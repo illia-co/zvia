@@ -27,10 +27,10 @@ npm run build:landing
 
 | Path | Purpose |
 |------|---------|
-| `app/` | Electron desktop application |
-| `landing/` | Static marketing site and user documentation |
-| `shared/` | Design tokens and brand assets |
-| `docs/` | Contributor and architecture documentation |
+| `app/` | Electron desktop application — see [app/docs/](app/docs/) |
+| `landing/` | Marketing site and user documentation — see [landing/docs/](landing/docs/) |
+| `shared/` | Design tokens and brand assets — see [shared/docs/](shared/docs/) |
+| `docs/` | [Documentation index](docs/README.md) |
 
 See [AGENTS.md](./AGENTS.md) for product rules, architecture constraints, and coding conventions.
 
@@ -41,6 +41,7 @@ See [AGENTS.md](./AGENTS.md) for product rules, architecture constraints, and co
 - Do not expose SSH credentials or raw keys to the renderer process.
 - Add or update tests when behavior changes.
 - Update user-facing documentation in `landing/src/docs/content.ts` when features or workflows change.
+- Update agent docs in `app/docs/`, `landing/docs/`, or `shared/docs/` when architecture or tool behavior changes.
 
 ## Reporting issues
 

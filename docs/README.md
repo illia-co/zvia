@@ -1,10 +1,27 @@
-# See also
+# Relay documentation index
 
-- [README](../README.md) — project overview and development setup
-- [CONTRIBUTING.md](../CONTRIBUTING.md) — how to contribute
-- [AGENTS.md](../AGENTS.md) — product rules and architecture for coding agents
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — technical architecture
-- [PRODUCT.md](../PRODUCT.md) — product vision and UX principles
-- [SECURITY.md](../SECURITY.md) — security policy and model
+Agent and contributor documentation is organized by workspace package.
 
-User-facing documentation lives in the landing site at `landing/src/docs/content.ts` and is served at `/documentation`.
+## Root
+
+| Document | Purpose |
+|----------|---------|
+| [README](../README.md) | Project overview and quick start |
+| [AGENTS.md](../AGENTS.md) | Coding agent instructions (keep at repo root) |
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute |
+| [SECURITY.md](../SECURITY.md) | Security policy and vulnerability reporting |
+
+## By package
+
+| Package | Path | Contents |
+|---------|------|----------|
+| **App** | [app/docs/](../app/docs/) | Architecture, functionality, roadmap, tool specifications |
+| **Landing** | [landing/docs/](../landing/docs/) | Product vision and marketing context |
+| **Shared** | [shared/docs/](../shared/docs/) | Design language and UI styling rules |
+
+## User-facing documentation
+
+End-user guides live in the landing site:
+
+- Source: `landing/src/docs/content.ts`
+- Served at: `/documentation` when running or deploying the landing site

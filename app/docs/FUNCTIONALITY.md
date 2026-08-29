@@ -1,5 +1,7 @@
 # Relay Functional Requirements
 
+> App package documentation. See [tools/](./tools/) for per-tool specifications.
+
 ## Server Selection
 
 User can:
@@ -23,191 +25,55 @@ Selecting a server changes the complete application context.
 
 # Overview
 
-Display:
-
-- server name
-- hostname
-- OS
-- OS version
-- architecture
-- uptime
-- CPU
-- memory
-- disk
-- network
-
-Overview must never aggregate multiple servers.
+See [tools/overview.md](./tools/overview.md).
 
 ---
 
 # Stats
 
-Display live:
-
-CPU:
-
-- usage
-- cores
-- load average
-
-Memory:
-
-- used
-- available
-- total
-- swap
-
-Disk:
-
-- filesystem
-- used
-- available
-- percentage
-
-Network:
-
-- RX
-- TX
+See [tools/stats.md](./tools/stats.md).
 
 ---
 
 # Logs
 
-Requirements:
-
-- stream logs
-- pause
-- resume
-- search
-- filter
-- time range
-- severity
-- service/unit
-- clear
-- copy
-- jump to latest
-
-Performance:
-
-- virtualized list
-- bounded memory
-- incremental streaming
+See [tools/logs.md](./tools/logs.md).
 
 ---
 
 # Terminal
 
-Must support:
-
-- interactive shell
-- sudo
-- apt
-- vim
-- nano
-- top
-- htop
-- Docker
-- arbitrary commands
-- ANSI
-- colors
-- Unicode
-- resize
-- Ctrl+C
-- Ctrl+D
-- Ctrl+Z
-- tab completion
-
-Terminal should support multiple sessions.
+See [tools/terminal.md](./tools/terminal.md).
 
 ---
 
 # Files
 
-Requirements:
-
-- browse
-- breadcrumbs
-- list
-- sorting
-- create directory
-- create file
-- rename
-- move
-- copy
-- delete
-- upload
-- download
-- drag/drop
-- permissions
-- file size
-- modified date
-
-File operations should provide progress for large transfers.
-
-Destructive operations require confirmation.
+See [tools/files.md](./tools/files.md).
 
 ---
 
 # Docker
 
-## Containers
+See [tools/docker.md](./tools/docker.md).
 
-Display:
+---
 
-- name
-- status
-- image
-- ports
-- created
-- uptime
-- CPU
-- memory
+# Users, Processes, Packages
 
-Actions:
+See [tools/users.md](./tools/users.md), [tools/processes.md](./tools/processes.md), [tools/packages.md](./tools/packages.md).
 
-- start
-- stop
-- restart
-- remove
-- inspect
-- logs
-- exec terminal
+---
 
-## Images
+# Ports, Nginx, SSL
 
-Display:
+See [tools/ports.md](./tools/ports.md), [tools/nginx.md](./tools/nginx.md), [tools/ssl.md](./tools/ssl.md).
 
-- repository
-- tag
-- ID
-- size
-- created
+---
 
-Actions:
+# Services, Cron
 
-- remove
-
-## Volumes
-
-Display:
-
-- name
-- driver
-- mount information
-
-Actions:
-
-- inspect
-- remove
-
-## Networks
-
-Display:
-
-- name
-- driver
-- scope
-- containers
+See [tools/services.md](./tools/services.md), [tools/cron.md](./tools/cron.md).
 
 ---
 

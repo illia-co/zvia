@@ -1,3 +1,16 @@
+# Historical: original spec-generation instructions
+
+> **Note:** This file is archived. The project structure has changed. Use the current documentation index at [docs/README.md](../../../docs/README.md).
+
+The paths and file layout described below are **out of date**. Active documentation lives in:
+
+- `AGENTS.md` (repo root)
+- `app/docs/`
+- `landing/docs/`
+- `shared/docs/`
+
+---
+
 Yes. I’d structure this as a small **product specification repository** that you can hand to Claude Code/Codex/Cursor/etc. The important thing is to make the agents understand that this is **not a generic server dashboard** and that **everything is scoped to the currently selected server**.
 
 I’d create these files:

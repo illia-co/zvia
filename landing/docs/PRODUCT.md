@@ -1,5 +1,7 @@
 # Relay Product Specification
 
+> Landing package documentation. User-facing docs: `landing/src/docs/content.ts`.
+
 ## Vision
 
 Relay is a macOS application that provides a beautiful native interface for working with remote Linux servers.
@@ -378,15 +380,11 @@ Never pretend stale information is current.
 
 Possible future modules:
 
-- Nginx
-- SSL
-- systemd services
-- deployment
-- databases
-- process manager
-- firewall
-- cron
+- fleet management across servers
+- Kubernetes
+- database administration UIs
+- deployment automation
 - server provisioning
-- fleet management
+- monitoring alerts
 
-Do not implement these in MVP.
+Nginx, SSL, systemd services, cron, users, processes, packages, and ports are implemented — see `app/docs/tools/`.

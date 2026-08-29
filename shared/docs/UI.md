@@ -1,6 +1,6 @@
 # Relay UI Styling Rules
 
-These rules keep the renderer aligned with [DESIGN.md](../DESIGN.md).
+These rules keep the renderer aligned with [DESIGN.md](./DESIGN.md).
 
 ## Token-only styling
 

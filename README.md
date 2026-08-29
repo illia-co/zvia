@@ -169,7 +169,7 @@ npm run dist:win -w @relay/app
 npm run dist:linux -w @relay/app
 ```
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for pull request guidelines and [AGENTS.md](./AGENTS.md) for architecture and product rules.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for pull request guidelines, [AGENTS.md](./AGENTS.md) for product rules, and [docs/README.md](./docs/README.md) for the full documentation index.
 
 <details>
 <summary><strong>Repository structure</strong></summary>
@@ -179,9 +179,12 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for pull request guidelines and [AGENTS
 ```
 /
 ├── app/          # Electron application (@relay/app)
+│   └── docs/     # Architecture, tools, roadmap
 ├── landing/      # Marketing site (@relay/landing)
+│   └── docs/     # Product vision
 ├── shared/       # Design tokens and brand assets
-├── docs/         # Contributor documentation
+│   └── docs/     # Design language and UI rules
+├── docs/         # Documentation index
 └── package.json
 ```
 

@@ -14,9 +14,24 @@ Root scripts: `npm run dev` (app), `npm run dev:landing` (site), `npm run build`
 
 ---
 
+## Documentation
+
+Agent and contributor docs are organized by package:
+
+| Location | Contents |
+|----------|----------|
+| [docs/README.md](docs/README.md) | Documentation index |
+| [app/docs/](app/docs/) | Architecture, functionality, roadmap, tool specs |
+| [landing/docs/](landing/docs/) | Product vision |
+| [shared/docs/](shared/docs/) | Design language and UI rules |
+
+User-facing docs: `landing/src/docs/content.ts` → `/documentation` on the landing site.
+
+---
+
 ## Product
 
-Relay is a native-feeling macOS desktop application for managing remote Linux servers over SSH.
+Relay is a native-feeling desktop application for managing remote Linux servers over SSH. macOS is the primary target; Windows and Linux builds are supported.
 
 The product should feel like:
 
@@ -80,32 +95,30 @@ Example:
 
 ---
 
-# Current MVP
+# Current tools
 
-The first version contains exactly these primary tools:
+The application ships **14 server-scoped tools**:
 
-1. Overview
-2. Server Stats
-3. Server Logs
-4. Terminal
-5. File Management
-6. Docker
+| Section | Tools |
+|---------|-------|
+| General | Overview |
+| System | Stats, Users, Processes, Packages, Logs |
+| Workspace | Terminal, Files |
+| Containers | Docker |
+| Network | Ports, Nginx, SSL |
+| Daemons | Services, Cron |
 
-Do not add unnecessary features during MVP development.
+Per-tool specs: [app/docs/tools/](app/docs/tools/).
 
-Do not implement:
+Do not add fleet-wide views (all servers, all containers, all logs) unless explicitly designing a fleet mode.
+
+Do not implement without product intent:
 
 - Kubernetes
-- database administration
-- Nginx management
-- SSL management
-- user management
-- firewall management
+- database administration UIs
 - cloud provisioning
-- fleet dashboards
 - deployment pipelines
-
-These may come later.
+- monitoring alert systems
 
 ---
 

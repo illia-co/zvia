@@ -1,162 +1,69 @@
 # Relay Roadmap
 
-## Phase 1 — Foundation
+## Shipped
 
-- Electron app
-- React
-- TypeScript
-- macOS window
-- application shell
-- server profiles
-- SSH connection
-- secure credential handling
+### Foundation
 
----
+- Electron app, React, TypeScript
+- Server profiles, SSH connection, secure credentials
+- macOS, Windows, and Linux packaging via electron-builder
 
-## Phase 2 — Workspace
+### Workspace
 
-- server sidebar
-- tool sidebar
-- workspace
-- tabs
-- split panes
-- panel resizing
-- command palette
+- Server sidebar, tool sidebar, workspace
+- Tabs, split panes, panel resizing, command palette
 
----
+### Tools (14)
 
-## Phase 3 — Terminal
+- **General:** Overview
+- **System:** Stats, Users, Processes, Packages, Logs
+- **Workspace:** Terminal, Files
+- **Containers:** Docker
+- **Network:** Ports, Nginx, SSL
+- **Daemons:** Services, Cron
 
-- xterm.js
-- SSH PTY
-- resize
-- multiple sessions
-- reconnect
-- terminal persistence
+### Landing
 
-Terminal quality is critical.
+- Marketing site with documentation page (`/documentation`)
 
 ---
 
-## Phase 4 — Files
+## In progress / next
 
-- SFTP
-- directory navigation
-- breadcrumbs
-- list view
-- file operations
-- upload/download
-- drag/drop
-- editor
+- GitHub Releases distribution pipeline
+- Code signing and notarization (macOS)
+- In-app auto-update (optional future phase)
 
 ---
 
-## Phase 5 — Stats
+## Future (not planned for current release)
 
-- CPU
-- memory
-- disk
-- network
-- uptime
-- OS information
-
----
-
-## Phase 6 — Logs
-
-- journal streaming
-- search
-- filters
-- live mode
-- pause
-- resume
-- virtualization
-
----
-
-## Phase 7 — Docker
-
-- containers
-- images
-- volumes
-- networks
-- container logs
-- container exec
-- start/stop/restart
-
----
-
-# Explicitly Out of MVP
-
-Do not implement:
-
-- Nginx manager
-- SSL manager
-- PostgreSQL UI
-- Redis UI
+- Fleet management across servers
 - Kubernetes
-- firewall
-- user administration
-- cloud APIs
-- deployment automation
-- monitoring alerts
-- fleet-wide dashboards
-
-These belong to future versions.
+- Database administration UIs
+- Cloud API integrations
+- Deployment automation
+- Monitoring alerts and paging
+- Server provisioning
 
 ---
 
-# Quality Bar
+## Quality bar
 
-Before calling MVP complete:
+**Terminal** — interactive SSH PTY: sudo, apt, vim, htop, docker CLI, long-running processes.
 
-## Terminal
+**Files** — reliable SFTP transfers for large files.
 
-It must be possible to:
+**Logs** — streaming and virtualization without freezing the UI.
 
-    ssh into server
-    sudo
-    apt install
-    vim
-    nano
-    htop
-    docker
-    long-running processes
+**Docker** — reflects the remote server's actual state.
 
-without unexpected behavior.
+**Connection** — graceful reconnect after network failures.
 
-## Files
-
-Large files must transfer reliably.
-
-## Logs
-
-Large log streams must not freeze the UI.
-
-## Docker
-
-Docker operations must clearly reflect the remote server.
-
-## Connection
-
-Temporary network failures must recover gracefully.
-
-## UX
-
-The application must feel like a native Mac application.
+**UX** — native, calm, server context always visible.
 
 ---
 
-# Product Principle
+## Product principle
 
-Reliability beats feature count.
-
-A small application that makes:
-
-    SSH
-    Files
-    Logs
-    Docker
-    Stats
-
-feel fantastic is better than a huge application with unreliable features.
+Reliability beats feature count. A focused server-scoped workspace that feels excellent beats a sprawling unreliable dashboard.
