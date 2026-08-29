@@ -1,0 +1,18 @@
+{
+  "name": "relay",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "app",
+    "landing",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @relay/app",
+    "build": "npm run build -w @relay/app",
+    "typecheck": "npm run typecheck -w @relay/app",
+    "test": "npm run test -w @relay/app",
+    "dev:landing": "npm run dev -w @relay/landing",
+    "build:landing": "npm run build -w @relay/landing"
+  }
+}

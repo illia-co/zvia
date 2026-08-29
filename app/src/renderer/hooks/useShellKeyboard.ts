@@ -1,0 +1,84 @@
+import { useEffect } from 'react'
+import { TOOLS } from '@renderer/lib/tools'
+import { useServerContext } from '@renderer/state/ServerContext'
+import { useWorkspaceStore } from '@renderer/state/workspaceStore'
+import { useThemeStore } from '@renderer/state/themeStore'
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  const tag = target.tagName
+  return (
+    tag === 'INPUT' ||
+    tag === 'TEXTAREA' ||
+    tag === 'SELECT' ||
+    target.isContentEditable
+  )
+}
+
+export function useShellKeyboard(): void {
+  const { serverId } = useServerContext()
+  const commandPaletteOpen = useWorkspaceStore((s) => s.commandPaletteOpen)
+  const setCommandPaletteOpen = useWorkspaceStore((s) => s.setCommandPaletteOpen)
+  const openTool = useWorkspaceStore((s) => s.openTool)
+  const requestClosePanel = useWorkspaceStore((s) => s.requestClosePanel)
+  const cyclePreference = useThemeStore((s) => s.cyclePreference)
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return
+
+      const mod = event.metaKey || event.ctrlKey
+
+      if (mod && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setCommandPaletteOpen(!commandPaletteOpen)
+        return
+      }
+
+      if (mod && event.key.toLowerCase() === 'w' && serverId) {
+        const workspace = useWorkspaceStore.getState().getWorkspace(serverId)
+        const focusedPanelId = workspace.focusedPanelId
+        if (focusedPanelId) {
+          event.preventDefault()
+          requestClosePanel(serverId, focusedPanelId)
+        }
+        return
+      }
+
+      if (mod && !event.shiftKey && !event.altKey && serverId) {
+        if (event.key === '0') {
+          const tool = TOOLS[9]
+          if (tool) {
+            event.preventDefault()
+            openTool(serverId, tool.id)
+          }
+          return
+        }
+
+        const toolIndex = Number.parseInt(event.key, 10)
+        if (toolIndex >= 1 && toolIndex <= TOOLS.length) {
+          event.preventDefault()
+          const tool = TOOLS[toolIndex - 1]
+          if (tool) {
+            openTool(serverId, tool.id)
+          }
+        }
+      }
+
+      if (mod && event.shiftKey && event.key.toLowerCase() === 'l') {
+        event.preventDefault()
+        cyclePreference()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [
+    requestClosePanel,
+    commandPaletteOpen,
+    cyclePreference,
+    openTool,
+    serverId,
+    setCommandPaletteOpen
+  ])
+}

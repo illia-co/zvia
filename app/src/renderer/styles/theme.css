@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@import "@relay/shared/design/tokens.css";
+@import "./base.css";
+@import "./scrollbar.css";

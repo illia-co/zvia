@@ -1,0 +1,54 @@
+@theme {
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f7f7f7;
+  --color-bg-elevated: #ffffff;
+  --color-text: #111111;
+  --color-text-secondary: #777777;
+  --color-text-tertiary: #a0a0a0;
+  --color-divider: #e8e8e8;
+  --color-status-healthy: #4a9d5f;
+  --color-status-warning: #c8853a;
+  --color-status-error: #c25450;
+  --color-overlay: rgba(0, 0, 0, 0.4);
+
+  --radius-sm: 8px;
+  --radius-panel: 10px;
+  --radius-lg: 12px;
+  --font-sans: -apple-system, "SF Pro Text", system-ui, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", monospace;
+  --transition-duration-default: 140ms;
+  --shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --radius-panel-inner: calc(var(--radius-panel) - 1px);
+
+  --scrollbar-size: 6px;
+  --scrollbar-radius: 9999px;
+  --scrollbar-thumb-border: 1px;
+  --color-scrollbar-thumb: rgba(17, 17, 17, 0.18);
+  --color-scrollbar-thumb-hover: rgba(17, 17, 17, 0.28);
+  --color-scrollbar-thumb-active: rgba(17, 17, 17, 0.38);
+  --color-scrollbar-thumb-terminal: rgba(255, 255, 255, 0.16);
+  --color-scrollbar-thumb-terminal-hover: rgba(255, 255, 255, 0.26);
+  --color-scrollbar-thumb-terminal-active: rgba(255, 255, 255, 0.36);
+
+  --height-titlebar: 38px;
+  --padding-titlebar-mac: 78px;
+  --spacing-titlebar-mac: var(--padding-titlebar-mac);
+}
+
+.dark {
+  --color-bg: #111111;
+  --color-bg-secondary: #181818;
+  --color-bg-elevated: #1c1c1c;
+  --color-text: #f5f5f5;
+  --color-text-secondary: #999999;
+  --color-text-tertiary: #666666;
+  --color-divider: #292929;
+  --color-status-healthy: #4a9d5f;
+  --color-status-warning: #c8853a;
+  --color-status-error: #c25450;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --color-scrollbar-thumb: rgba(245, 245, 245, 0.14);
+  --color-scrollbar-thumb-hover: rgba(245, 245, 245, 0.24);
+  --color-scrollbar-thumb-active: rgba(245, 245, 245, 0.34);
+}

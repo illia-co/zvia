@@ -1,0 +1,9 @@
+{
+  "name": "@relay/shared",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./design/tokens.css": "./design/tokens.css",
+    "./assets/*": "./assets/*"
+  }
+}

@@ -1,0 +1,27 @@
+import { SiteClosing } from '../components/SiteClosing'
+import { Header } from '../components/Header'
+import { Hero } from '../components/Hero'
+import { OpenSource } from '../components/OpenSource'
+import { Problem } from '../components/Problem'
+import { RealSSH } from '../components/RealSSH'
+import { ServerContext } from '../components/ServerContext'
+import { TerminalSection } from '../components/TerminalSection'
+import { FeatureTabs } from '../components/FeatureTabs'
+
+export function HomePage() {
+  return (
+    <>
+      <Header />
+      <main id="main">
+        <Hero />
+        <Problem />
+        <FeatureTabs />
+        <ServerContext />
+        <RealSSH />
+        <TerminalSection />
+        <OpenSource />
+        <SiteClosing />
+      </main>
+    </>
+  )
+}

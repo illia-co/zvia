@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest an idea for Relay
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Relay is server-scoped by design. Features should operate on the currently selected server, not across a fleet.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What problem are you trying to solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How would you like Relay to handle this?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional — other approaches you thought about.

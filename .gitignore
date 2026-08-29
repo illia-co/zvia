@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+app/out/
+app/release/
+landing/dist/
+
+# Environment & secrets
+.env
+.env.*
+*.pem
+*.key
+id_rsa
+id_ed25519
+
+# Logs & debug
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE & editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+.cursor/
+
+# Tooling caches
+.vite/
+**/.vite/
+*.tsbuildinfo
+coverage/

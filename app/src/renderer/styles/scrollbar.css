@@ -1,0 +1,94 @@
+/*
+ * Relay scrollbars — thin, monochrome, macOS-inspired overlay thumbs.
+ * Applied globally to native overflow scrollers; Radix ScrollArea uses
+ * the .relay-scroll-area rules below for auto-hiding overlay bars.
+ */
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-scrollbar-thumb) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: var(--scrollbar-size);
+    height: var(--scrollbar-size);
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-scrollbar-thumb);
+    border-radius: var(--scrollbar-radius);
+    border: var(--scrollbar-thumb-border) solid transparent;
+    background-clip: padding-box;
+    min-height: 2rem;
+    min-width: 2rem;
+    transition: background-color var(--transition-duration-default) ease;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-scrollbar-thumb-hover);
+  }
+
+  *::-webkit-scrollbar-thumb:active {
+    background-color: var(--color-scrollbar-thumb-active);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+/* Radix overlay scroll area — hides native bars, renders custom thumbs */
+.relay-scroll-area {
+  overflow: hidden;
+}
+
+.relay-scroll-area [data-radix-scroll-area-viewport] > div {
+  display: block !important;
+}
+
+.relay-scroll-area [data-radix-scroll-area-scrollbar] {
+  display: flex;
+  touch-action: none;
+  user-select: none;
+  padding: 1px;
+  transition: opacity var(--transition-duration-default) ease;
+}
+
+.relay-scroll-area [data-radix-scroll-area-scrollbar][data-orientation='vertical'] {
+  width: calc(var(--scrollbar-size) + 2px);
+}
+
+.relay-scroll-area [data-radix-scroll-area-scrollbar][data-orientation='horizontal'] {
+  flex-direction: column;
+  height: calc(var(--scrollbar-size) + 2px);
+}
+
+.relay-scroll-area [data-radix-scroll-area-scrollbar][data-state='hidden'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.relay-scroll-area [data-radix-scroll-area-scrollbar][data-state='visible'] {
+  opacity: 1;
+}
+
+.relay-scroll-area [data-radix-scroll-area-thumb] {
+  flex: 1;
+  border-radius: var(--scrollbar-radius);
+  background-color: var(--color-scrollbar-thumb);
+  transition: background-color var(--transition-duration-default) ease;
+}
+
+.relay-scroll-area [data-radix-scroll-area-scrollbar]:hover [data-radix-scroll-area-thumb],
+.relay-scroll-area [data-radix-scroll-area-thumb]:hover {
+  background-color: var(--color-scrollbar-thumb-hover);
+}
+
+.relay-scroll-area [data-radix-scroll-area-thumb]:active {
+  background-color: var(--color-scrollbar-thumb-active);
+}
