@@ -12,15 +12,24 @@ import sslImg from './assets/screenshots/ssl.png'
 import statsImg from './assets/screenshots/stats.png'
 import usersImg from './assets/screenshots/users.png'
 
+const GITHUB_REPO = 'https://github.com/illia-co/zvia'
+const RELEASES_BASE = `${GITHUB_REPO}/releases`
+const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://illia-co.github.io/zvia').replace(
+  /\/$/,
+  ''
+)
+
 export const SITE = {
   title: 'Zvia — Open-source SSH client for Linux server management',
   description:
     'Open-source desktop app for managing Linux servers and VPS instances over SSH. One workspace for server administration — stats, logs, Docker, Nginx, SSL, systemd, files, and terminal.',
-  canonical: 'https://zvia.app',
-  ogImage: 'https://zvia.app/og-image.png',
-  github: 'https://github.com/illia-co/zvia',
-  downloadMac: '#download',
-  downloadWindows: '#download-windows'
+  canonical: siteUrl,
+  ogImage: `${siteUrl}/og-image.png`,
+  github: GITHUB_REPO,
+  releases: `${RELEASES_BASE}/latest`,
+  downloadMac: `${RELEASES_BASE}/latest/download/Zvia-mac.dmg`,
+  downloadWindows: `${RELEASES_BASE}/latest/download/Zvia-windows-setup.exe`,
+  downloadLinux: `${RELEASES_BASE}/latest/download/Zvia-linux.AppImage`
 } as const
 
 export const DOC_PAGE_META = {

@@ -2,19 +2,23 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { DownloadDropdown } from './DownloadDropdown'
 
-const HOME_NAV_LINKS = [
-  { href: '/#features', label: 'Features' },
-  { href: '/#ssh', label: 'SSH' },
-  { href: '/#open-source', label: 'Open Source' }
-]
+const HOME_SECTION_LINKS = [
+  { hash: '#features', label: 'Features' },
+  { hash: '#ssh', label: 'SSH' },
+  { hash: '#open-source', label: 'Open Source' }
+] as const
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
   const isDocs = location.pathname.startsWith('/documentation')
+  const homeBase = import.meta.env.BASE_URL
 
   const navLinks = [
-    ...HOME_NAV_LINKS,
+    ...HOME_SECTION_LINKS.map((link) => ({
+      href: `${homeBase}${link.hash}`,
+      label: link.label
+    })),
     { href: '/documentation', label: 'Documentation', active: isDocs }
   ]
 

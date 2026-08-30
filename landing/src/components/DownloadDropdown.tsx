@@ -83,6 +83,7 @@ export function DownloadDropdown({ className = '', onSelect }: DownloadDropdownP
               role="menuitem"
               className="download-dropdown-item"
               onClick={close}
+              rel="noopener noreferrer"
             >
               <span className="download-dropdown-item-label">{option.label}</span>
               <span className="download-dropdown-item-hint">Download</span>

@@ -9,7 +9,7 @@ const SOFTWARE_APPLICATION = {
   operatingSystem: 'macOS, Windows, Linux',
   description: SITE.description,
   url: SITE.canonical,
-  downloadUrl: SITE.canonical,
+  downloadUrl: SITE.releases,
   softwareHelp: `${SITE.canonical}/documentation`,
   isAccessibleForFree: true,
   offers: {

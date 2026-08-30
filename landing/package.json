@@ -1,11 +1,12 @@
 {
   "name": "@zvia/landing",
-  "version": "0.1.0",
+  "version": "0.1.0-beta",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/postbuild-pages.mjs",
+    "preview:pages": "VITE_BASE_PATH=/zvia/ VITE_SITE_URL=https://illia-co.github.io/zvia npm run build && vite preview",
     "preview": "vite preview"
   },
   "dependencies": {

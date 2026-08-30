@@ -20,8 +20,10 @@ export function Hero() {
           server-scoped workspace — stats, logs, Docker, Nginx, SSL, and more.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <LinkButton href={SITE.downloadMac}>Download for macOS</LinkButton>
-          <LinkButton href={SITE.downloadWindows} variant="secondary">
+          <LinkButton href={SITE.downloadMac} rel="noopener noreferrer">
+            Download for macOS
+          </LinkButton>
+          <LinkButton href={SITE.downloadWindows} variant="secondary" rel="noopener noreferrer">
             Download for Windows
           </LinkButton>
         </div>

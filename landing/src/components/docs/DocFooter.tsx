@@ -25,13 +25,13 @@ export function DocFooter() {
         <span className="text-sm text-text-tertiary" aria-hidden>
           ·
         </span>
-        <a href={SITE.downloadMac} className={footerLinkClass}>
+        <a href={SITE.downloadMac} className={footerLinkClass} rel="noopener noreferrer">
           macOS
         </a>
         <span className="text-sm text-text-tertiary" aria-hidden>
           ·
         </span>
-        <a href={SITE.downloadWindows} className={footerLinkClass}>
+        <a href={SITE.downloadWindows} className={footerLinkClass} rel="noopener noreferrer">
           Windows
         </a>
       </nav>

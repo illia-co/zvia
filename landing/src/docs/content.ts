@@ -182,7 +182,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Compare the version shown in the app (or the release tag on GitHub, e.g. v0.1.0) with the latest release on GitHub. If they match, you are up to date.'
+          'Compare the version shown in the app (or the release tag on GitHub, e.g. v0.1.0-beta) with the latest release on GitHub. If they match, you are up to date.'
       }
     ]
   },

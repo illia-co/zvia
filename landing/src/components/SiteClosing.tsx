@@ -24,8 +24,10 @@ export function SiteClosing() {
             </p>
           </div>
           <div className="site-closing-cta-actions">
-            <LinkButton href={SITE.downloadMac}>Download for macOS</LinkButton>
-            <LinkButton href={SITE.downloadWindows} variant="secondary">
+            <LinkButton href={SITE.downloadMac} rel="noopener noreferrer">
+              Download for macOS
+            </LinkButton>
+            <LinkButton href={SITE.downloadWindows} variant="secondary" rel="noopener noreferrer">
               Download for Windows
             </LinkButton>
           </div>
@@ -54,13 +56,13 @@ export function SiteClosing() {
             <span className="text-sm text-text-tertiary" aria-hidden>
               ·
             </span>
-            <a href={SITE.downloadMac} className={footerLinkClass}>
+            <a href={SITE.downloadMac} className={footerLinkClass} rel="noopener noreferrer">
               macOS
             </a>
             <span className="text-sm text-text-tertiary" aria-hidden>
               ·
             </span>
-            <a href={SITE.downloadWindows} className={footerLinkClass}>
+            <a href={SITE.downloadWindows} className={footerLinkClass} rel="noopener noreferrer">
               Windows
             </a>
           </nav>

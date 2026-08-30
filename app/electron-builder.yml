@@ -12,17 +12,17 @@ mac:
   icon: build/icon.png
   target:
     - dmg
-    - zip
+  artifactName: Zvia-mac.${ext}
   hardenedRuntime: true
   gatekeeperAssess: false
 win:
   icon: build/icon.png
   target:
     - nsis
-    - portable
+  artifactName: Zvia-windows-setup.${ext}
 linux:
   icon: build/icon.png
   target:
     - AppImage
-    - deb
+  artifactName: Zvia-linux.${ext}
   category: Development

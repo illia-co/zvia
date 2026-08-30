@@ -1,6 +1,6 @@
 {
   "name": "@zvia/app",
-  "version": "0.1.0",
+  "version": "0.1.0-beta",
   "description": "Cross-platform SSH workspace for remote Linux servers",
   "main": "./out/main/index.js",
   "private": true,
