@@ -122,3 +122,50 @@ export function serializeError(error: unknown): RelayErrorPayload {
     message: 'An unexpected error occurred'
   }
 }
+
+export const RELAY_IPC_ERROR_PREFIX = 'RELAY_IPC_ERROR:'
+
+export function extractRelayIpcPayload(message: string): RelayErrorPayload | null {
+  const relayIndex = message.indexOf(RELAY_IPC_ERROR_PREFIX)
+  if (relayIndex === -1) return null
+
+  try {
+    const parsed = JSON.parse(
+      message.slice(relayIndex + RELAY_IPC_ERROR_PREFIX.length)
+    ) as unknown
+    return isRelayErrorPayload(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+export function formatIpcError(payload: RelayErrorPayload): Error {
+  return new Error(`${RELAY_IPC_ERROR_PREFIX}${JSON.stringify(payload)}`)
+}
+
+export function parseIpcError(error: unknown): RelayErrorPayload {
+  if (isRelayErrorPayload(error)) {
+    return error
+  }
+
+  if (error instanceof Error) {
+    const embedded = extractRelayIpcPayload(error.message)
+    if (embedded) return embedded
+
+    return {
+      code: 'INTERNAL_ERROR',
+      message: error.message
+    }
+  }
+
+  if (typeof error === 'string') {
+    const embedded = extractRelayIpcPayload(error)
+    if (embedded) return embedded
+    return { code: 'INTERNAL_ERROR', message: error }
+  }
+
+  return {
+    code: 'INTERNAL_ERROR',
+    message: 'An unexpected error occurred'
+  }
+}

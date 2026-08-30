@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { PackageDetail, PackageOperation } from '@shared/packages'
+import { normalizePackageDetail } from '@shared/packages'
 import type { RelayErrorPayload } from '@shared/errors'
 import { BackButton } from '@renderer/components/ui/back-button'
 import { Button } from '@renderer/components/ui/button'
@@ -100,7 +101,9 @@ export function PackagesPanel() {
     setInstallLoading(true)
     setActionError(null)
     try {
-      const detail = await window.relay.packages.info({ serverId, packageName })
+      const detail = normalizePackageDetail(
+        await window.relay.packages.info({ serverId, packageName })
+      )
       setInstallDetail(detail)
       setInstallDialogOpen(true)
     } catch (error) {
@@ -224,82 +227,84 @@ export function PackagesPanel() {
     </div>
   ) : null
 
-  if (showingDetail && packages.detail) {
-    return (
-      <div className="flex h-full min-h-0 flex-col">
-        {errorSurface}
-        <div className="border-b border-divider px-3 py-2">
-          <BackButton
-            onClick={() => {
-              setSelectedPackage(null)
-              packages.clearDetail()
-            }}
-          />
-        </div>
-        <PackageDetailView
-          serverId={serverId}
-          detail={packages.detail}
-          loading={packages.detailLoading}
-          onInstall={(packageName) => void openInstallDialog(packageName)}
-          onRemove={requestRemove}
-          onUpgrade={requestUpgrade}
-        />
-      </div>
-    )
-  }
-
   return (
     <div className="flex h-full min-h-0 flex-col">
       {errorSurface}
-      <PackagesOverview overview={packages.overview} loading={packages.loading} />
 
-      <div className="border-b border-divider px-3 py-2">
-        <SegmentedControl options={TABS} value={tab} onChange={setTab} />
-      </div>
-
-      <div className="min-h-0 flex-1">
-        {tab === 'installed' && (
-          <InstalledPackagesTab
-            items={packages.installed?.items ?? []}
-            query={packages.installedQuery}
-            loading={packages.installedLoading || packages.loading}
-            onQueryChange={packages.setInstalledQuery}
-            onSelect={openPackage}
-          />
-        )}
-
-        {tab === 'updates' && (
-          <UpdatesTab
-            updates={packages.updates}
-            loading={packages.updatesLoading || packages.loading}
-            onSelect={openPackage}
-            onUpgradeAll={requestUpgradeAll}
+      {showingDetail && packages.detail ? (
+        <>
+          <div className="border-b border-divider px-3 py-2">
+            <BackButton
+              onClick={() => {
+                setSelectedPackage(null)
+                packages.clearDetail()
+              }}
+            />
+          </div>
+          <PackageDetailView
+            serverId={serverId}
+            detail={packages.detail}
+            loading={packages.detailLoading}
+            onInstall={(packageName) => void openInstallDialog(packageName)}
+            onRemove={requestRemove}
             onUpgrade={requestUpgrade}
           />
-        )}
+        </>
+      ) : (
+        <>
+          <PackagesOverview overview={packages.overview} loading={packages.loading} />
 
-        {tab === 'search' && (
-          <SearchTab
-            results={packages.searchResults}
-            query={packages.searchQuery}
-            loading={packages.searchLoading}
-            onQueryChange={packages.setSearchQuery}
-            onSelect={openPackage}
-            onInstall={(packageName) => void openInstallDialog(packageName)}
-          />
-        )}
-      </div>
+          <div className="border-b border-divider px-3 py-2">
+            <SegmentedControl options={TABS} value={tab} onChange={setTab} />
+          </div>
+
+          <div className="min-h-0 flex-1">
+            {tab === 'installed' && (
+              <InstalledPackagesTab
+                items={packages.installed?.items ?? []}
+                query={packages.installedQuery}
+                loading={packages.installedLoading || packages.loading}
+                onQueryChange={packages.setInstalledQuery}
+                onSelect={openPackage}
+              />
+            )}
+
+            {tab === 'updates' && (
+              <UpdatesTab
+                updates={packages.updates}
+                loading={packages.updatesLoading || packages.loading}
+                onSelect={openPackage}
+                onUpgradeAll={requestUpgradeAll}
+                onUpgrade={requestUpgrade}
+              />
+            )}
+
+            {tab === 'search' && (
+              <SearchTab
+                results={packages.searchResults}
+                query={packages.searchQuery}
+                loading={packages.searchLoading}
+                onQueryChange={packages.setSearchQuery}
+                onSelect={openPackage}
+                onInstall={(packageName) => void openInstallDialog(packageName)}
+              />
+            )}
+          </div>
+        </>
+      )}
 
       <InstallPackageDialog
         open={installDialogOpen}
         detail={installDetail}
         loading={installLoading}
         onOpenChange={setInstallDialogOpen}
-        onConfirm={() => {
+        onConfirm={(version) => {
           if (!installDetail) return
           void startOperation(
-            { kind: 'install', packageName: installDetail.name },
-            `Installing ${installDetail.name}`
+            { kind: 'install', packageName: installDetail.name, version },
+            version
+              ? `Installing ${installDetail.name} (${version})`
+              : `Installing ${installDetail.name}`
           )
         }}
       />

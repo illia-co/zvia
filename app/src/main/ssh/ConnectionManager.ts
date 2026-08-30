@@ -1,8 +1,9 @@
 import type { BrowserWindow } from 'electron'
 import type { ServerProfile, ConnectionState } from '@shared/server'
-import type { ExecResult } from '@shared/ipc'
-import { RelayError } from '@shared/errors'
+import type { ConnectionTestRequest, ExecResult } from '@shared/ipc'
+import { ConnectionError, RelayError } from '@shared/errors'
 import { ServerConnection } from './ServerConnection'
+import { runTestConnection } from './testConnection'
 import { profileStore } from '../store/profiles'
 import { terminalService } from '../services/TerminalService'
 import { statsService } from '../services/StatsService'
@@ -20,6 +21,11 @@ import { clearCache as clearLinuxOsCache } from '../services/linuxOs'
 export class ConnectionManager {
   private connections = new Map<string, ServerConnection>()
   private mainWindow: BrowserWindow | null = null
+  private pendingTestHostKey: {
+    serverId: string
+    resolve: (accepted: boolean) => void
+    reject: (error: Error) => void
+  } | null = null
 
   setMainWindow(window: BrowserWindow | null): void {
     this.mainWindow = window
@@ -56,6 +62,35 @@ export class ConnectionManager {
     await connection.connect()
   }
 
+  async testConnection(request: ConnectionTestRequest): Promise<void> {
+    const serverId = request.serverId ?? `test-${Date.now()}`
+    const testRequest: ConnectionTestRequest = { ...request, serverId }
+
+    try {
+      await runTestConnection(testRequest, (prompt) => this.promptTestHostKey(prompt))
+    } finally {
+      this.pendingTestHostKey = null
+    }
+  }
+
+  private promptTestHostKey(
+    prompt: import('@shared/server').HostKeyPrompt
+  ): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      this.pendingTestHostKey = {
+        serverId: prompt.serverId,
+        resolve,
+        reject
+      }
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        this.mainWindow.webContents.send('connection:hostKeyPrompt', prompt)
+      } else {
+        this.pendingTestHostKey = null
+        reject(new ConnectionError('Unable to prompt for host key: no window available'))
+      }
+    })
+  }
+
   async disconnect(serverId: string): Promise<void> {
     const connection = this.connections.get(serverId)
     if (!connection) return
@@ -80,6 +115,17 @@ export class ConnectionManager {
   }
 
   respondToHostKey(serverId: string, decision: 'accept' | 'reject'): void {
+    if (this.pendingTestHostKey?.serverId === serverId) {
+      const pending = this.pendingTestHostKey
+      this.pendingTestHostKey = null
+      if (decision === 'accept') {
+        pending.resolve(true)
+      } else {
+        pending.reject(new ConnectionError('Host key rejected by user'))
+      }
+      return
+    }
+
     const connection = this.connections.get(serverId)
     if (!connection) {
       throw new RelayError('NOT_FOUND', `No active connection for server: ${serverId}`)

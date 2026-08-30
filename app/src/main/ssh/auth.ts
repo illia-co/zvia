@@ -13,7 +13,10 @@ function expandPath(path: string): string {
   return path
 }
 
-export async function buildConnectConfig(profile: ServerProfile): Promise<ConnectConfig> {
+export async function buildConnectConfig(
+  profile: ServerProfile,
+  options?: { passphrase?: string }
+): Promise<ConnectConfig> {
   const config: ConnectConfig = {
     host: profile.hostname,
     port: profile.port,
@@ -38,7 +41,9 @@ export async function buildConnectConfig(profile: ServerProfile): Promise<Connec
     throw new AuthenticationError(`Unable to read private key at ${profile.auth.privateKeyPath}`)
   }
 
-  if (profile.auth.hasPassphrase) {
+  if (options?.passphrase) {
+    config.passphrase = options.passphrase
+  } else if (profile.auth.hasPassphrase) {
     const passphrase = await secretsStore.getPassphrase(profile.id)
     if (!passphrase) {
       throw new AuthenticationError('Passphrase is required but not stored for this profile')

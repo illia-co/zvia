@@ -74,7 +74,7 @@ export function ProcessesTable({
         {sorted.map((process) => (
           <tr
             key={process.pid}
-            className="cursor-pointer border-t border-divider hover:bg-bg-secondary"
+            className="group cursor-pointer border-t border-divider hover:bg-bg-secondary"
             onClick={() => onSelect(process)}
           >
             <td className="px-3 py-2">
@@ -88,7 +88,9 @@ export function ProcessesTable({
                   )}
                   aria-hidden
                 />
-                <span className="truncate font-mono text-text">{processDisplayName(process)}</span>
+                <span className="truncate font-mono font-medium text-text group-hover:underline">
+                  {processDisplayName(process)}
+                </span>
               </div>
             </td>
             <td className="px-3 py-2 font-mono text-text-secondary">{process.pid}</td>

@@ -28,6 +28,7 @@ export interface LogsQuery {
   timeRange?: LogTimeRange
   priority?: LogPriority | `${0 | 1 | 2 | 3 | 4 | 5 | 6 | 7}`
   unit?: string
+  pid?: number
 }
 
 export interface LogEntry {
@@ -37,6 +38,7 @@ export interface LogEntry {
   unit?: string
   message: string
   hostname?: string
+  pid?: number
 }
 
 export type LogStreamStatus = 'idle' | 'streaming' | 'unavailable' | 'error'

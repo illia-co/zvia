@@ -28,6 +28,19 @@ describe('buildJournalctlCommand', () => {
     )
   })
 
+  it('combines pid and unit filters', () => {
+    const command = buildJournalctlCommand({
+      mode: 'live',
+      lines: 500,
+      pid: 1421,
+      unit: 'nginx.service'
+    })
+
+    expect(command).toBe(
+      'journalctl _PID=1421 -f -o json --no-pager -n 500 -u nginx.service'
+    )
+  })
+
   it('applies time range in recent mode', () => {
     const command = buildJournalctlCommand({
       mode: 'recent',
@@ -36,6 +49,16 @@ describe('buildJournalctlCommand', () => {
     })
 
     expect(command).toBe("journalctl -o json --no-pager -n 200 --since today")
+  })
+
+  it('filters by process id', () => {
+    const command = buildJournalctlCommand({
+      mode: 'live',
+      lines: 500,
+      pid: 2847
+    })
+
+    expect(command).toBe('journalctl _PID=2847 -f -o json --no-pager -n 500')
   })
 
   it('shell-quotes filter values that need escaping', () => {

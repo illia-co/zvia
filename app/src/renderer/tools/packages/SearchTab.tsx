@@ -48,20 +48,16 @@ export function SearchTab({
             </thead>
             <tbody>
               {results.map((result) => (
-                <tr key={result.name} className="border-b border-divider hover:bg-bg-secondary">
-                  <td
-                    className="cursor-pointer px-3 py-2 font-mono text-text"
-                    onClick={() => onSelect(result.name)}
-                  >
+                <tr
+                  key={result.name}
+                  className="group cursor-pointer border-t border-divider hover:bg-bg-secondary"
+                  onClick={() => onSelect(result.name)}
+                >
+                  <td className="px-3 py-2 font-mono font-medium text-text group-hover:underline">
                     {result.name}
                   </td>
-                  <td
-                    className="cursor-pointer px-3 py-2 text-text-secondary"
-                    onClick={() => onSelect(result.name)}
-                  >
-                    {result.description}
-                  </td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-text-secondary">{result.description}</td>
+                  <td className="px-3 py-2 text-right" onClick={(event) => event.stopPropagation()}>
                     <Button size="sm" variant="ghost" onClick={() => onInstall(result.name)}>
                       Install
                     </Button>

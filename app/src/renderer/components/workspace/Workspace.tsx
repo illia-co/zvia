@@ -12,17 +12,31 @@ export function Workspace() {
   const { server, serverId, connectionState } = useServerContext()
   const connect = useServerStore((s) => s.connect)
   const workspace = useWorkspaceStore((s) => (serverId ? s.getWorkspace(serverId) : null))
-  const isDisconnected = connectionState === 'disconnected' || connectionState === 'error'
+  const isConnected = connectionState === 'connected'
+  const hasOpenPanels = Boolean(workspace?.root)
+
+  const emptyState = !server || !serverId || !hasOpenPanels
 
   return (
     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-bg">
       <TabStrip />
 
       <div className="min-h-0 flex-1 overflow-hidden p-3">
-        {!server || !serverId || !workspace?.root ? (
+        {emptyState ? (
           <div className="flex h-full flex-col items-center justify-center">
-            {server && serverId && isDisconnected && (
-              <div className="mb-6 w-full max-w-md rounded-panel border border-divider bg-bg-secondary p-4">
+            {!server || !serverId ? (
+              <div className="max-w-sm text-center">
+                <span
+                  className="relay-mark mx-auto mb-4 block size-10 text-text-tertiary"
+                  aria-hidden
+                />
+                <p className="text-sm text-text">Select a server</p>
+                <p className="mt-2 text-xs text-text-secondary">
+                  Add or select a server from the left sidebar.
+                </p>
+              </div>
+            ) : !isConnected ? (
+              <div className="w-full max-w-md rounded-panel border border-divider bg-bg-secondary p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-text">{server.name}</p>
@@ -37,41 +51,36 @@ export function Workspace() {
                   size="sm"
                   className="mt-3"
                   onClick={() => void connect(serverId)}
+                  disabled={connectionState === 'connecting' || connectionState === 'reconnecting'}
                 >
-                  Connect
+                  {connectionState === 'connecting' || connectionState === 'reconnecting'
+                    ? 'Connecting…'
+                    : 'Connect'}
                 </Button>
               </div>
+            ) : (
+              <div className="max-w-sm text-center">
+                <span
+                  className="relay-mark mx-auto mb-4 block size-10 text-text-tertiary"
+                  aria-hidden
+                />
+                <p className="text-sm text-text">
+                  <span className="font-medium">{server.name}</span>
+                  {' — '}
+                  Select a tool from the sidebar, or press {modKey}1 for Overview.
+                </p>
+                <p className="mt-2 text-xs text-text-secondary">
+                  Choose Overview, Terminal, or another tool from the sidebar.
+                </p>
+              </div>
             )}
-
-            <div className="max-w-sm text-center">
-              <span
-                className="relay-mark mx-auto mb-4 block size-10 text-text-tertiary"
-                aria-hidden
-              />
-              <p className="text-sm text-text">
-                {server ? (
-                  <>
-                    <span className="font-medium">{server.name}</span>
-                    {' — '}
-                    Select a tool from the sidebar, or press {modKey}1 for Overview.
-                  </>
-                ) : (
-                  'Select a server'
-                )}
-              </p>
-              <p className="mt-2 text-xs text-text-secondary">
-                {server
-                  ? 'Choose Overview, Terminal, or another tool from the sidebar.'
-                  : 'Add or select a server from the left sidebar.'}
-              </p>
-            </div>
           </div>
         ) : (
           <PanelLayout
             serverId={serverId}
-            node={workspace.root}
-            focusedPanelId={workspace.focusedPanelId}
-            tabOrder={workspace.tabOrder}
+            node={workspace!.root}
+            focusedPanelId={workspace!.focusedPanelId}
+            tabOrder={workspace!.tabOrder}
           />
         )}
       </div>

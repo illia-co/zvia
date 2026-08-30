@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Group, Panel, Separator } from 'react-resizable-panels'
 import { useRequiredServerContext } from '@renderer/state/ServerContext'
 import { usePanelId } from '@renderer/state/PanelContext'
 import { usePanelStateStore } from '@renderer/state/panelStateStore'
@@ -66,6 +67,10 @@ export function FilesPanel() {
   const [promptTarget, setPromptTarget] = useState<RemoteFileEntry | null>(null)
   const [deleteRecursive, setDeleteRecursive] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [editorSplitLayout, setEditorSplitLayout] = useState<Record<string, number>>({
+    list: 50,
+    editor: 50
+  })
 
   const selectedEntries = fm.entries.filter((e) => fm.selectedPaths.has(e.path))
   const hasSelection = selectedEntries.length > 0
@@ -143,6 +148,91 @@ export function FilesPanel() {
     )
   }
 
+  const fileList = (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          className={cn(
+            'flex min-h-0 min-w-0 flex-1 flex-col',
+            isDragging && 'ring-2 ring-inset ring-text-tertiary'
+          )}
+          onDragOver={(event) => {
+            event.preventDefault()
+            setIsDragging(true)
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(event) => void handleDrop(event)}
+        >
+          <FileList
+            entries={fm.entries}
+            selectedPaths={fm.selectedPaths}
+            sortField={fm.sortField}
+            sortDirection={fm.sortDirection}
+            onSort={fm.toggleSort}
+            onOpen={(entry) => {
+              if (entry.type === 'file' && !isEditableFile(entry)) {
+                void fm.downloadEntry(entry.path)
+                return
+              }
+              void fm.openEntry(entry)
+            }}
+            onSelect={fm.toggleSelection}
+            onContextMenu={(entry, event) => {
+              event.preventDefault()
+              if (!fm.selectedPaths.has(entry.path)) {
+                fm.toggleSelection(entry.path, false)
+              }
+            }}
+          />
+        </div>
+      </ContextMenuTrigger>
+
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={() => void fm.openEntry(selectedEntries[0] ?? fm.entries[0])}>
+          Open
+        </ContextMenuItem>
+        <ContextMenuItem
+          onSelect={() => {
+            const target = selectedEntries[0]
+            if (target) void fm.downloadEntry(target.path)
+          }}
+          disabled={!hasSelection}
+        >
+          Download
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          onSelect={() => fm.copyToClipboard(Array.from(fm.selectedPaths))}
+          disabled={!hasSelection}
+        >
+          Copy
+        </ContextMenuItem>
+        <ContextMenuItem
+          onSelect={() => fm.cutToClipboard(Array.from(fm.selectedPaths))}
+          disabled={!hasSelection}
+        >
+          Cut
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={() => void fm.pasteClipboard()} disabled={!fm.hasClipboard}>
+          Paste
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          onSelect={() => openPrompt('rename', selectedEntries[0])}
+          disabled={selectedEntries.length !== 1}
+        >
+          Rename
+        </ContextMenuItem>
+        <ContextMenuItem
+          onSelect={() => openPrompt('delete', selectedEntries[0])}
+          disabled={!hasSelection}
+        >
+          Delete
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+
   return (
     <div className="flex h-full flex-col bg-bg-secondary">
       <div className="flex shrink-0 items-center gap-2 border-b border-divider px-3 py-2">
@@ -198,103 +288,34 @@ export function FilesPanel() {
       )}
 
       <div className="flex min-h-0 flex-1">
-        <ContextMenu>
-          <ContextMenuTrigger asChild>
-            <div
-              className={cn(
-                'flex min-h-0 min-w-0 flex-1 flex-col',
-                isDragging && 'ring-2 ring-inset ring-text-tertiary'
-              )}
-              onDragOver={(event) => {
-                event.preventDefault()
-                setIsDragging(true)
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={(event) => void handleDrop(event)}
-            >
-              <FileList
-                entries={fm.entries}
-                selectedPaths={fm.selectedPaths}
-                sortField={fm.sortField}
-                sortDirection={fm.sortDirection}
-                onSort={fm.toggleSort}
-                onOpen={(entry) => {
-                  if (entry.type === 'file' && !isEditableFile(entry)) {
-                    void fm.downloadEntry(entry.path)
-                    return
-                  }
-                  void fm.openEntry(entry)
-                }}
-                onSelect={fm.toggleSelection}
-                onContextMenu={(entry, event) => {
-                  event.preventDefault()
-                  if (!fm.selectedPaths.has(entry.path)) {
-                    fm.toggleSelection(entry.path, false)
-                  }
-                }}
+        {fm.editor ? (
+          <Group
+            id="files-editor-split"
+            orientation="horizontal"
+            defaultLayout={editorSplitLayout}
+            onLayoutChanged={setEditorSplitLayout}
+            className="h-full min-h-0 flex-1"
+          >
+            <Panel id="files-list" minSize={20} className="flex min-h-0 flex-col">
+              {fileList}
+            </Panel>
+            <Separator className="bg-divider" />
+            <Panel id="files-editor" minSize={20} className="flex min-h-0 flex-col">
+              <FileEditor
+                path={fm.editor.path}
+                name={fm.editor.name}
+                content={fm.editor.content}
+                dirty={fm.editor.dirty}
+                onChange={(content) =>
+                  fm.setEditor(fm.editor ? { ...fm.editor, content, dirty: true } : null)
+                }
+                onSave={() => void fm.saveEditor()}
+                onClose={fm.closeEditor}
               />
-            </div>
-          </ContextMenuTrigger>
-
-          <ContextMenuContent>
-            <ContextMenuItem onSelect={() => void fm.openEntry(selectedEntries[0] ?? fm.entries[0])}>
-              Open
-            </ContextMenuItem>
-            <ContextMenuItem
-              onSelect={() => {
-                const target = selectedEntries[0]
-                if (target) void fm.downloadEntry(target.path)
-              }}
-              disabled={!hasSelection}
-            >
-              Download
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem
-              onSelect={() => fm.copyToClipboard(Array.from(fm.selectedPaths))}
-              disabled={!hasSelection}
-            >
-              Copy
-            </ContextMenuItem>
-            <ContextMenuItem
-              onSelect={() => fm.cutToClipboard(Array.from(fm.selectedPaths))}
-              disabled={!hasSelection}
-            >
-              Cut
-            </ContextMenuItem>
-            <ContextMenuItem onSelect={() => void fm.pasteClipboard()} disabled={!fm.hasClipboard}>
-              Paste
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem
-              onSelect={() => openPrompt('rename', selectedEntries[0])}
-              disabled={selectedEntries.length !== 1}
-            >
-              Rename
-            </ContextMenuItem>
-            <ContextMenuItem
-              onSelect={() => openPrompt('delete', selectedEntries[0])}
-              disabled={!hasSelection}
-            >
-              Delete
-            </ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
-
-        {fm.editor && (
-          <div className="w-1/2 min-w-[20rem] shrink-0">
-            <FileEditor
-              path={fm.editor.path}
-              name={fm.editor.name}
-              content={fm.editor.content}
-              dirty={fm.editor.dirty}
-              onChange={(content) =>
-                fm.setEditor(fm.editor ? { ...fm.editor, content, dirty: true } : null)
-              }
-              onSave={() => void fm.saveEditor()}
-              onClose={fm.closeEditor}
-            />
-          </div>
+            </Panel>
+          </Group>
+        ) : (
+          fileList
         )}
       </div>
 

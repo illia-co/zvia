@@ -1,13 +1,7 @@
-import { isRelayErrorPayload, type RelayErrorPayload } from '@shared/errors'
+import { parseIpcError, type RelayErrorPayload } from '@shared/errors'
 
 export function parseRelayError(error: unknown): RelayErrorPayload {
-  if (isRelayErrorPayload(error)) {
-    return error
-  }
-  if (error instanceof Error) {
-    return { code: 'INTERNAL_ERROR', message: error.message }
-  }
-  return { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' }
+  return parseIpcError(error)
 }
 
 /**
@@ -27,12 +21,15 @@ export function humanizeError(error: RelayErrorPayload): string {
     case 'CONNECTION_ERROR':
       return 'Could not connect to this server. Check the hostname, port, and network.'
     case 'AUTHENTICATION_ERROR':
-      return 'Authentication failed. Verify your SSH key or agent is loaded.'
+      return 'Authentication failed. Check your SSH key, passphrase, or agent and try again.'
     case 'PERMISSION_ERROR':
       return 'Permission denied. Your account may not have access to this resource.'
     case 'SFTP_ERROR':
       return 'File operation failed over SFTP.'
     case 'COMMAND_ERROR':
+      if (/was created, but/i.test(error.message)) {
+        return error.message
+      }
       return 'The remote command failed.'
     case 'DOCKER_UNAVAILABLE_ERROR':
       return 'Docker is not available on this server.'

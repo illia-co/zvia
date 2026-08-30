@@ -63,19 +63,19 @@ export function ServicesTable({
           const isFailed = unit.activeState === 'failed'
 
           return (
-            <tr key={unit.unit} className="border-t border-divider">
+            <tr
+              key={unit.unit}
+              className="group cursor-pointer border-t border-divider hover:bg-bg-secondary"
+              onClick={() => onSelect(unit)}
+            >
               <td className="px-3 py-2">
-                <button
-                  type="button"
-                  className="flex items-center gap-2 text-left"
-                  onClick={() => onSelect(unit)}
-                >
+                <div className="flex items-center gap-2 text-left">
                   <span
                     className={cn('size-1.5 shrink-0 rounded-full', unitStateDotClass(unit.activeState))}
                     aria-hidden
                   />
-                  <span className="font-medium text-text hover:underline">{unit.unit}</span>
-                </button>
+                  <span className="font-medium text-text group-hover:underline">{unit.unit}</span>
+                </div>
               </td>
               <td className="px-3 py-2">
                 <span className={cn('text-text-secondary', isFailed && 'text-status-error')}>
@@ -87,7 +87,7 @@ export function ServicesTable({
               <td className="max-w-[22rem] truncate px-3 py-2 text-text-secondary">
                 {unit.description || '—'}
               </td>
-              <td className="px-3 py-2">
+              <td className="px-3 py-2" onClick={(event) => event.stopPropagation()}>
                 <div className="flex flex-wrap gap-1">
                   {isFailed ? (
                     <>
@@ -132,9 +132,6 @@ export function ServicesTable({
                       Start
                     </Button>
                   )}
-                  <Button size="sm" variant="ghost" onClick={() => onSelect(unit)}>
-                    Details
-                  </Button>
                 </div>
               </td>
             </tr>

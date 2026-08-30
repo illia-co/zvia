@@ -236,7 +236,15 @@ export class PackageService {
 
       switch (operation.kind) {
         case 'install':
-          await this.runInstall(serverId, streamId, manager, operation.packageName, fail, succeed)
+          await this.runInstall(
+            serverId,
+            streamId,
+            manager,
+            operation.packageName,
+            operation.version,
+            fail,
+            succeed
+          )
           break
         case 'remove':
           await this.runRemove(serverId, streamId, manager, operation.packageName, fail, succeed)
@@ -300,6 +308,7 @@ export class PackageService {
     streamId: string,
     manager: PackageManager,
     packageName: string,
+    version: string | undefined,
     fail: (stepId: PackageOperationStepId, message: string, output?: string) => void,
     succeed: (output?: string) => void
   ): Promise<void> {
@@ -307,7 +316,7 @@ export class PackageService {
     const simulate = await this.runPrivilegedStream(
       serverId,
       streamId,
-      manager.buildSimulateInstallCommand(packageName)
+      manager.buildSimulateInstallCommand(packageName, version)
     )
     if (this.isCancelled(serverId, streamId) || simulate.exitCode === -1) {
       fail('resolve-dependencies', 'Operation cancelled', simulate.output)
@@ -324,7 +333,7 @@ export class PackageService {
     const install = await this.runPrivilegedStream(
       serverId,
       streamId,
-      manager.buildInstallCommand(packageName)
+      manager.buildInstallCommand(packageName, version)
     )
     if (this.abortIfCancelled(serverId, streamId, 'install', fail, install.output)) return
     if (install.exitCode !== 0) {

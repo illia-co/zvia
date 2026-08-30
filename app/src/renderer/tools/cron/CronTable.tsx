@@ -1,5 +1,4 @@
 import type { CronJob, CronSource } from '@shared/cron'
-import { Button } from '@renderer/components/ui/button'
 
 export const CRON_SOURCE_LABELS: Record<CronSource, string> = {
   'user-crontab': 'User crontab',
@@ -33,12 +32,15 @@ export function CronTable({ jobs, loading, onSelect }: CronTableProps) {
           <th className="px-3 py-2 font-medium">User</th>
           <th className="px-3 py-2 font-medium">Source</th>
           <th className="px-3 py-2 font-medium">Status</th>
-          <th className="px-3 py-2 font-medium" />
         </tr>
       </thead>
       <tbody>
         {jobs.map((job) => (
-          <tr key={job.id} className="border-t border-divider align-top">
+          <tr
+            key={job.id}
+            className="group cursor-pointer border-t border-divider align-top hover:bg-bg-secondary"
+            onClick={() => onSelect(job)}
+          >
             <td className="px-3 py-2">
               <div className="font-mono text-text">{job.schedule}</div>
               {job.description !== job.schedule && (
@@ -46,13 +48,9 @@ export function CronTable({ jobs, loading, onSelect }: CronTableProps) {
               )}
             </td>
             <td className="max-w-[24rem] px-3 py-2">
-              <button
-                type="button"
-                onClick={() => onSelect(job)}
-                className="block w-full truncate text-left font-mono text-text-secondary hover:text-text hover:underline"
-              >
+              <span className="block truncate font-mono font-medium text-text group-hover:underline">
                 {job.command}
-              </button>
+              </span>
             </td>
             <td className="px-3 py-2 text-text-secondary">{job.user ?? '—'}</td>
             <td className="px-3 py-2 text-text-secondary">{CRON_SOURCE_LABELS[job.source]}</td>
@@ -64,11 +62,6 @@ export function CronTable({ jobs, loading, onSelect }: CronTableProps) {
               ) : (
                 <span className="text-text-tertiary">Read-only</span>
               )}
-            </td>
-            <td className="px-3 py-2">
-              <Button size="sm" variant="ghost" onClick={() => onSelect(job)}>
-                Details
-              </Button>
             </td>
           </tr>
         ))}

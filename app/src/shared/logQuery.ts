@@ -40,6 +40,13 @@ export function normalizeLogsQuery(partial?: Partial<LogsQuery>): LogsQuery {
   if (partial?.unit !== undefined) {
     query.unit = partial.unit
   }
+  if (partial?.pid !== undefined) {
+    query.pid = partial.pid
+  }
 
   return query
+}
+
+export function hasLogsFilters(query: LogsQuery): boolean {
+  return Boolean(query.timeRange || query.priority || query.unit || query.pid !== undefined)
 }

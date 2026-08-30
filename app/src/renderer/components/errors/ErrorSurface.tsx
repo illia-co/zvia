@@ -9,9 +9,16 @@ interface ErrorSurfaceProps {
   className?: string
   onRetry?: () => void
   onDismiss?: () => void
+  secondaryAction?: { label: string; onClick: () => void }
 }
 
-export function ErrorSurface({ error, className, onRetry, onDismiss }: ErrorSurfaceProps) {
+export function ErrorSurface({
+  error,
+  className,
+  onRetry,
+  onDismiss,
+  secondaryAction
+}: ErrorSurfaceProps) {
   const [showDetails, setShowDetails] = useState(false)
   const payload: RelayErrorPayload =
     typeof error === 'string' ? { code: 'INTERNAL_ERROR', message: error } : error
@@ -36,11 +43,16 @@ export function ErrorSurface({ error, className, onRetry, onDismiss }: ErrorSurf
           )}
         </div>
       )}
-      {(onRetry || onDismiss) && (
+      {(onRetry || onDismiss || secondaryAction) && (
         <div className="mt-3 flex gap-2">
           {onRetry && (
             <Button size="sm" onClick={onRetry}>
               Retry
+            </Button>
+          )}
+          {secondaryAction && (
+            <Button size="sm" variant="ghost" onClick={secondaryAction.onClick}>
+              {secondaryAction.label}
             </Button>
           )}
           {onDismiss && (

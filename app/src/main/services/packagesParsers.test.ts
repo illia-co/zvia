@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   mergePackageDetail,
+  parseAptCachePolicy,
   parseAptCacheRdepends,
   parseAptCacheSearch,
   parseAptCacheShow,
@@ -110,11 +111,26 @@ describe('parseAptCacheSearch', () => {
   })
 })
 
+const APT_CACHE_POLICY = [
+  'curl:',
+  '  Installed: (none)',
+  '  Candidate: 7.81.0-1ubuntu1.15',
+  '  Version table:',
+  ' *** 7.81.0-1ubuntu1.15 500',
+  '        500 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 Packages',
+  '     7.81.0-1ubuntu1.14 500',
+  '        500 http://security.ubuntu.com/ubuntu jammy-security/main amd64 Packages',
+  '     7.81.0-1ubuntu1 500',
+  '        500 http://archive.ubuntu.com/ubuntu jammy/main amd64 Packages'
+].join('\n')
+
 describe('parseAptCacheShow', () => {
   it('parses package metadata and dependencies', () => {
     expect(parseAptCacheShow(APT_CACHE_SHOW, 'curl')).toEqual({
       name: 'curl',
       version: '7.81.0-1ubuntu1.15',
+      candidateVersion: null,
+      availableVersions: [],
       installedVersion: null,
       architecture: 'amd64',
       description: 'command line tool for transferring data with URL syntax',
@@ -123,6 +139,19 @@ describe('parseAptCacheShow', () => {
       dependencies: ['libc6', 'libcurl4', 'zlib1g'],
       reverseDependencies: [],
       installedFiles: []
+    })
+  })
+})
+
+describe('parseAptCachePolicy', () => {
+  it('parses candidate and available versions', () => {
+    expect(parseAptCachePolicy(APT_CACHE_POLICY)).toEqual({
+      candidateVersion: '7.81.0-1ubuntu1.15',
+      availableVersions: [
+        '7.81.0-1ubuntu1.15',
+        '7.81.0-1ubuntu1.14',
+        '7.81.0-1ubuntu1'
+      ]
     })
   })
 })

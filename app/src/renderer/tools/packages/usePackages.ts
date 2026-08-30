@@ -8,6 +8,7 @@ import type {
   PackageUpdate,
   PaginatedResult
 } from '@shared/packages'
+import { normalizePackageDetail } from '@shared/packages'
 import type { ServerId } from '@shared/server'
 import { parseRelayError } from '@renderer/lib/errors'
 
@@ -271,7 +272,9 @@ export function usePackages({
       if (!isConnected || available !== true) return
       setDetailLoading(true)
       try {
-        const next = await window.relay.packages.info({ serverId, packageName })
+        const next = normalizePackageDetail(
+          await window.relay.packages.info({ serverId, packageName })
+        )
         setDetail(next)
         setError(null)
       } catch (err) {

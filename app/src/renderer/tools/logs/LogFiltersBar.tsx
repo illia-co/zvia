@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Command } from 'cmdk'
 import type { LogPriority, LogsQuery, LogStreamStatus, LogTimeRange, LogViewMode } from '@shared/logs'
-import { LOG_LINE_PRESETS } from '@shared/logQuery'
+import { LOG_LINE_PRESETS, hasLogsFilters } from '@shared/logQuery'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
@@ -99,7 +99,7 @@ export function LogFiltersBar({
 }: LogFiltersBarProps) {
   const [unitPickerOpen, setUnitPickerOpen] = useState(false)
 
-  const hasServerFilters = Boolean(query.timeRange || query.priority || query.unit)
+  const hasServerFilters = hasLogsFilters(query)
   const isLive = query.mode === 'live'
 
   const sortedUnits = useMemo(

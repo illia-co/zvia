@@ -33,8 +33,8 @@ export function TitleBar() {
   return (
     <div
       className={cn(
-        'titlebar flex h-titlebar shrink-0 items-center border-b border-divider bg-bg',
-        showTrafficLightPadding ? 'pl-titlebar-mac' : 'px-3'
+        'titlebar flex h-titlebar shrink-0 items-center justify-between border-b border-divider bg-bg',
+        showTrafficLightPadding ? 'pl-titlebar-mac pr-3' : 'px-3'
       )}
       onDoubleClick={handleDoubleClick}
     >
@@ -42,6 +42,12 @@ export function TitleBar() {
         <span className="relay-mark size-3.5 shrink-0" aria-hidden />
         <span className="text-xs">Relay</span>
       </div>
+      <span
+        className="rounded-panel border border-divider px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-text-tertiary"
+        aria-label={`Version ${window.relay.version}`}
+      >
+        v{window.relay.version}
+      </span>
     </div>
   )
 }

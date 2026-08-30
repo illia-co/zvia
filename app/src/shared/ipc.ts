@@ -17,6 +17,16 @@ export interface ConnectRequest extends ServerScoped {}
 
 export interface DisconnectRequest extends ServerScoped {}
 
+export interface ConnectionTestRequest {
+  hostname: string
+  username: string
+  port?: number
+  auth: import('./server').AuthMethod
+  passphrase?: string
+  /** Existing profile id or ephemeral test session id for host-key routing */
+  serverId?: ServerId
+}
+
 export interface HostKeyResponseRequest extends ServerScoped {
   decision: 'accept' | 'reject'
 }
@@ -367,6 +377,7 @@ export type IpcChannel =
   | 'profiles:remove'
   | 'connection:connect'
   | 'connection:disconnect'
+  | 'connection:test'
   | 'connection:getState'
   | 'connection:hostKeyResponse'
   | 'connection:exec'
@@ -467,6 +478,7 @@ export type IpcRequestMap = {
   'profiles:remove': ProfileRemoveRequest
   'connection:connect': ConnectRequest
   'connection:disconnect': DisconnectRequest
+  'connection:test': ConnectionTestRequest
   'connection:getState': ServerScoped
   'connection:hostKeyResponse': HostKeyResponseRequest
   'connection:exec': ExecRequest
@@ -568,6 +580,7 @@ export type IpcResponseMap = {
   'profiles:remove': void
   'connection:connect': void
   'connection:disconnect': void
+  'connection:test': void
   'connection:getState': import('./server').ConnectionState
   'connection:hostKeyResponse': void
   'connection:exec': ExecResult
@@ -838,6 +851,7 @@ export interface SslApi {
 
 export interface RelayApi {
   platform: NodeJS.Platform
+  version: string
 
   invoke<C extends IpcChannel>(
     channel: C,

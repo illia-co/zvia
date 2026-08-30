@@ -179,29 +179,33 @@ export function ProcessDetailView({
         <Button size="sm" variant="ghost" onClick={() => openTool(serverId, 'terminal')}>
           Open Terminal
         </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() =>
+            openWithIntent(serverId, {
+              tool: 'logs',
+              pid: detail.pid,
+              ...(detail.unit ? { unit: detail.unit } : {})
+            })
+          }
+        >
+          View Logs
+        </Button>
         {detail.unit && (
-          <>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() =>
-                openWithIntent(serverId, {
-                  tool: 'services',
-                  unit: detail.unit as string,
-                  view: 'detail'
-                })
-              }
-            >
-              Open Service
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => openWithIntent(serverId, { tool: 'logs', unit: detail.unit as string })}
-            >
-              View Logs
-            </Button>
-          </>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              openWithIntent(serverId, {
+                tool: 'services',
+                unit: detail.unit as string,
+                view: 'detail'
+              })
+            }
+          >
+            Open Service
+          </Button>
         )}
         {detail.listeningPorts.length > 0 && (
           <Button

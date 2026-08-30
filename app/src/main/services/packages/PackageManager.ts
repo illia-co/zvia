@@ -21,8 +21,8 @@ export interface PackageManager {
   search(query: string): Promise<PackageSearchResult[]>
   getInfo(name: string): Promise<PackageDetail>
   listUpdates(): Promise<PackageUpdate[]>
-  buildSimulateInstallCommand(packageName: string): string
-  buildInstallCommand(packageName: string): string
+  buildSimulateInstallCommand(packageName: string, version?: string): string
+  buildInstallCommand(packageName: string, version?: string): string
   buildRemoveCommand(packageName: string): string
   buildUpgradeCommand(packageName: string): string
   buildUpgradeAllCommand(): string

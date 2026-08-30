@@ -112,7 +112,16 @@ export function UsersPanel() {
       setDetailRefreshToken((token) => token + 1)
       await reload()
     } catch (err) {
-      setActionError(parseRelayError(err))
+      const parsed = parseRelayError(err)
+      setActionError(parsed)
+      const partialCreate =
+        parsed.code === 'COMMAND_ERROR' && parsed.message.includes('was created, but')
+      if (partialCreate) {
+        setPendingAction(null)
+        setCreateOpen(false)
+        setDetailRefreshToken((token) => token + 1)
+        await reload()
+      }
     } finally {
       setSubmitting(false)
     }
@@ -203,7 +212,10 @@ export function UsersPanel() {
               </button>
             ))}
           </div>
-          <Button size="sm" variant="ghost" onClick={() => setCreateOpen(true)}>
+          <Button size="sm" variant="ghost" onClick={() => {
+            setActionError(null)
+            setCreateOpen(true)
+          }}>
             New User
           </Button>
           <Button variant="ghost" size="sm" onClick={() => void reload()} disabled={loading}>
@@ -249,10 +261,15 @@ export function UsersPanel() {
       </div>
 
       <CreateUserDialog
+        serverId={serverId}
         open={createOpen}
         adminGroup={listing.adminGroup}
         submitting={submitting}
-        onClose={() => setCreateOpen(false)}
+        error={createOpen ? actionError : null}
+        onClose={() => {
+          setCreateOpen(false)
+          setActionError(null)
+        }}
         onSubmit={(values) =>
           void runAction({
             type: 'create',

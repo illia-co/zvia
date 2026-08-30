@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
+import type { RelayErrorPayload } from '@shared/errors'
+import type { ServerId } from '@shared/server'
 import { Button } from '@renderer/components/ui/button'
+import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
+import { ElevationRequired } from '@renderer/components/errors/ElevationRequired'
+import { elevationCommand } from '@renderer/lib/errors'
+import { getPasswordPolicyIssues } from '@shared/userPassword'
 import {
   Dialog,
   DialogContent,
@@ -8,11 +14,14 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import { PasswordFieldHints } from './PasswordFieldHints'
 
 interface CreateUserDialogProps {
+  serverId: ServerId
   open: boolean
   adminGroup: string | null
   submitting: boolean
+  error: RelayErrorPayload | null
   onClose: () => void
   onSubmit: (values: {
     username: string
@@ -26,9 +35,11 @@ interface CreateUserDialogProps {
 }
 
 export function CreateUserDialog({
+  serverId,
   open,
   adminGroup,
   submitting,
+  error,
   onClose,
   onSubmit
 }: CreateUserDialogProps) {
@@ -68,8 +79,11 @@ export function CreateUserDialog({
     })
   }
 
+  const elevation = error ? elevationCommand(error) : null
+  const passwordIssues = getPasswordPolicyIssues(password, username.trim())
+
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+    <Dialog open={open} onOpenChange={(next) => !next && !submitting && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New user</DialogTitle>
@@ -78,7 +92,18 @@ export function CreateUserDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
+          {error && (
+            <div>
+              {elevation ? (
+                <ElevationRequired serverId={serverId} command={elevation} />
+              ) : (
+                <ErrorSurface error={error} />
+              )}
+            </div>
+          )}
+
+          <div className="space-y-3">
           <label className="block text-xs text-text-secondary">
             Username
             <input
@@ -121,6 +146,7 @@ export function CreateUserDialog({
               onChange={(event) => setPassword(event.target.value)}
               className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 text-xs text-text outline-none focus:border-text-tertiary"
             />
+            <PasswordFieldHints username={username.trim()} password={password} />
           </label>
           <label className="flex items-center gap-2 text-xs text-text-secondary">
             <input
@@ -134,18 +160,19 @@ export function CreateUserDialog({
             <input type="checkbox" checked={sudo} onChange={(event) => setSudo(event.target.checked)} />
             Grant {adminGroup ?? 'sudo'} access
           </label>
+          </div>
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
           <Button
             size="sm"
-            disabled={submitting || !username.trim()}
+            disabled={submitting || !username.trim() || passwordIssues.length > 0}
             onClick={handleSubmit}
           >
-            Create user
+            {submitting ? 'Creating…' : 'Create user'}
           </Button>
         </DialogFooter>
       </DialogContent>

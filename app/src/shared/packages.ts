@@ -61,6 +61,8 @@ export interface PackageSearchResult {
 export interface PackageDetail {
   name: string
   version: string | null
+  candidateVersion: string | null
+  availableVersions: string[]
   installedVersion: string | null
   architecture: string | null
   description: string
@@ -71,6 +73,21 @@ export interface PackageDetail {
   installedFiles: string[]
 }
 
+export function normalizePackageDetail(detail: PackageDetail): PackageDetail {
+  const availableVersions = detail.availableVersions ?? []
+  const candidateVersion = detail.candidateVersion ?? detail.version ?? availableVersions[0] ?? null
+
+  return {
+    ...detail,
+    version: detail.version ?? candidateVersion,
+    candidateVersion,
+    availableVersions,
+    dependencies: detail.dependencies ?? [],
+    reverseDependencies: detail.reverseDependencies ?? [],
+    installedFiles: detail.installedFiles ?? []
+  }
+}
+
 export interface PackageUpdate {
   name: string
   installedVersion: string
@@ -79,7 +96,7 @@ export interface PackageUpdate {
 }
 
 export type PackageOperation =
-  | { kind: 'install'; packageName: string }
+  | { kind: 'install'; packageName: string; version?: string }
   | { kind: 'remove'; packageName: string }
   | { kind: 'upgrade'; packageName: string }
   | { kind: 'upgrade-all' }
@@ -98,6 +115,11 @@ export function isPackageOperation(value: unknown): value is PackageOperation {
     return false
   }
   if (record.kind === 'upgrade-all') return true
+  if (record.kind === 'install') {
+    if (typeof record.packageName !== 'string' || record.packageName.length === 0) return false
+    if (record.version === undefined) return true
+    return typeof record.version === 'string' && record.version.length > 0
+  }
   return typeof record.packageName === 'string' && record.packageName.length > 0
 }
 

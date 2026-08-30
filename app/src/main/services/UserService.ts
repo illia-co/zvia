@@ -20,6 +20,13 @@ function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`
 }
 
+function describePasswordSetupFailure(details: string): string {
+  if (/pam_chauthtok|authentication token manipulation|password not changed/i.test(details)) {
+    return 'The password was rejected by the server password policy. Try a stronger password.'
+  }
+  return details
+}
+
 export class UserService {
   private availabilityCache = new Map<ServerId, { available: boolean; checkedAt: number }>()
   private listCache = new Map<ServerId, { response: UsersListResponse; sections: ReturnType<typeof splitDiscoverySections>; expiresAt: number }>()
@@ -212,19 +219,45 @@ export class UserService {
     args.push(shellQuote(action.username))
 
     await this.execPrivileged(serverId, args.join(' '))
+    this.invalidate(serverId)
+
+    const followUpIssues: string[] = []
 
     if (action.password) {
-      await this.execPrivileged(
-        serverId,
-        `printf '%s\\n' ${shellQuote(`${action.username}:${action.password}`)} | chpasswd`
-      )
+      try {
+        await this.execPrivileged(
+          serverId,
+          `printf '%s\\n' ${shellQuote(`${action.username}:${action.password}`)} | chpasswd`
+        )
+      } catch (error) {
+        const details =
+          error instanceof CommandError
+            ? error.details ?? error.message
+            : 'Password could not be set.'
+        followUpIssues.push(`password was not set (${describePasswordSetupFailure(details)})`)
+      }
     }
 
     if (action.sudo) {
-      const adminGroup = (await this.discover(serverId, true)).response.adminGroup ?? 'sudo'
-      await this.execPrivileged(
-        serverId,
-        `usermod -aG ${shellQuote(adminGroup)} ${shellQuote(action.username)}`
+      try {
+        const adminGroup = (await this.discover(serverId, true)).response.adminGroup ?? 'sudo'
+        await this.execPrivileged(
+          serverId,
+          `usermod -aG ${shellQuote(adminGroup)} ${shellQuote(action.username)}`
+        )
+      } catch (error) {
+        const details =
+          error instanceof CommandError
+            ? error.details ?? error.message
+            : 'Sudo access could not be granted.'
+        followUpIssues.push(`sudo access was not granted (${details})`)
+      }
+    }
+
+    if (followUpIssues.length > 0) {
+      throw new CommandError(
+        `User ${action.username} was created, but ${followUpIssues.join('; ')}.`,
+        followUpIssues.join('\n')
       )
     }
   }

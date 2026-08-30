@@ -13,6 +13,7 @@ import { CommandPalette } from '@renderer/components/workspace/CommandPalette'
 import { ConfirmCloseDialog } from '@renderer/components/workspace/ConfirmCloseDialog'
 import { HostKeyDialog } from '@renderer/components/servers/HostKeyDialog'
 import { AddServerDialog } from '@renderer/components/servers/AddServerDialog'
+import { ServerProfileDialog } from '@renderer/components/servers/ServerProfileDialog'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 
 function ShellKeyboard() {
@@ -28,6 +29,7 @@ export function AppShell() {
   const connectionErrors = useServerStore((s) => s.connectionErrors)
   const connectionError = selectedServerId ? connectionErrors[selectedServerId] : undefined
   const [addServerOpen, setAddServerOpen] = useState(false)
+  const [editServerId, setEditServerId] = useState<string | null>(null)
 
   useEffect(() => {
     if (window.relay.screenshot) {
@@ -50,7 +52,10 @@ export function AppShell() {
       <div className="flex h-full flex-col bg-bg text-text">
         <TitleBar />
         <div className="flex min-h-0 flex-1">
-          <ServerSidebar onAddServer={() => setAddServerOpen(true)} />
+          <ServerSidebar
+            onAddServer={() => setAddServerOpen(true)}
+            onEditServer={(serverId) => setEditServerId(serverId)}
+          />
           <ToolSidebar />
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <Toolbar />
@@ -64,6 +69,14 @@ export function AppShell() {
                       ? () => void useServerStore.getState().connect(selectedServerId)
                       : undefined
                   }
+                  secondaryAction={
+                    connectionError && selectedServerId
+                      ? {
+                          label: 'Edit credentials',
+                          onClick: () => setEditServerId(selectedServerId)
+                        }
+                      : undefined
+                  }
                 />
               </div>
             )}
@@ -73,6 +86,14 @@ export function AppShell() {
       </div>
       <HostKeyDialog />
       <AddServerDialog open={addServerOpen} onOpenChange={setAddServerOpen} />
+      <ServerProfileDialog
+        mode="edit"
+        serverId={editServerId ?? undefined}
+        open={editServerId !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditServerId(null)
+        }}
+      />
       <CommandPalette />
       <ConfirmCloseDialog />
     </ServerProvider>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { UserDetail } from '@shared/users'
+import { getPasswordPolicyIssues } from '@shared/userPassword'
 import { ServerScopeNotice } from '@renderer/components/ServerScopeNotice'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -10,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import { PasswordFieldHints } from './PasswordFieldHints'
 
 interface DeleteUserDialogProps {
   open: boolean
@@ -42,20 +44,22 @@ export function DeleteUserDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ServerScopeNotice />
+        <div className="space-y-4">
+          <ServerScopeNotice />
 
-        <label className="flex items-center gap-2 text-xs text-text-secondary">
-          <input
-            type="checkbox"
-            checked={removeHome}
-            onChange={(event) => setRemoveHome(event.target.checked)}
-          />
-          Remove home directory ({user?.home})
-        </label>
+          <label className="flex items-center gap-2 text-xs text-text-secondary">
+            <input
+              type="checkbox"
+              checked={removeHome}
+              onChange={(event) => setRemoveHome(event.target.checked)}
+            />
+            Remove home directory ({user?.home})
+          </label>
 
-        <p className="rounded-panel bg-bg-secondary p-2 font-mono text-[11px] text-text-tertiary">
-          {removeHome ? `userdel -r ${user?.username}` : `userdel ${user?.username}`}
-        </p>
+          <p className="rounded-panel bg-bg-secondary p-2 font-mono text-[11px] text-text-tertiary">
+            {removeHome ? `userdel -r ${user?.username}` : `userdel ${user?.username}`}
+          </p>
+        </div>
 
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -105,10 +109,12 @@ function ConfirmUserActionDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <ServerScopeNotice />
-        <p className="rounded-panel bg-bg-secondary p-2 font-mono text-[11px] text-text-tertiary">
-          {command}
-        </p>
+        <div className="space-y-4">
+          <ServerScopeNotice />
+          <p className="rounded-panel bg-bg-secondary p-2 font-mono text-[11px] text-text-tertiary">
+            {command}
+          </p>
+        </div>
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
@@ -143,6 +149,7 @@ export function PasswordDialog({
   onConfirm
 }: PasswordDialogProps) {
   const [password, setPassword] = useState('')
+  const passwordIssues = getPasswordPolicyIssues(password, user?.username)
 
   useEffect(() => {
     if (open) setPassword('')
@@ -157,24 +164,27 @@ export function PasswordDialog({
             Set a new password for <span className="font-mono">{user?.username}</span>.
           </DialogDescription>
         </DialogHeader>
-        <ServerScopeNotice />
-        <label className="block text-xs text-text-secondary">
-          New password
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 text-xs text-text outline-none focus:border-text-tertiary"
-            autoFocus
-          />
-        </label>
+        <div className="space-y-4">
+          <ServerScopeNotice />
+          <label className="block text-xs text-text-secondary">
+            New password
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 text-xs text-text outline-none focus:border-text-tertiary"
+              autoFocus
+            />
+            <PasswordFieldHints username={user?.username} password={password} />
+          </label>
+        </div>
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
           </Button>
           <Button
             size="sm"
-            disabled={submitting || !password}
+            disabled={submitting || !password || passwordIssues.length > 0}
             onClick={() => onConfirm(password)}
           >
             Set password
@@ -213,23 +223,25 @@ export function GroupsDialog({ open, user, submitting, onClose, onConfirm }: Gro
             <span className="font-mono">{user?.groups.join(', ') || 'none'}</span>
           </DialogDescription>
         </DialogHeader>
-        <ServerScopeNotice />
-        <label className="block text-xs text-text-secondary">
-          Add to groups (comma-separated)
-          <input
-            value={addGroups}
-            onChange={(event) => setAddGroups(event.target.value)}
-            className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
-          />
-        </label>
-        <label className="block text-xs text-text-secondary">
-          Remove from groups (comma-separated)
-          <input
-            value={removeGroups}
-            onChange={(event) => setRemoveGroups(event.target.value)}
-            className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
-          />
-        </label>
+        <div className="space-y-4">
+          <ServerScopeNotice />
+          <label className="block text-xs text-text-secondary">
+            Add to groups (comma-separated)
+            <input
+              value={addGroups}
+              onChange={(event) => setAddGroups(event.target.value)}
+              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+            />
+          </label>
+          <label className="block text-xs text-text-secondary">
+            Remove from groups (comma-separated)
+            <input
+              value={removeGroups}
+              onChange={(event) => setRemoveGroups(event.target.value)}
+              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+            />
+          </label>
+        </div>
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
@@ -288,15 +300,17 @@ export function ChangeShellDialog({
             Set the login shell for <span className="font-mono">{user?.username}</span>.
           </DialogDescription>
         </DialogHeader>
-        <ServerScopeNotice />
-        <label className="block text-xs text-text-secondary">
-          Shell
-          <input
-            value={shell}
-            onChange={(event) => setShell(event.target.value)}
-            className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
-          />
-        </label>
+        <div className="space-y-4">
+          <ServerScopeNotice />
+          <label className="block text-xs text-text-secondary">
+            Shell
+            <input
+              value={shell}
+              onChange={(event) => setShell(event.target.value)}
+              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+            />
+          </label>
+        </div>
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
@@ -346,17 +360,19 @@ export function EnableSshDialog({
             <span className="font-mono">{user?.username}</span>. Password SSH is not enabled.
           </DialogDescription>
         </DialogHeader>
-        <ServerScopeNotice />
-        <label className="block text-xs text-text-secondary">
-          Public key (optional)
-          <textarea
-            value={publicKey}
-            onChange={(event) => setPublicKey(event.target.value)}
-            rows={4}
-            placeholder="ssh-ed25519 AAAA... comment"
-            className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
-          />
-        </label>
+        <div className="space-y-4">
+          <ServerScopeNotice />
+          <label className="block text-xs text-text-secondary">
+            Public key (optional)
+            <textarea
+              value={publicKey}
+              onChange={(event) => setPublicKey(event.target.value)}
+              rows={4}
+              placeholder="ssh-ed25519 AAAA... comment"
+              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+            />
+          </label>
+        </div>
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel

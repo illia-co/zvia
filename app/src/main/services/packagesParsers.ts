@@ -4,6 +4,7 @@ import type {
   PackageSearchResult,
   PackageUpdate
 } from '@shared/packages'
+import { normalizePackageDetail } from '@shared/packages'
 
 export function parseDpkgQueryLine(line: string): InstalledPackage | null {
   const trimmed = line.trim()
@@ -153,6 +154,8 @@ export function parseAptCacheShow(stdout: string, packageName: string): PackageD
   return {
     name,
     version,
+    candidateVersion: null,
+    availableVersions: [],
     installedVersion: null,
     architecture,
     description,
@@ -191,6 +194,41 @@ export function parseAptCacheRdepends(stdout: string): string[] {
   return [...new Set(results)]
 }
 
+export function parseAptCachePolicy(
+  stdout: string
+): { candidateVersion: string | null; availableVersions: string[] } {
+  const candidateMatch = stdout.match(/^\s*Candidate:\s*(\S+)/m)
+  const candidateRaw = candidateMatch?.[1] ?? null
+  const candidate =
+    candidateRaw && candidateRaw !== '(none)' && candidateRaw.length > 0 ? candidateRaw : null
+
+  const versions: string[] = []
+  let inVersionTable = false
+
+  for (const line of stdout.split('\n')) {
+    if (line.includes('Version table:')) {
+      inVersionTable = true
+      continue
+    }
+    if (!inVersionTable) continue
+
+    const match = line.match(/^\s+\*{0,3}\s+(\S+)\s+\d+/)
+    if (match?.[1]) {
+      versions.push(match[1])
+    }
+  }
+
+  const availableVersions = [...new Set(versions)]
+  if (availableVersions.length === 0 && candidate) {
+    availableVersions.push(candidate)
+  }
+
+  return {
+    candidateVersion: candidate ?? availableVersions[0] ?? null,
+    availableVersions
+  }
+}
+
 export function parseDpkgListFiles(stdout: string): string[] {
   return stdout
     .split('\n')
@@ -204,11 +242,11 @@ export function mergePackageDetail(
   reverseDependencies: string[],
   installedFiles: string[]
 ): PackageDetail {
-  return {
+  return normalizePackageDetail({
     ...detail,
     installedVersion: installed?.version ?? null,
     installed: installed !== null,
     reverseDependencies,
     installedFiles
-  }
+  })
 }

@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import { parseIpcError } from '@shared/errors'
 import type {
   IpcChannel,
   IpcEventMap,
@@ -35,6 +36,7 @@ import type {
 } from '@shared/ipc'
 import type { LogsEntriesEvent, LogsStatusEvent } from '@shared/logs'
 import type { FileTransferCompleteEvent, FileTransferProgressEvent } from '@shared/files'
+import appPackage from '../../package.json'
 
 const allowedChannels: IpcChannel[] = [
   'profiles:list',
@@ -44,6 +46,7 @@ const allowedChannels: IpcChannel[] = [
   'profiles:remove',
   'connection:connect',
   'connection:disconnect',
+  'connection:test',
   'connection:getState',
   'connection:hostKeyResponse',
   'connection:exec',
@@ -170,18 +173,29 @@ function decodeBase64(data: string): Uint8Array {
   return bytes
 }
 
+async function invokeIpc<C extends IpcChannel>(
+  channel: C,
+  ...args: IpcRequestMap[C] extends void ? [] : [IpcRequestMap[C]]
+): Promise<IpcResponseMap[C]> {
+  try {
+    return (await ipcRenderer.invoke(channel, ...args)) as IpcResponseMap[C]
+  } catch (error) {
+    throw parseIpcError(error)
+  }
+}
+
 const terminalApi: TerminalApi = {
   open(request) {
-    return ipcRenderer.invoke('terminal:open', request)
+    return invokeIpc('terminal:open', request)
   },
   write(request) {
-    return ipcRenderer.invoke('terminal:write', request)
+    return invokeIpc('terminal:write', request)
   },
   resize(request) {
-    return ipcRenderer.invoke('terminal:resize', request)
+    return invokeIpc('terminal:resize', request)
   },
   close(request) {
-    return ipcRenderer.invoke('terminal:close', request)
+    return invokeIpc('terminal:close', request)
   },
   onData(listener) {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: TerminalDataEvent) => {
@@ -205,13 +219,13 @@ const terminalApi: TerminalApi = {
 
 const logsApi: LogsApi = {
   start(request) {
-    return ipcRenderer.invoke('logs:start', request)
+    return invokeIpc('logs:start', request)
   },
   stop(request) {
-    return ipcRenderer.invoke('logs:stop', request)
+    return invokeIpc('logs:stop', request)
   },
   setFilters(request) {
-    return ipcRenderer.invoke('logs:setFilters', request)
+    return invokeIpc('logs:setFilters', request)
   },
   onEntries(listener) {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: LogsEntriesEvent) => {
@@ -235,13 +249,13 @@ const logsApi: LogsApi = {
 
 const statsApi: StatsApi = {
   getInfo(request) {
-    return ipcRenderer.invoke('stats:getInfo', request)
+    return invokeIpc('stats:getInfo', request)
   },
   subscribe(request) {
-    return ipcRenderer.invoke('stats:subscribe', request)
+    return invokeIpc('stats:subscribe', request)
   },
   unsubscribe(request) {
-    return ipcRenderer.invoke('stats:unsubscribe', request)
+    return invokeIpc('stats:unsubscribe', request)
   },
   onUpdate(listener) {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: StatsUpdateEvent) => {
@@ -256,76 +270,76 @@ const statsApi: StatsApi = {
 
 const servicesApi: ServicesApi = {
   isAvailable(request) {
-    return ipcRenderer.invoke('services:isAvailable', request)
+    return invokeIpc('services:isAvailable', request)
   },
   list(request) {
-    return ipcRenderer.invoke('services:list', request)
+    return invokeIpc('services:list', request)
   },
   getUnit(request) {
-    return ipcRenderer.invoke('services:getUnit', request)
+    return invokeIpc('services:getUnit', request)
   },
   getUnitFile(request) {
-    return ipcRenderer.invoke('services:getUnitFile', request)
+    return invokeIpc('services:getUnitFile', request)
   },
   getUnitLogs(request) {
-    return ipcRenderer.invoke('services:getUnitLogs', request)
+    return invokeIpc('services:getUnitLogs', request)
   },
   action(request) {
-    return ipcRenderer.invoke('services:action', request)
+    return invokeIpc('services:action', request)
   }
 }
 
 const cronApi: CronApi = {
   list(request) {
-    return ipcRenderer.invoke('cron:list', request)
+    return invokeIpc('cron:list', request)
   },
   getSource(request) {
-    return ipcRenderer.invoke('cron:getSource', request)
+    return invokeIpc('cron:getSource', request)
   },
   createJob(request) {
-    return ipcRenderer.invoke('cron:createJob', request)
+    return invokeIpc('cron:createJob', request)
   },
   updateJob(request) {
-    return ipcRenderer.invoke('cron:updateJob', request)
+    return invokeIpc('cron:updateJob', request)
   },
   deleteJob(request) {
-    return ipcRenderer.invoke('cron:deleteJob', request)
+    return invokeIpc('cron:deleteJob', request)
   }
 }
 
 const usersApi: UsersApi = {
   isAvailable(request) {
-    return ipcRenderer.invoke('users:isAvailable', request)
+    return invokeIpc('users:isAvailable', request)
   },
   list(request) {
-    return ipcRenderer.invoke('users:list', request)
+    return invokeIpc('users:list', request)
   },
   get(request) {
-    return ipcRenderer.invoke('users:get', request)
+    return invokeIpc('users:get', request)
   },
   groups(request) {
-    return ipcRenderer.invoke('users:groups', request)
+    return invokeIpc('users:groups', request)
   },
   action(request) {
-    return ipcRenderer.invoke('users:action', request)
+    return invokeIpc('users:action', request)
   }
 }
 
 const processesApi: ProcessesApi = {
   list(request) {
-    return ipcRenderer.invoke('processes:list', request)
+    return invokeIpc('processes:list', request)
   },
   get(request) {
-    return ipcRenderer.invoke('processes:get', request)
+    return invokeIpc('processes:get', request)
   },
   subscribe(request) {
-    return ipcRenderer.invoke('processes:subscribe', request)
+    return invokeIpc('processes:subscribe', request)
   },
   unsubscribe(request) {
-    return ipcRenderer.invoke('processes:unsubscribe', request)
+    return invokeIpc('processes:unsubscribe', request)
   },
   signal(request) {
-    return ipcRenderer.invoke('processes:signal', request)
+    return invokeIpc('processes:signal', request)
   },
   onUpdate(listener) {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: ProcessesUpdateEvent) => {
@@ -340,28 +354,28 @@ const processesApi: ProcessesApi = {
 
 const packagesApi: PackagesApi = {
   isAvailable(request) {
-    return ipcRenderer.invoke('packages:isAvailable', request)
+    return invokeIpc('packages:isAvailable', request)
   },
   overview(request) {
-    return ipcRenderer.invoke('packages:overview', request)
+    return invokeIpc('packages:overview', request)
   },
   list(request) {
-    return ipcRenderer.invoke('packages:list', request)
+    return invokeIpc('packages:list', request)
   },
   search(request) {
-    return ipcRenderer.invoke('packages:search', request)
+    return invokeIpc('packages:search', request)
   },
   info(request) {
-    return ipcRenderer.invoke('packages:info', request)
+    return invokeIpc('packages:info', request)
   },
   updates(request) {
-    return ipcRenderer.invoke('packages:updates', request)
+    return invokeIpc('packages:updates', request)
   },
   operationStart(request) {
-    return ipcRenderer.invoke('packages:operationStart', request)
+    return invokeIpc('packages:operationStart', request)
   },
   operationCancel(request) {
-    return ipcRenderer.invoke('packages:operationCancel', request)
+    return invokeIpc('packages:operationCancel', request)
   },
   onOperationStep(listener) {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: PackagesOperationStepEvent) => {
@@ -394,34 +408,34 @@ const packagesApi: PackagesApi = {
 
 const filesApi: FilesApi = {
   list(request) {
-    return ipcRenderer.invoke('files:list', request)
+    return invokeIpc('files:list', request)
   },
   read(request) {
-    return ipcRenderer.invoke('files:read', request)
+    return invokeIpc('files:read', request)
   },
   write(request) {
-    return ipcRenderer.invoke('files:write', request)
+    return invokeIpc('files:write', request)
   },
   mkdir(request) {
-    return ipcRenderer.invoke('files:mkdir', request)
+    return invokeIpc('files:mkdir', request)
   },
   rename(request) {
-    return ipcRenderer.invoke('files:rename', request)
+    return invokeIpc('files:rename', request)
   },
   delete(request) {
-    return ipcRenderer.invoke('files:delete', request)
+    return invokeIpc('files:delete', request)
   },
   upload(request) {
-    return ipcRenderer.invoke('files:upload', request)
+    return invokeIpc('files:upload', request)
   },
   download(request) {
-    return ipcRenderer.invoke('files:download', request)
+    return invokeIpc('files:download', request)
   },
   copy(request) {
-    return ipcRenderer.invoke('files:copy', request)
+    return invokeIpc('files:copy', request)
   },
   cancelTransfer(request) {
-    return ipcRenderer.invoke('files:cancelTransfer', request)
+    return invokeIpc('files:cancelTransfer', request)
   },
   onTransferProgress(listener) {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: FileTransferProgressEvent) => {
@@ -445,46 +459,46 @@ const filesApi: FilesApi = {
 
 const dockerApi: DockerApi = {
   isAvailable(request) {
-    return ipcRenderer.invoke('docker:isAvailable', request)
+    return invokeIpc('docker:isAvailable', request)
   },
   listContainers(request) {
-    return ipcRenderer.invoke('docker:listContainers', request)
+    return invokeIpc('docker:listContainers', request)
   },
   listImages(request) {
-    return ipcRenderer.invoke('docker:listImages', request)
+    return invokeIpc('docker:listImages', request)
   },
   listVolumes(request) {
-    return ipcRenderer.invoke('docker:listVolumes', request)
+    return invokeIpc('docker:listVolumes', request)
   },
   listNetworks(request) {
-    return ipcRenderer.invoke('docker:listNetworks', request)
+    return invokeIpc('docker:listNetworks', request)
   },
   startContainer(request) {
-    return ipcRenderer.invoke('docker:startContainer', request)
+    return invokeIpc('docker:startContainer', request)
   },
   stopContainer(request) {
-    return ipcRenderer.invoke('docker:stopContainer', request)
+    return invokeIpc('docker:stopContainer', request)
   },
   restartContainer(request) {
-    return ipcRenderer.invoke('docker:restartContainer', request)
+    return invokeIpc('docker:restartContainer', request)
   },
   removeContainer(request) {
-    return ipcRenderer.invoke('docker:removeContainer', request)
+    return invokeIpc('docker:removeContainer', request)
   },
   inspectContainer(request) {
-    return ipcRenderer.invoke('docker:inspectContainer', request)
+    return invokeIpc('docker:inspectContainer', request)
   },
   removeImage(request) {
-    return ipcRenderer.invoke('docker:removeImage', request)
+    return invokeIpc('docker:removeImage', request)
   },
   removeVolume(request) {
-    return ipcRenderer.invoke('docker:removeVolume', request)
+    return invokeIpc('docker:removeVolume', request)
   },
   startLogs(request) {
-    return ipcRenderer.invoke('docker:logsStart', request)
+    return invokeIpc('docker:logsStart', request)
   },
   stopLogs(request) {
-    return ipcRenderer.invoke('docker:logsStop', request)
+    return invokeIpc('docker:logsStop', request)
   },
   onLogsData(listener) {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: DockerLogsDataEvent) => {
@@ -508,43 +522,43 @@ const dockerApi: DockerApi = {
 
 const portsApi: PortsApi = {
   list(request) {
-    return ipcRenderer.invoke('ports:list', request)
+    return invokeIpc('ports:list', request)
   },
   setFirewallRule(request) {
-    return ipcRenderer.invoke('ports:setFirewallRule', request)
+    return invokeIpc('ports:setFirewallRule', request)
   },
   deleteFirewallRule(request) {
-    return ipcRenderer.invoke('ports:deleteFirewallRule', request)
+    return invokeIpc('ports:deleteFirewallRule', request)
   }
 }
 
 const nginxApi: NginxApi = {
   status(request) {
-    return ipcRenderer.invoke('nginx:status', request)
+    return invokeIpc('nginx:status', request)
   },
   configTree(request) {
-    return ipcRenderer.invoke('nginx:configTree', request)
+    return invokeIpc('nginx:configTree', request)
   },
   readConfig(request) {
-    return ipcRenderer.invoke('nginx:readConfig', request)
+    return invokeIpc('nginx:readConfig', request)
   },
   writeConfig(request) {
-    return ipcRenderer.invoke('nginx:writeConfig', request)
+    return invokeIpc('nginx:writeConfig', request)
   },
   validate(request) {
-    return ipcRenderer.invoke('nginx:validate', request)
+    return invokeIpc('nginx:validate', request)
   },
   action(request) {
-    return ipcRenderer.invoke('nginx:action', request)
+    return invokeIpc('nginx:action', request)
   },
   logPaths(request) {
-    return ipcRenderer.invoke('nginx:logPaths', request)
+    return invokeIpc('nginx:logPaths', request)
   },
   startLogs(request) {
-    return ipcRenderer.invoke('nginx:logsStart', request)
+    return invokeIpc('nginx:logsStart', request)
   },
   stopLogs(request) {
-    return ipcRenderer.invoke('nginx:logsStop', request)
+    return invokeIpc('nginx:logsStop', request)
   },
   onLogsData(listener) {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: NginxLogsDataEvent) => {
@@ -568,37 +582,37 @@ const nginxApi: NginxApi = {
 
 const sslApi: SslApi = {
   overview(request) {
-    return ipcRenderer.invoke('ssl:overview', request)
+    return invokeIpc('ssl:overview', request)
   },
   certificate(request) {
-    return ipcRenderer.invoke('ssl:certificate', request)
+    return invokeIpc('ssl:certificate', request)
   },
   nginxSites(request) {
-    return ipcRenderer.invoke('ssl:nginxSites', request)
+    return invokeIpc('ssl:nginxSites', request)
   },
   installCertbot(request) {
-    return ipcRenderer.invoke('ssl:installCertbot', request)
+    return invokeIpc('ssl:installCertbot', request)
   },
   enableHttpsStart(request) {
-    return ipcRenderer.invoke('ssl:enableHttpsStart', request)
+    return invokeIpc('ssl:enableHttpsStart', request)
   },
   enableHttpsCancel(request) {
-    return ipcRenderer.invoke('ssl:enableHttpsCancel', request)
+    return invokeIpc('ssl:enableHttpsCancel', request)
   },
   renew(request) {
-    return ipcRenderer.invoke('ssl:renew', request)
+    return invokeIpc('ssl:renew', request)
   },
   testRenewal(request) {
-    return ipcRenderer.invoke('ssl:testRenewal', request)
+    return invokeIpc('ssl:testRenewal', request)
   },
   enableAutoRenewal(request) {
-    return ipcRenderer.invoke('ssl:enableAutoRenewal', request)
+    return invokeIpc('ssl:enableAutoRenewal', request)
   },
   verifyHttps(request) {
-    return ipcRenderer.invoke('ssl:verifyHttps', request)
+    return invokeIpc('ssl:verifyHttps', request)
   },
   renewalLog(request) {
-    return ipcRenderer.invoke('ssl:renewalLog', request)
+    return invokeIpc('ssl:renewalLog', request)
   },
   onWorkflowStep(listener) {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: SslWorkflowStepEventPayload) => {
@@ -631,6 +645,7 @@ const sslApi: SslApi = {
 
 const relayApi: RelayApi = {
   platform: process.platform,
+  version: appPackage.version,
 
   invoke<C extends IpcChannel>(
     channel: C,
@@ -640,7 +655,7 @@ const relayApi: RelayApi = {
       return Promise.reject(new Error(`IPC channel not allowed: ${channel}`))
     }
     const payload = args[0]
-    return ipcRenderer.invoke(channel, payload) as Promise<IpcResponseMap[C]>
+    return invokeIpc(channel, payload) as Promise<IpcResponseMap[C]>
   },
 
   on<E extends keyof IpcEventMap>(

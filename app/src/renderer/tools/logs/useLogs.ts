@@ -9,6 +9,7 @@ const MAX_ENTRIES = 5000
 interface UseLogsOptions {
   serverId: ServerId
   connectionState: ConnectionState
+  initialQuery?: Partial<LogsQuery>
 }
 
 interface UseLogsResult {
@@ -27,24 +28,30 @@ interface UseLogsResult {
   copySelection: (entryIds: string[]) => Promise<void>
 }
 
-export function useLogs({ serverId, connectionState }: UseLogsOptions): UseLogsResult {
+export function useLogs({ serverId, connectionState, initialQuery }: UseLogsOptions): UseLogsResult {
   const [entries, setEntries] = useState<LogEntry[]>([])
   const [status, setStatus] = useState<LogStreamStatus>('idle')
   const [statusMessage, setStatusMessage] = useState<string | undefined>()
   const [paused, setPaused] = useState(false)
-  const [query, setQueryState] = useState<LogsQuery>(DEFAULT_LOGS_QUERY)
+  const [query, setQueryState] = useState(() =>
+    normalizeLogsQuery({ ...DEFAULT_LOGS_QUERY, ...initialQuery })
+  )
   const [loadGeneration, setLoadGeneration] = useState(0)
   const queryRef = useRef(query)
   queryRef.current = query
+  const initialQueryRef = useRef(initialQuery)
+  initialQueryRef.current = initialQuery
 
   const isConnected = connectionState === 'connected'
 
   useEffect(() => {
+    const nextQuery = normalizeLogsQuery({ ...DEFAULT_LOGS_QUERY, ...initialQueryRef.current })
+    queryRef.current = nextQuery
     setEntries([])
     setStatus('idle')
     setStatusMessage(undefined)
     setPaused(false)
-    setQueryState(DEFAULT_LOGS_QUERY)
+    setQueryState(nextQuery)
     setLoadGeneration(0)
     void window.relay.logs.stop({ serverId })
   }, [serverId])
@@ -97,6 +104,7 @@ export function useLogs({ serverId, connectionState }: UseLogsOptions): UseLogsR
         : { ...queryRef.current, ...next }
       const normalized = normalizeLogsQuery(merged)
       setQueryState(normalized)
+      setEntries([])
       setLoadGeneration((current) => current + 1)
       if (normalized.mode === 'recent') {
         setPaused(false)

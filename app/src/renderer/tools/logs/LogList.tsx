@@ -14,6 +14,7 @@ interface LogListProps {
   onJumpToLatest: () => void
   selectedIds: Set<string>
   onToggleSelect: (entryId: string) => void
+  emptyMessage?: string
 }
 
 const ROW_HEIGHT = 20
@@ -28,7 +29,8 @@ export function LogList({
   onPause,
   onJumpToLatest,
   selectedIds,
-  onToggleSelect
+  onToggleSelect,
+  emptyMessage
 }: LogListProps) {
   const parentRef = useRef<HTMLDivElement>(null)
   const atBottomRef = useRef(true)
@@ -91,38 +93,44 @@ export function LogList({
         onScroll={handleScroll}
         className="h-full overflow-auto bg-bg font-mono text-[11px] leading-5"
       >
-        <div
-          className="relative w-full"
-          style={{ height: `${virtualizer.getTotalSize()}px` }}
-        >
-          {virtualizer.getVirtualItems().map((virtualRow) => {
-            const entry = visibleEntries[virtualRow.index]
-            if (!entry) return null
-            const selected = selectedIds.has(entry.id)
-            return (
-              <button
-                key={entry.id}
-                type="button"
-                onClick={() => onToggleSelect(entry.id)}
-                className={cn(
-                  'absolute left-0 top-0 flex w-full items-start gap-3 px-3 text-left hover:bg-bg-secondary',
-                  selected && 'bg-bg-secondary',
-                  entry.priority <= 3 && 'text-status-error',
-                  entry.priority === 4 && 'text-status-warning'
-                )}
-                style={{
-                  height: `${virtualRow.size}px`,
-                  transform: `translateY(${virtualRow.start}px)`
-                }}
-              >
-                <span className="shrink-0 text-text-tertiary">{formatLogTimestamp(entry.timestamp)}</span>
-                <span className="shrink-0 w-10 text-text-secondary">{formatLogPriority(entry.priority)}</span>
-                <span className="shrink-0 w-40 truncate text-text-secondary">{entry.unit ?? '—'}</span>
-                <span className="min-w-0 flex-1 truncate text-text">{entry.message}</span>
-              </button>
-            )
-          })}
-        </div>
+        {visibleEntries.length === 0 && emptyMessage ? (
+          <div className="flex h-full items-center justify-center px-8 text-center">
+            <p className="text-xs text-text-secondary">{emptyMessage}</p>
+          </div>
+        ) : (
+          <div
+            className="relative w-full"
+            style={{ height: `${virtualizer.getTotalSize()}px` }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const entry = visibleEntries[virtualRow.index]
+              if (!entry) return null
+              const selected = selectedIds.has(entry.id)
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => onToggleSelect(entry.id)}
+                  className={cn(
+                    'absolute left-0 top-0 flex w-full items-start gap-3 px-3 text-left hover:bg-bg-secondary',
+                    selected && 'bg-bg-secondary',
+                    entry.priority <= 3 && 'text-status-error',
+                    entry.priority === 4 && 'text-status-warning'
+                  )}
+                  style={{
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`
+                  }}
+                >
+                  <span className="shrink-0 text-text-tertiary">{formatLogTimestamp(entry.timestamp)}</span>
+                  <span className="shrink-0 w-10 text-text-secondary">{formatLogPriority(entry.priority)}</span>
+                  <span className="shrink-0 w-40 truncate text-text-secondary">{entry.unit ?? '—'}</span>
+                  <span className="min-w-0 flex-1 truncate text-text">{entry.message}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {isLive && paused && (

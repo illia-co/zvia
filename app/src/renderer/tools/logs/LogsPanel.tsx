@@ -1,11 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { LogsQuery } from '@shared/logs'
+import { hasLogsFilters } from '@shared/logQuery'
 import { useRequiredServerContext } from '@renderer/state/ServerContext'
 import { Button } from '@renderer/components/ui/button'
 import { useServerStore } from '@renderer/state/serverStore'
-import { useToolIntent } from '@renderer/state/navigationStore'
+import { useNavigationStore } from '@renderer/state/navigationStore'
 import { LogFiltersBar } from './LogFiltersBar'
 import { LogList } from './LogList'
 import { useLogs } from './useLogs'
+
+function logsIntentToQuery(intent: {
+  unit?: string
+  pid?: number
+}): Partial<LogsQuery> {
+  const patch: Partial<LogsQuery> = {}
+  if (intent.unit) patch.unit = intent.unit
+  if (intent.pid !== undefined) patch.pid = intent.pid
+  return patch
+}
 
 function formatHeaderStatus(
   mode: 'live' | 'recent',
@@ -29,6 +41,14 @@ export function LogsPanel() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [serviceUnits, setServiceUnits] = useState<string[]>([])
 
+  const initialQuery = useMemo(() => {
+    const intent = useNavigationStore.getState().takeIntent(serverId, 'logs')
+    return intent ? logsIntentToQuery(intent) : undefined
+  }, [serverId])
+
+  const takeIntent = useNavigationStore((state) => state.takeIntent)
+  const pendingIntent = useNavigationStore((state) => state.pendingIntents[serverId])
+
   const {
     entries,
     status,
@@ -43,14 +63,16 @@ export function LogsPanel() {
     loadGeneration,
     jumpToLatest,
     copySelection
-  } = useLogs({ serverId, connectionState })
-
-  const logsIntent = useToolIntent('logs')
+  } = useLogs({ serverId, connectionState, initialQuery })
 
   useEffect(() => {
-    if (!logsIntent?.unit) return
-    setQuery({ unit: logsIntent.unit })
-  }, [logsIntent?.unit, setQuery])
+    if (pendingIntent?.tool !== 'logs') return
+    const intent = takeIntent(serverId, 'logs')
+    if (!intent) return
+    const patch = logsIntentToQuery(intent)
+    if (Object.keys(patch).length === 0) return
+    setQuery(patch, { resetFilters: true })
+  }, [pendingIntent, serverId, takeIntent, setQuery])
 
   useEffect(() => {
     if (connectionState !== 'connected') {
@@ -108,6 +130,18 @@ export function LogsPanel() {
     setSearch('')
   }, [clearFilters])
 
+  const scopedEntries = useMemo(() => {
+    if (query.pid === undefined) return entries
+    return entries.filter((entry) => entry.pid === query.pid)
+  }, [entries, query.pid])
+
+  const showNoMatchingLogs =
+    isConnected &&
+    !isUnavailable &&
+    scopedEntries.length === 0 &&
+    hasLogsFilters(query) &&
+    (status === 'idle' || status === 'streaming')
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex items-center justify-between border-b border-divider px-4 py-2">
@@ -161,7 +195,7 @@ export function LogsPanel() {
         </div>
       ) : (
         <LogList
-          entries={entries}
+          entries={scopedEntries}
           search={search}
           mode={query.mode}
           paused={paused}
@@ -170,6 +204,7 @@ export function LogsPanel() {
           onJumpToLatest={jumpToLatest}
           selectedIds={selectedIds}
           onToggleSelect={handleToggleSelect}
+          emptyMessage={showNoMatchingLogs ? 'No logs match the current filters.' : undefined}
         />
       )}
     </div>

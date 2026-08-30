@@ -1,7 +1,8 @@
 import { BrowserWindow, ipcMain } from 'electron'
-import { serializeError } from '@shared/errors'
+import { formatIpcError, serializeError } from '@shared/errors'
 import {
   validateConnectRequest,
+  validateConnectionTestRequest,
   validateDisconnectRequest,
   validateExecRequest,
   validateHostKeyResponseRequest,
@@ -97,7 +98,7 @@ function registerHandler<C extends IpcChannel>(
       }
       return await handler(payload)
     } catch (error) {
-      throw serializeError(error)
+      throw formatIpcError(serializeError(error))
     }
   })
 }
@@ -133,6 +134,11 @@ export function registerIpcHandlers(): void {
   registerHandler('connection:disconnect', async (payload) => {
     const request = validateDisconnectRequest(payload)
     await connectionManager.disconnect(request.serverId)
+  })
+
+  registerHandler('connection:test', async (payload) => {
+    const request = validateConnectionTestRequest(payload)
+    await connectionManager.testConnection(request)
   })
 
   registerHandler('connection:getState', async (payload) => {
@@ -644,6 +650,7 @@ export function unregisterIpcHandlers(): void {
     'profiles:remove',
     'connection:connect',
     'connection:disconnect',
+    'connection:test',
     'connection:getState',
     'connection:hostKeyResponse',
     'connection:exec',

@@ -53,13 +53,13 @@ export function UsersTable({ users, loading, connectedUsername, onSelect }: User
         {users.map((user) => {
           const isConnected = connectedUsername.length > 0 && user.username === connectedUsername
           return (
-            <tr key={user.username} className="border-t border-divider">
+            <tr
+              key={user.username}
+              className="group cursor-pointer border-t border-divider hover:bg-bg-secondary"
+              onClick={() => onSelect(user)}
+            >
               <td className="px-3 py-2">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 text-left"
-                  onClick={() => onSelect(user)}
-                >
+                <div className="inline-flex items-center gap-2 text-left">
                   <span
                     className={cn(
                       'size-1.5 shrink-0 rounded-full',
@@ -67,9 +67,9 @@ export function UsersTable({ users, loading, connectedUsername, onSelect }: User
                     )}
                     aria-hidden
                   />
-                  <span className="font-medium text-text hover:underline">{user.username}</span>
+                  <span className="font-medium text-text group-hover:underline">{user.username}</span>
                   {user.protected && <span className={ROW_LABEL_CLASS}>Protected</span>}
-                </button>
+                </div>
               </td>
               <td className="px-3 py-2 font-mono text-text-secondary">{user.uid}</td>
               <td className="px-3 py-2 text-text-secondary">{kindLabel(user.kind)}</td>

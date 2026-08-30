@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { EditorState } from '@codemirror/state'
+import { useEffect, useRef, useState } from 'react'
+import { EditorState, Prec } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search'
@@ -13,9 +13,45 @@ import { xml } from '@codemirror/lang-xml'
 import { StreamLanguage } from '@codemirror/language'
 import { nginx } from '@codemirror/legacy-modes/mode/nginx'
 import { Button } from '@renderer/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@renderer/components/ui/dialog'
 import { cn } from '@renderer/lib/utils'
 
 export type EditorLanguage = 'nginx'
+
+const editorChipClassName =
+  'rounded-sm bg-status-warning/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-status-warning'
+
+const editorTheme = EditorView.theme({
+  '&': {
+    height: '100%',
+    fontSize: '12px',
+    fontFamily: 'var(--font-mono)',
+    color: 'var(--color-text)'
+  },
+  '.cm-scroller': {
+    overflow: 'auto',
+    fontFamily: 'inherit'
+  },
+  '.cm-content': {
+    padding: '8px 0',
+    caretColor: 'var(--color-text)'
+  },
+  '.cm-gutters': {
+    backgroundColor: 'transparent',
+    border: 'none',
+    color: 'var(--color-text-tertiary)'
+  },
+  '.cm-cursor, .cm-dropCursor': {
+    borderLeft: '2px solid var(--color-text)'
+  }
+})
 
 interface FileEditorProps {
   path: string
@@ -83,7 +119,16 @@ export function FileEditor({
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false)
   onChangeRef.current = onChange
+
+  const requestClose = () => {
+    if (dirty) {
+      setConfirmCloseOpen(true)
+      return
+    }
+    onClose()
+  }
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -105,25 +150,7 @@ export function FileEditor({
           languageExtension(name, path, language),
           keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
           updateListener,
-          EditorView.theme({
-            '&': {
-              height: '100%',
-              fontSize: '12px',
-              fontFamily: 'var(--font-mono)'
-            },
-            '.cm-scroller': {
-              overflow: 'auto',
-              fontFamily: 'inherit'
-            },
-            '.cm-content': {
-              padding: '8px 0'
-            },
-            '.cm-gutters': {
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: 'var(--color-text-tertiary)'
-            }
-          })
+          Prec.high(editorTheme)
         ]
       })
     })
@@ -149,19 +176,42 @@ export function FileEditor({
   return (
     <div className="flex h-full flex-col border-l border-divider bg-bg-secondary">
       <div className="flex items-center gap-2 border-b border-divider px-3 py-2">
-        <span className="rounded-sm bg-status-warning/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-status-warning">
-          Remote file
-        </span>
+        <span className={editorChipClassName}>Remote file</span>
         <span className="min-w-0 flex-1 truncate text-xs text-text">{name}</span>
-        {dirty && <span className="text-[10px] text-text-tertiary">Unsaved</span>}
+        {dirty && <span className={editorChipClassName}>Unsaved</span>}
         <Button size="sm" variant="ghost" onClick={onSave} disabled={!dirty}>
           Save
         </Button>
-        <Button size="sm" variant="ghost" onClick={onClose}>
+        <Button size="sm" variant="ghost" onClick={requestClose}>
           Close
         </Button>
       </div>
       <div ref={containerRef} className={cn('min-h-0 flex-1 overflow-hidden')} />
+
+      <Dialog open={confirmCloseOpen} onOpenChange={setConfirmCloseOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Discard unsaved changes?</DialogTitle>
+            <DialogDescription>
+              {name} has unsaved changes that will be lost if you close it.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmCloseOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setConfirmCloseOpen(false)
+                onClose()
+              }}
+            >
+              Discard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

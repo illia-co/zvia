@@ -27,11 +27,17 @@ function shellQuote(value: string): string {
 }
 
 export function buildJournalctlCommand(query: LogsQuery): string {
-  const parts = ['journalctl', '-o', 'json', '--no-pager', '-n', String(query.lines)]
+  const parts = ['journalctl']
+
+  if (query.pid !== undefined) {
+    parts.push(`_PID=${query.pid}`)
+  }
 
   if (query.mode === 'live') {
-    parts.splice(1, 0, '-f')
+    parts.push('-f')
   }
+
+  parts.push('-o', 'json', '--no-pager', '-n', String(query.lines))
 
   const since = mapTimeRangeToSince(query.timeRange)
   if (since) {
@@ -73,6 +79,7 @@ interface ServerLogSession {
   query: LogsQuery
   buffer: RingBuffer<LogEntry>
   stream: ClientChannel | null
+  streamGeneration: number
   lineRemainder: string
   pendingEntries: LogEntry[]
   batchTimer: NodeJS.Timeout | null
@@ -92,6 +99,8 @@ function parseJournalLine(line: string, nextId: () => string): LogEntry | null {
     const unit = record._SYSTEMD_UNIT ?? record.UNIT ?? record.SYSLOG_IDENTIFIER
     const message = record.MESSAGE ?? ''
     const hostname = record._HOSTNAME ?? record.HOSTNAME
+    const pid = Number(record._PID)
+    const entryPid = Number.isInteger(pid) && pid > 0 ? pid : undefined
 
     return {
       id: nextId(),
@@ -99,7 +108,8 @@ function parseJournalLine(line: string, nextId: () => string): LogEntry | null {
       priority: Number.isFinite(priority) ? priority : 6,
       unit,
       message,
-      hostname
+      hostname,
+      pid: entryPid
     }
   } catch {
     return null
@@ -180,6 +190,7 @@ export class LogService {
       query,
       buffer: new RingBuffer<LogEntry>(BUFFER_CAPACITY),
       stream: null,
+      streamGeneration: 0,
       lineRemainder: '',
       pendingEntries: [],
       batchTimer: null,
@@ -251,6 +262,7 @@ export class LogService {
   }
 
   private stopStream(session: ServerLogSession): void {
+    session.streamGeneration += 1
     if (session.stream) {
       session.stream.close()
       session.stream = null
@@ -267,6 +279,9 @@ export class LogService {
   }
 
   private async spawnStream(session: ServerLogSession): Promise<void> {
+    const generation = session.streamGeneration + 1
+    session.streamGeneration = generation
+
     const connection = connectionManager.getConnection(session.serverId)
     if (!connection) {
       throw new ConnectionError('Server is not connected')
@@ -286,17 +301,25 @@ export class LogService {
       })
     })
 
+    if (session.streamGeneration !== generation) {
+      stream.close()
+      return
+    }
+
     session.stream = stream
 
     stream.on('data', (data: Buffer) => {
+      if (session.streamGeneration !== generation) return
       this.ingestChunk(session, data.toString('utf8'))
     })
 
     stream.stderr.on('data', (data: Buffer) => {
+      if (session.streamGeneration !== generation) return
       stderr += data.toString('utf8')
     })
 
     stream.on('close', (code: number | null) => {
+      if (session.streamGeneration !== generation) return
       session.stream = null
       this.flushBatch(session, false)
 

@@ -46,10 +46,12 @@ export function InstalledPackagesTab({
               {items.map((pkg) => (
                 <tr
                   key={`${pkg.name}:${pkg.version}`}
-                  className="cursor-pointer border-b border-divider hover:bg-bg-secondary"
+                  className="group cursor-pointer border-t border-divider hover:bg-bg-secondary"
                   onClick={() => onSelect(pkg.name)}
                 >
-                  <td className="px-3 py-2 font-mono text-text">{pkg.name}</td>
+                  <td className="px-3 py-2 font-mono font-medium text-text group-hover:underline">
+                    {pkg.name}
+                  </td>
                   <td className="px-3 py-2 font-mono text-text-secondary">{pkg.version}</td>
                   <td className="px-3 py-2 text-text-secondary">{pkg.architecture}</td>
                   <td className="hidden px-3 py-2 text-text-secondary md:table-cell">

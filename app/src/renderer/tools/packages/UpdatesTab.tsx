@@ -50,11 +50,12 @@ export function UpdatesTab({
             </thead>
             <tbody>
               {updates.map((update) => (
-                <tr key={update.name} className="border-b border-divider hover:bg-bg-secondary">
-                  <td
-                    className="cursor-pointer px-3 py-2 font-mono text-text"
-                    onClick={() => onSelect(update.name)}
-                  >
+                <tr
+                  key={update.name}
+                  className="group cursor-pointer border-t border-divider hover:bg-bg-secondary"
+                  onClick={() => onSelect(update.name)}
+                >
+                  <td className="px-3 py-2 font-mono font-medium text-text group-hover:underline">
                     {update.name}
                   </td>
                   <td className="px-3 py-2 font-mono text-text-secondary">
@@ -62,7 +63,7 @@ export function UpdatesTab({
                   </td>
                   <td className="px-3 py-2 font-mono text-text">{update.candidateVersion}</td>
                   <td className="px-3 py-2 text-text-secondary">{update.architecture}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-right" onClick={(event) => event.stopPropagation()}>
                     <Button size="sm" variant="ghost" onClick={() => onUpgrade(update.name)}>
                       Upgrade
                     </Button>

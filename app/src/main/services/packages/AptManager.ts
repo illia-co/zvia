@@ -10,6 +10,7 @@ import { CommandError } from '@shared/errors'
 import type { CommandRunner } from '../CommandRunner'
 import {
   mergePackageDetail,
+  parseAptCachePolicy,
   parseAptCacheRdepends,
   parseAptCacheSearch,
   parseAptCacheShow,
@@ -112,6 +113,8 @@ export class AptManager implements PackageManager {
     const command = [
       `apt-cache show ${quoted} 2>/dev/null`,
       `echo '---RELAY---'`,
+      `apt-cache policy ${quoted} 2>/dev/null`,
+      `echo '---RELAY---'`,
       `apt-cache rdepends ${quoted} 2>/dev/null`,
       `echo '---RELAY---'`,
       `dpkg-query -W -f='${DPKG_QUERY_FORMAT}' ${quoted} 2>/dev/null`,
@@ -120,11 +123,21 @@ export class AptManager implements PackageManager {
     ].join('\n')
 
     const result = await this.runner.exec(command, 30_000)
-    const [showPart, rdependsPart, installedPart, filesPart] = result.stdout.split('\n---RELAY---\n')
+    const [showPart, policyPart, rdependsPart, installedPart, filesPart] = result.stdout.split(
+      '\n---RELAY---\n'
+    )
 
     const detail = parseAptCacheShow(showPart ?? '', name)
     if (!detail) {
       throw new CommandError(`Package not found: ${name}`)
+    }
+
+    const { candidateVersion, availableVersions } = parseAptCachePolicy(policyPart ?? '')
+    const versionedDetail = {
+      ...detail,
+      candidateVersion,
+      availableVersions,
+      version: candidateVersion ?? detail.version
     }
 
     const installedLine = (installedPart ?? '').trim().split('\n')[0] ?? ''
@@ -132,7 +145,7 @@ export class AptManager implements PackageManager {
     const reverseDependencies = parseAptCacheRdepends(rdependsPart ?? '')
     const installedFiles = installed ? parseDpkgListFiles(filesPart ?? '') : []
 
-    return mergePackageDetail(detail, installed, reverseDependencies, installedFiles)
+    return mergePackageDetail(versionedDetail, installed, reverseDependencies, installedFiles)
   }
 
   async listUpdates(): Promise<PackageUpdate[]> {
@@ -140,12 +153,14 @@ export class AptManager implements PackageManager {
     return parseAptListUpgradable(result.stdout)
   }
 
-  buildSimulateInstallCommand(packageName: string): string {
-    return `DEBIAN_FRONTEND=noninteractive apt-get install -s ${shellQuote(packageName)} 2>&1`
+  buildSimulateInstallCommand(packageName: string, version?: string): string {
+    const spec = version ? `${packageName}=${version}` : packageName
+    return `DEBIAN_FRONTEND=noninteractive apt-get install -s ${shellQuote(spec)} 2>&1`
   }
 
-  buildInstallCommand(packageName: string): string {
-    return `DEBIAN_FRONTEND=noninteractive apt-get install -y ${shellQuote(packageName)} 2>&1`
+  buildInstallCommand(packageName: string, version?: string): string {
+    const spec = version ? `${packageName}=${version}` : packageName
+    return `DEBIAN_FRONTEND=noninteractive apt-get install -y ${shellQuote(spec)} 2>&1`
   }
 
   buildRemoveCommand(packageName: string): string {

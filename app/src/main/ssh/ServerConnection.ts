@@ -6,7 +6,7 @@ import type { ExecResult } from '@shared/ipc'
 import { AuthenticationError, ConnectionError, SFTPError } from '@shared/errors'
 import { buildConnectConfig } from './auth'
 import { execOnClient } from './exec'
-import { fingerprintFromKey, hostKeyStore } from './hostKeys'
+import { createHostVerifier } from './hostVerifier'
 import type { CommandRunner } from '../services/CommandRunner'
 
 const KEEPALIVE_INTERVAL = 15000
@@ -78,39 +78,12 @@ export class ServerConnection extends EventEmitter implements CommandRunner {
   }
 
   private buildHostVerifier(): HostVerifier {
-    return (key: Buffer, callback) => {
-      void (async () => {
-        try {
-          const { fingerprint, keyType } = fingerprintFromKey(key)
-          const stored = hostKeyStore.getSync(this.profile.hostname, this.profile.port)
-
-          if (stored && stored.fingerprint === fingerprint) {
-            callback(true)
-            return
-          }
-
-          const prompt: HostKeyPrompt = {
-            serverId: this.serverId,
-            hostname: this.profile.hostname,
-            port: this.profile.port,
-            keyType: stored?.keyType ?? keyType,
-            fingerprint,
-            isChanged: Boolean(stored && stored.fingerprint !== fingerprint)
-          }
-
-          const accepted = await this.promptHostKey(prompt)
-          if (!accepted) {
-            callback(false)
-            return
-          }
-
-          await hostKeyStore.save(this.profile.hostname, this.profile.port, key)
-          callback(true)
-        } catch {
-          callback(false)
-        }
-      })()
-    }
+    return createHostVerifier(
+      this.serverId,
+      this.profile.hostname,
+      this.profile.port,
+      (prompt) => this.promptHostKey(prompt)
+    )
   }
 
   private connectClient(client: Client, connectConfig: ConnectConfig): Promise<void> {

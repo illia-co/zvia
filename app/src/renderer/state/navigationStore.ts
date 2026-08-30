@@ -10,7 +10,7 @@ export type ToolIntent =
   | { tool: 'ssl'; domain?: string }
   | { tool: 'services'; unit: string; view?: 'detail' | 'logs' }
   | { tool: 'ports'; port?: number }
-  | { tool: 'logs'; unit: string }
+  | { tool: 'logs'; unit?: string; pid?: number }
   /** Reveals an absolute remote path: its directory is listed, the file is opened. */
   | { tool: 'files'; path: string }
   /**

@@ -748,6 +748,7 @@ const SCREENSHOT_STUBS: Partial<Record<IpcChannel, ScreenshotStub>> = {
   'connection:getState': async () => 'connected',
   'connection:connect': async () => undefined,
   'connection:disconnect': async () => undefined,
+  'connection:test': async () => undefined,
   'docker:isAvailable': async () => true,
   'docker:listContainers': async () => DEMO_CONTAINERS,
   'stats:getInfo': async () => DEMO_INFO,
@@ -800,7 +801,11 @@ const SCREENSHOT_STUBS: Partial<Record<IpcChannel, ScreenshotStub>> = {
     const installed = DEMO_INSTALLED_PACKAGES.find((pkg) => pkg.name === request.packageName)
     return {
       name: request.packageName,
-      version: installed?.version ?? null,
+      version: installed?.version ?? '1.0.0-1',
+      candidateVersion: installed?.version ?? '1.0.0-1',
+      availableVersions: installed?.version
+        ? [installed.version, '1.0.0-1']
+        : ['1.0.0-1', '0.9.0-1'],
       installedVersion: installed?.version ?? null,
       architecture: installed?.architecture ?? 'amd64',
       description: installed?.description ?? '',

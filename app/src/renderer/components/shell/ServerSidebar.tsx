@@ -13,6 +13,7 @@ import type { ConnectionState, ServerId, ServerProfile } from '@shared/server'
 
 interface ServerSidebarProps {
   onAddServer: () => void
+  onEditServer: (serverId: ServerId) => void
 }
 
 interface ServerListItemProps {
@@ -22,6 +23,7 @@ interface ServerListItemProps {
   onSelect: (serverId: ServerId) => void
   onConnect: (serverId: ServerId) => void
   onDisconnect: (serverId: ServerId) => void
+  onEdit: (serverId: ServerId) => void
   onRemove: (serverId: ServerId) => void
 }
 
@@ -32,6 +34,7 @@ function ServerListItem({
   onSelect,
   onConnect,
   onDisconnect,
+  onEdit,
   onRemove
 }: ServerListItemProps) {
   const isConnected = state === 'connected' || state === 'connecting' || state === 'reconnecting'
@@ -92,6 +95,8 @@ function ServerListItem({
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => onEdit(profile.id)}>Edit</DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             className="text-status-error"
             onSelect={() => void onRemove(profile.id)}
@@ -104,7 +109,7 @@ function ServerListItem({
   )
 }
 
-export function ServerSidebar({ onAddServer }: ServerSidebarProps) {
+export function ServerSidebar({ onAddServer, onEditServer }: ServerSidebarProps) {
   const profiles = useServerStore((s) => s.profiles)
   const selectedServerId = useServerStore((s) => s.selectedServerId)
   const connectionStates = useServerStore((s) => s.connectionStates)
@@ -143,6 +148,7 @@ export function ServerSidebar({ onAddServer }: ServerSidebarProps) {
                 onSelect={selectServer}
                 onConnect={connect}
                 onDisconnect={disconnect}
+                onEdit={onEditServer}
                 onRemove={removeProfile}
               />
             ))

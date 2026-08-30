@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ProfileCreateRequest } from '@shared/ipc'
+import type { ConnectionTestRequest, ProfileCreateRequest, ProfileUpdateRequest } from '@shared/ipc'
 import type { RelayErrorPayload } from '@shared/errors'
 import type {
   ConnectionState,
@@ -23,6 +23,8 @@ interface ServerStoreState {
   connect: (serverId: ServerId) => Promise<void>
   disconnect: (serverId: ServerId) => Promise<void>
   createProfile: (request: ProfileCreateRequest) => Promise<ServerProfile>
+  updateProfile: (request: ProfileUpdateRequest) => Promise<ServerProfile>
+  testConnection: (request: ConnectionTestRequest) => Promise<void>
   removeProfile: (serverId: ServerId) => Promise<void>
   respondToHostKey: (decision: 'accept' | 'reject') => Promise<void>
   clearActionError: () => void
@@ -126,6 +128,33 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
       set({ actionError: parsed })
       throw parsed
     }
+  },
+
+  async updateProfile(request) {
+    set({ actionError: null })
+    const connectionState = get().connectionStates[request.id]
+    if (
+      connectionState === 'connected' ||
+      connectionState === 'connecting' ||
+      connectionState === 'reconnecting'
+    ) {
+      await get().disconnect(request.id)
+    }
+    try {
+      const profile = await window.relay.invoke('profiles:update', request)
+      set((state) => ({
+        profiles: state.profiles.map((item) => (item.id === profile.id ? profile : item))
+      }))
+      return profile
+    } catch (error) {
+      const parsed = parseRelayError(error)
+      set({ actionError: parsed })
+      throw parsed
+    }
+  },
+
+  async testConnection(request) {
+    await window.relay.invoke('connection:test', request)
   },
 
   async removeProfile(serverId) {

@@ -4,9 +4,11 @@ import { isSystemdAction } from './systemd'
 import { isUserAction } from './users'
 import { isProcessSignal, isProcessesSubscriptionInterval } from './processes'
 import { isPackageOperation } from './packages'
+import { getPasswordPolicyIssues } from './userPassword'
 import type { AuthMethod, ServerId } from './server'
 import type {
   ConnectRequest,
+  ConnectionTestRequest,
   DisconnectRequest,
   ExecRequest,
   HostKeyResponseRequest,
@@ -96,6 +98,29 @@ export function validateConnectRequest(value: unknown): ConnectRequest {
 
 export function validateDisconnectRequest(value: unknown): DisconnectRequest {
   return validateServerScoped(value)
+}
+
+export function validateConnectionTestRequest(value: unknown): ConnectionTestRequest {
+  if (!value || typeof value !== 'object') {
+    throw new ValidationError('Invalid connection test request: expected object')
+  }
+  const record = value as Record<string, unknown>
+  const request: ConnectionTestRequest = {
+    hostname: assertString(record.hostname, 'hostname'),
+    username: assertString(record.username, 'username'),
+    port: assertPort(record.port),
+    auth: assertAuthMethod(record.auth)
+  }
+  if (record.passphrase !== undefined) {
+    if (typeof record.passphrase !== 'string') {
+      throw new ValidationError('Invalid passphrase: expected string')
+    }
+    request.passphrase = record.passphrase
+  }
+  if (record.serverId !== undefined) {
+    request.serverId = assertServerId(record.serverId)
+  }
+  return request
 }
 
 export function validateExecRequest(value: unknown): ExecRequest {
@@ -570,6 +595,9 @@ export function validateLogsQuery(value: unknown): LogsQuery {
   }
   if (record.unit !== undefined) {
     partial.unit = assertSystemdUnit(record.unit)
+  }
+  if (record.pid !== undefined) {
+    partial.pid = assertPid(record.pid)
   }
 
   return normalizeLogsQuery(partial)
@@ -1178,10 +1206,14 @@ function assertLinuxGroupNameArray(value: unknown): string[] {
   return value.map((group) => assertLinuxGroupName(group))
 }
 
-function assertPassword(value: unknown): string {
+function assertPassword(value: unknown, username?: string): string {
   const password = assertString(value, 'password')
   if (password.length > 256) {
     throw new ValidationError('Invalid password: exceeds 256 characters')
+  }
+  const issues = getPasswordPolicyIssues(password, username)
+  if (issues.length > 0) {
+    throw new ValidationError(`Invalid password: ${issues[0]}`)
   }
   return password
 }
@@ -1260,7 +1292,9 @@ function assertUserAction(value: unknown): import('./users').UserAction {
       if (action.groups !== undefined) {
         validated.groups = assertLinuxGroupNameArray(action.groups)
       }
-      if (action.password !== undefined) validated.password = assertPassword(action.password)
+      if (action.password !== undefined) {
+        validated.password = assertPassword(action.password, validated.username)
+      }
       if (action.sudo === true) validated.sudo = true
       return validated
     }
@@ -1283,7 +1317,7 @@ function assertUserAction(value: unknown): import('./users').UserAction {
       return {
         type: 'setPassword',
         username: assertLinuxUsername(action.username),
-        password: assertPassword(action.password)
+        password: assertPassword(action.password, action.username)
       }
     case 'addGroups':
     case 'removeGroups':
