@@ -17,12 +17,15 @@ jobs:
           - os: macos-latest
             command: dist:mac
             artifact: mac
+            file: app/release/zvia-mac.dmg
           - os: windows-latest
             command: dist:win
             artifact: win
+            file: app/release/zvia-win.exe
           - os: ubuntu-latest
             command: dist:linux
             artifact: linux
+            file: app/release/zvia-linux.AppImage
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -31,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -40,26 +43,34 @@ jobs:
       - name: Build distributable
         run: npm run ${{ matrix.command }} -w @zvia/app
 
-      - name: Upload build artifacts
+      - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.artifact }}
-          path: app/release/
+          path: ${{ matrix.file }}
           if-no-files-found: error
 
   publish:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download build artifacts
+      - name: Download installers
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: installers
           merge-multiple: true
+
+      - name: List release files
+        run: ls -la installers
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, '-') }}
-          files: artifacts/**
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          files: |
+            installers/zvia-mac.dmg
+            installers/zvia-win.exe
+            installers/zvia-linux.AppImage
