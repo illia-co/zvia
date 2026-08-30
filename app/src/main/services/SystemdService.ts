@@ -5,7 +5,7 @@ import type {
   SystemdUnitFile
 } from '@shared/systemd'
 import { CommandError, ConnectionError, ValidationError } from '@shared/errors'
-import { isSystemdAction } from '@shared/systemd'
+import { isSystemdAction, getProtectedSystemdUnitActionBlock } from '@shared/systemd'
 import { assertSystemdUnit } from '@shared/validate'
 import { connectionManager } from '../ssh/ConnectionManager'
 import { privilegeService } from './PrivilegeService'
@@ -171,6 +171,10 @@ export class SystemdService {
       throw new ValidationError('Invalid action: expected a supported systemctl action')
     }
     const name = assertSystemdUnit(unit)
+    const blockReason = getProtectedSystemdUnitActionBlock(name, action)
+    if (blockReason) {
+      throw new ValidationError(blockReason)
+    }
 
     const context = await privilegeService.getContext(serverId)
     const command = privilegeService.buildPrivileged(context, `systemctl ${action} ${name}`)

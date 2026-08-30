@@ -1,4 +1,5 @@
 import type { SystemdAction, SystemdUnit } from '@shared/systemd'
+import { getProtectedSystemdUnitActionBlock } from '@shared/systemd'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
 
@@ -61,6 +62,7 @@ export function ServicesTable({
         {units.map((unit) => {
           const isRunning = unit.activeState === 'active'
           const isFailed = unit.activeState === 'failed'
+          const stopBlocked = getProtectedSystemdUnitActionBlock(unit.unit, 'stop')
 
           return (
             <tr
@@ -108,7 +110,8 @@ export function ServicesTable({
                       <Button
                         size="sm"
                         variant="ghost"
-                        disabled={actionLoading}
+                        disabled={actionLoading || stopBlocked !== null}
+                        title={stopBlocked ?? undefined}
                         onClick={() => onAction(unit, 'stop')}
                       >
                         Stop

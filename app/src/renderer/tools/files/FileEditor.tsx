@@ -22,6 +22,11 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { cn } from '@renderer/lib/utils'
+import {
+  CRITICAL_PATH_CONFIRMATION_PHRASE,
+  getCriticalPathMutationWarning,
+  isCriticalSystemPath
+} from '@shared/remotePaths'
 
 export type EditorLanguage = 'nginx'
 
@@ -59,7 +64,7 @@ interface FileEditorProps {
   content: string
   dirty: boolean
   onChange: (content: string) => void
-  onSave: () => void
+  onSave: (options?: { dangerousPathConfirmed?: boolean }) => void
   onClose: () => void
   /** Overrides filename-based detection for files whose type the caller knows. */
   language?: EditorLanguage
@@ -120,7 +125,23 @@ export function FileEditor({
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false)
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false)
+  const [saveConfirmText, setSaveConfirmText] = useState('')
   onChangeRef.current = onChange
+
+  const requestSave = () => {
+    if (isCriticalSystemPath(path)) {
+      setSaveConfirmText('')
+      setConfirmSaveOpen(true)
+      return
+    }
+    onSave()
+  }
+
+  const confirmSave = () => {
+    setConfirmSaveOpen(false)
+    onSave({ dangerousPathConfirmed: true })
+  }
 
   const requestClose = () => {
     if (dirty) {
@@ -179,7 +200,7 @@ export function FileEditor({
         <span className={editorChipClassName}>Remote file</span>
         <span className="min-w-0 flex-1 truncate text-xs text-text">{name}</span>
         {dirty && <span className={editorChipClassName}>Unsaved</span>}
-        <Button size="sm" variant="ghost" onClick={onSave} disabled={!dirty}>
+        <Button size="sm" variant="ghost" onClick={requestSave} disabled={!dirty}>
           Save
         </Button>
         <Button size="sm" variant="ghost" onClick={requestClose}>
@@ -187,6 +208,45 @@ export function FileEditor({
         </Button>
       </div>
       <div ref={containerRef} className={cn('min-h-0 flex-1 overflow-hidden')} />
+
+      <Dialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save critical system file?</DialogTitle>
+            <DialogDescription>
+              {getCriticalPathMutationWarning(path) ??
+                'Saving this file can affect core system behavior.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <p className="text-xs text-text-secondary">
+              Type <span className="font-mono">{CRITICAL_PATH_CONFIRMATION_PHRASE}</span> to
+              confirm.
+            </p>
+            <input
+              autoFocus
+              value={saveConfirmText}
+              onChange={(event) => setSaveConfirmText(event.target.value)}
+              className="w-full rounded-panel border border-divider bg-bg px-3 py-2 font-mono text-sm text-text outline-none focus:border-text-tertiary"
+              placeholder={CRITICAL_PATH_CONFIRMATION_PHRASE}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmSaveOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={saveConfirmText !== CRITICAL_PATH_CONFIRMATION_PHRASE}
+              onClick={confirmSave}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={confirmCloseOpen} onOpenChange={setConfirmCloseOpen}>
         <DialogContent>

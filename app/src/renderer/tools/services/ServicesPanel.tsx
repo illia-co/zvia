@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { RelayErrorPayload } from '@shared/errors'
 import type { SystemdAction, SystemdUnit } from '@shared/systemd'
+import { getProtectedSystemdUnitActionBlock } from '@shared/systemd'
 import { BackButton } from '@renderer/components/ui/back-button'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -126,6 +127,11 @@ export function ServicesPanel() {
   }
 
   const requestAction = (unit: string, action: SystemdAction): void => {
+    const blockReason = getProtectedSystemdUnitActionBlock(unit, action)
+    if (blockReason) {
+      setActionError({ code: 'VALIDATION_ERROR', message: blockReason })
+      return
+    }
     if (CONFIRMED_ACTIONS.includes(action)) {
       setPendingAction({ unit, action })
       return

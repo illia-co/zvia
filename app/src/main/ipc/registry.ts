@@ -4,7 +4,6 @@ import {
   validateConnectRequest,
   validateConnectionTestRequest,
   validateDisconnectRequest,
-  validateExecRequest,
   validateHostKeyResponseRequest,
   validateLogsSetFiltersRequest,
   validateLogsStartRequest,
@@ -149,11 +148,6 @@ export function registerIpcHandlers(): void {
   registerHandler('connection:hostKeyResponse', async (payload) => {
     const request = validateHostKeyResponseRequest(payload)
     connectionManager.respondToHostKey(request.serverId, request.decision)
-  })
-
-  registerHandler('connection:exec', async (payload) => {
-    const request = validateExecRequest(payload)
-    return connectionManager.exec(request.serverId, request.command, request.timeoutMs)
   })
 
   registerHandler('terminal:open', async (payload) => {
@@ -653,7 +647,6 @@ export function unregisterIpcHandlers(): void {
     'connection:test',
     'connection:getState',
     'connection:hostKeyResponse',
-    'connection:exec',
     'terminal:open',
     'terminal:write',
     'terminal:resize',

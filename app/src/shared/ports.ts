@@ -112,3 +112,19 @@ export function firewallRuleCoversPort(
 export function firewallRuleScopeIsUnknown(rule: FirewallRule): boolean {
   return rule.ports.length === 0
 }
+
+/** Stronger warning copy for firewall deny operations shown before applying a rule. */
+export function getFirewallDenyWarning(port: number, protocol: PortProtocol): string {
+  return `Blocking ${port}/${protocol} will refuse new incoming connections on that port. If it carries SSH, a web admin interface, or another service you rely on, you may lose access to this server.`
+}
+
+/**
+ * Extra warning when deleting a firewall rule could remove SSH access. Returns
+ * null when the delete looks routine.
+ */
+export function getFirewallDeleteRuleWarning(rule: FirewallRule, sshPort: number): string | null {
+  const action = rule.action.toLowerCase()
+  if (action !== 'allow' && action !== 'allow in') return null
+  if (!firewallRuleCoversPort(rule, sshPort, 'tcp')) return null
+  return `This rule allows SSH on port ${sshPort}/tcp. Removing it can lock you out when the default incoming policy is deny.`
+}

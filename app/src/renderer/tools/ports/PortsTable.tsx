@@ -31,7 +31,10 @@ interface PortRowProps {
 
 function PortRow({ listener, canEdit, actionLoading, onSelect, onRequestChange }: PortRowProps) {
   return (
-    <tr className="border-t border-divider">
+    <tr
+      className="group cursor-pointer border-t border-divider hover:bg-bg-secondary"
+      onClick={() => onSelect(listener)}
+    >
       <td className="px-3 py-2">
         <div className="flex items-center gap-2">
           <span
@@ -41,7 +44,9 @@ function PortRow({ listener, canEdit, actionLoading, onSelect, onRequestChange }
             )}
             aria-hidden
           />
-          <span className="font-mono font-medium text-text">{listener.port}</span>
+          <span className="font-mono font-medium text-text group-hover:underline">
+            {listener.port}
+          </span>
           <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
             {listener.protocol}
           </span>
@@ -59,44 +64,39 @@ function PortRow({ listener, canEdit, actionLoading, onSelect, onRequestChange }
         {ownerLabel(listener)}
       </td>
       <td className="px-3 py-2 text-text-secondary">{verdictLabel(listener.firewall)}</td>
-      <td className="px-3 py-2">
-        <div className="flex flex-wrap justify-end gap-1">
-          {canEdit && (
-            <>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={actionLoading}
-                onClick={() =>
-                  onRequestChange({
-                    kind: 'allow',
-                    port: listener.port,
-                    protocol: listener.protocol
-                  })
-                }
-              >
-                Allow
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={actionLoading}
-                onClick={() =>
-                  onRequestChange({
-                    kind: 'deny',
-                    port: listener.port,
-                    protocol: listener.protocol
-                  })
-                }
-              >
-                Block
-              </Button>
-            </>
-          )}
-          <Button size="sm" variant="ghost" onClick={() => onSelect(listener)}>
-            Details
-          </Button>
-        </div>
+      <td className="px-3 py-2" onClick={(event) => event.stopPropagation()}>
+        {canEdit && (
+          <div className="flex flex-wrap justify-end gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={actionLoading}
+              onClick={() =>
+                onRequestChange({
+                  kind: 'allow',
+                  port: listener.port,
+                  protocol: listener.protocol
+                })
+              }
+            >
+              Allow
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={actionLoading}
+              onClick={() =>
+                onRequestChange({
+                  kind: 'deny',
+                  port: listener.port,
+                  protocol: listener.protocol
+                })
+              }
+            >
+              Block
+            </Button>
+          </div>
+        )}
       </td>
     </tr>
   )
@@ -129,7 +129,7 @@ export function PortsTable({
           <th className="px-3 py-2 font-medium">Process</th>
           <th className="px-3 py-2 font-medium">Owner</th>
           <th className="px-3 py-2 font-medium">Firewall</th>
-          <th className="px-3 py-2 font-medium" />
+          <th className="px-3 py-2 font-medium">Actions</th>
         </tr>
       </thead>
       <tbody>

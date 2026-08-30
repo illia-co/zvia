@@ -4,6 +4,7 @@ import type { ServerId } from '@shared/server'
 import { generateId } from '@renderer/lib/utils'
 import { parseRelayError } from '@renderer/lib/errors'
 import type { SortDirection, SortField } from './fileUtils'
+import { isCriticalSystemPath } from '@shared/remotePaths'
 import {
   filterEntries,
   joinRemotePath,
@@ -22,6 +23,10 @@ export interface OpenEditor {
 export interface ActiveTransfer extends FileTransferProgressEvent {
   status: 'active' | 'complete' | 'error' | 'cancelled'
   error?: string
+}
+
+interface MutationOptions {
+  dangerousPathConfirmed?: boolean
 }
 
 interface UseFileManagerOptions {
@@ -237,16 +242,24 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
     [navigateTo, serverId]
   )
 
-  const saveEditor = useCallback(async () => {
-    if (!editor) return
-    try {
-      await window.relay.files.write({ serverId, path: editor.path, content: editor.content })
-      setEditor({ ...editor, dirty: false })
-      void refresh()
-    } catch (err) {
-      setError(parseRelayError(err).message)
-    }
-  }, [editor, serverId, refresh])
+  const saveEditor = useCallback(
+    async (options?: MutationOptions) => {
+      if (!editor) return
+      try {
+        await window.relay.files.write({
+          serverId,
+          path: editor.path,
+          content: editor.content,
+          dangerousPathConfirmed: options?.dangerousPathConfirmed
+        })
+        setEditor({ ...editor, dirty: false })
+        void refresh()
+      } catch (err) {
+        setError(parseRelayError(err).message)
+      }
+    },
+    [editor, serverId, refresh]
+  )
 
   const closeEditor = useCallback(() => {
     setEditor(null)
@@ -262,9 +275,14 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
   )
 
   const createFile = useCallback(
-    async (name: string) => {
+    async (name: string, options?: MutationOptions) => {
       const path = joinRemotePath(currentPath, name)
-      await window.relay.files.write({ serverId, path, content: '' })
+      await window.relay.files.write({
+        serverId,
+        path,
+        content: '',
+        dangerousPathConfirmed: options?.dangerousPathConfirmed
+      })
       void refresh()
       setEditor({ path, name, content: '', dirty: false })
     },
@@ -272,19 +290,29 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
   )
 
   const renameEntry = useCallback(
-    async (from: string, toName: string) => {
+    async (from: string, toName: string, options?: MutationOptions) => {
       const parent = parentPath(from)
       const to = joinRemotePath(parent, toName)
-      await window.relay.files.rename({ serverId, from, to })
+      await window.relay.files.rename({
+        serverId,
+        from,
+        to,
+        dangerousPathConfirmed: options?.dangerousPathConfirmed
+      })
       void refresh()
     },
     [serverId, refresh]
   )
 
   const deleteEntries = useCallback(
-    async (paths: string[], recursive = false) => {
+    async (paths: string[], recursive = false, options?: MutationOptions) => {
       for (const path of paths) {
-        await window.relay.files.delete({ serverId, path, recursive })
+        await window.relay.files.delete({
+          serverId,
+          path,
+          recursive,
+          dangerousPathConfirmed: options?.dangerousPathConfirmed
+        })
       }
       void refresh()
     },
@@ -299,20 +327,46 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
     setClipboard({ mode: 'move', paths })
   }, [])
 
-  const pasteClipboard = useCallback(async () => {
-    if (!clipboard) return
+  const getClipboardCriticalPaths = useCallback((): string[] => {
+    if (!clipboard) return []
+    const paths = new Set<string>()
     for (const sourcePath of clipboard.paths) {
+      if (isCriticalSystemPath(sourcePath)) paths.add(sourcePath)
       const name = sourcePath.split('/').pop() ?? sourcePath
       const dest = joinRemotePath(currentPath, name)
-      if (clipboard.mode === 'copy') {
-        await window.relay.files.copy({ serverId, from: sourcePath, to: dest })
-      } else {
-        await window.relay.files.rename({ serverId, from: sourcePath, to: dest })
-      }
+      if (isCriticalSystemPath(dest)) paths.add(dest)
     }
-    if (clipboard.mode === 'move') setClipboard(null)
-    void refresh()
-  }, [clipboard, currentPath, serverId, refresh])
+    return [...paths]
+  }, [clipboard, currentPath])
+
+  const pasteClipboard = useCallback(
+    async (options?: MutationOptions) => {
+      if (!clipboard) return
+      const confirmed = options?.dangerousPathConfirmed
+      for (const sourcePath of clipboard.paths) {
+        const name = sourcePath.split('/').pop() ?? sourcePath
+        const dest = joinRemotePath(currentPath, name)
+        if (clipboard.mode === 'copy') {
+          await window.relay.files.copy({
+            serverId,
+            from: sourcePath,
+            to: dest,
+            dangerousPathConfirmed: confirmed
+          })
+        } else {
+          await window.relay.files.rename({
+            serverId,
+            from: sourcePath,
+            to: dest,
+            dangerousPathConfirmed: confirmed
+          })
+        }
+      }
+      if (clipboard.mode === 'move') setClipboard(null)
+      void refresh()
+    },
+    [clipboard, currentPath, serverId, refresh]
+  )
 
   const uploadFiles = useCallback(
     async (files: FileList | File[]) => {
@@ -362,6 +416,15 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
     [serverId]
   )
 
+  const downloadEntries = useCallback(
+    async (paths: string[]) => {
+      for (const path of paths) {
+        await downloadEntry(path)
+      }
+    },
+    [downloadEntry]
+  )
+
   const cancelTransfer = useCallback((transferId: string) => {
     void window.relay.files.cancelTransfer({ transferId })
     setTransfers((current) =>
@@ -409,10 +472,12 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
     copyToClipboard,
     cutToClipboard,
     pasteClipboard,
+    getClipboardCriticalPaths,
     hasClipboard: clipboard !== null,
     uploadFiles,
     uploadFromDialog,
     downloadEntry,
+    downloadEntries,
     transfers,
     cancelTransfer,
     dismissTransfer

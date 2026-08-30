@@ -142,6 +142,7 @@ export function PortsPanel() {
 
         <FirewallRuleDialog
           change={pendingChange}
+          sshPort={snapshot.sshPort}
           busy={ports.actionLoading}
           onCancel={() => setPendingChange(null)}
           onConfirm={() => void confirmChange()}
@@ -273,6 +274,7 @@ export function PortsPanel() {
 
       <FirewallRuleDialog
         change={pendingChange}
+        sshPort={snapshot?.sshPort ?? 22}
         busy={ports.actionLoading}
         onCancel={() => setPendingChange(null)}
         onConfirm={() => void confirmChange()}

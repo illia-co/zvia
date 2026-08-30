@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { NginxStatus } from '@shared/nginx'
 import type { SslOverview } from '@shared/ssl'
 import type { ServerId } from '@shared/server'
@@ -11,13 +12,26 @@ interface NginxOverviewTabProps {
   onOpenService: () => void
 }
 
+const LABEL_WIDTH = 'w-40'
+
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline gap-3 border-b border-divider py-2">
-      <dt className="w-40 shrink-0 text-[10px] uppercase tracking-wider text-text-tertiary">
+      <dt className={`${LABEL_WIDTH} shrink-0 text-[10px] uppercase tracking-wider text-text-tertiary`}>
         {label}
       </dt>
       <dd className="min-w-0 flex-1 break-all font-mono text-xs text-text">{value}</dd>
+    </div>
+  )
+}
+
+function FieldBlock({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 border-b border-divider py-2">
+      <dt className={`${LABEL_WIDTH} shrink-0 pt-0.5 text-[10px] uppercase tracking-wider text-text-tertiary`}>
+        {label}
+      </dt>
+      <dd className="min-w-0 flex-1 space-y-2 text-xs text-text-secondary">{children}</dd>
     </div>
   )
 }
@@ -36,7 +50,7 @@ export function NginxOverviewTab({
 
   return (
     <div className="h-full overflow-auto p-4">
-      <dl className="mb-5">
+      <dl>
         <Field label="Version" value={status.version ?? 'Unknown'} />
         <Field label="Main PID" value={status.mainPid === null ? '—' : String(status.mainPid)} />
         <Field label="Active since" value={status.activeSince ?? '—'} />
@@ -46,79 +60,73 @@ export function NginxOverviewTab({
         <Field label="Prefix" value={status.paths.prefix ?? 'Unknown'} />
         <Field label="Default access log" value={status.paths.accessLogPath ?? 'Unknown'} />
         <Field label="Default error log" value={status.paths.errorLogPath ?? 'Unknown'} />
-      </dl>
 
-      {sslOverview && (
-        <div className="mb-5 rounded-panel bg-bg-secondary p-3">
-          <p className="text-[10px] uppercase tracking-wider text-text-tertiary">HTTPS</p>
-          {httpsCerts.length === 0 ? (
-            <p className="mt-2 text-xs text-text-secondary">
-              No TLS certificates linked to nginx sites were detected.
-            </p>
+        {sslOverview && (
+          <FieldBlock label="HTTPS">
+            {httpsCerts.length === 0 ? (
+              <p>No TLS certificates linked to nginx sites were detected.</p>
+            ) : (
+              <ul className="space-y-1">
+                {httpsCerts.map((cert) => (
+                  <li key={cert.id} className="font-mono text-text">
+                    {cert.primaryDomain}
+                    {cert.daysRemaining !== null ? ` · ${cert.daysRemaining}d remaining` : ''}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="-ml-2"
+              onClick={() => openWithIntent(serverId, { tool: 'ssl' })}
+            >
+              Open in SSL
+            </Button>
+          </FieldBlock>
+        )}
+
+        <FieldBlock label="Configuration test">
+          {status.validation.state === 'unknown' ? (
+            <p>Not tested in this session. Run Test configuration to check the live config.</p>
           ) : (
-            <ul className="mt-2 space-y-1">
-              {httpsCerts.map((cert) => (
-                <li key={cert.id} className="font-mono text-xs text-text">
-                  {cert.primaryDomain}
-                  {cert.daysRemaining !== null ? ` · ${cert.daysRemaining}d remaining` : ''}
-                </li>
-              ))}
-            </ul>
+            <>
+              <p className="text-text">
+                {status.validation.state === 'valid'
+                  ? 'nginx -t reported a valid configuration.'
+                  : 'nginx -t reported a problem.'}
+              </p>
+              <pre className="overflow-x-auto rounded-sm bg-bg-secondary p-2 font-mono text-[10px] leading-relaxed text-text-secondary">
+                {status.validation.output || 'No output.'}
+              </pre>
+            </>
           )}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="mt-3"
-            onClick={() => openWithIntent(serverId, { tool: 'ssl' })}
-          >
-            Open in SSL
-          </Button>
-        </div>
-      )}
+        </FieldBlock>
 
-      <div className="mb-5">
-        <p className="mb-2 text-[10px] uppercase tracking-wider text-text-tertiary">
-          Configuration test
-        </p>
-        {status.validation.state === 'unknown' ? (
-          <p className="text-xs text-text-secondary">
-            Not tested in this session. Run Test configuration to check the live config.
-          </p>
-        ) : (
-          <>
-            <p className="mb-2 text-xs text-text">
-              {status.validation.state === 'valid'
-                ? 'nginx -t reported a valid configuration.'
-                : 'nginx -t reported a problem.'}
+        <FieldBlock label="Related">
+          <div className="flex flex-wrap gap-2">
+            {status.systemdAvailable && (
+              <Button size="sm" variant="ghost" className="-ml-2" onClick={onOpenService}>
+                Open nginx.service in Services
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              className={status.systemdAvailable ? undefined : '-ml-2'}
+              onClick={() => openWithIntent(serverId, { tool: 'ports', port: 80 })}
+            >
+              Open in Ports
+            </Button>
+          </div>
+          {!status.systemdAvailable && (
+            <p className="leading-relaxed">
+              systemd is not available on this server, so state is derived from the running process
+              list. Start, stop, restart and reload will not work without a service manager.
             </p>
-            <pre className="overflow-x-auto rounded-sm bg-bg-secondary p-2 font-mono text-[10px] leading-relaxed text-text-secondary">
-              {status.validation.output || 'No output.'}
-            </pre>
-          </>
-        )}
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {status.systemdAvailable && (
-          <Button size="sm" variant="ghost" onClick={onOpenService}>
-            Open nginx.service in Services
-          </Button>
-        )}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => openWithIntent(serverId, { tool: 'ports', port: 80 })}
-        >
-          Open in Ports
-        </Button>
-      </div>
-
-      {!status.systemdAvailable && (
-        <p className="mt-4 text-xs leading-relaxed text-text-secondary">
-          systemd is not available on this server, so state is derived from the running process
-          list. Start, stop, restart and reload will not work without a service manager.
-        </p>
-      )}
+          )}
+        </FieldBlock>
+      </dl>
     </div>
   )
 }

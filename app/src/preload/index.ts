@@ -49,7 +49,6 @@ const allowedChannels: IpcChannel[] = [
   'connection:test',
   'connection:getState',
   'connection:hostKeyResponse',
-  'connection:exec',
   'terminal:open',
   'terminal:write',
   'terminal:resize',

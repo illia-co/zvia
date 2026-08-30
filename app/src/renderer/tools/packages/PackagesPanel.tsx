@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { PackageDetail, PackageOperation } from '@shared/packages'
-import { normalizePackageDetail } from '@shared/packages'
+import { getCriticalPackageRemoveWarning, normalizePackageDetail } from '@shared/packages'
 import type { RelayErrorPayload } from '@shared/errors'
 import { BackButton } from '@renderer/components/ui/back-button'
 import { Button } from '@renderer/components/ui/button'
@@ -44,6 +44,7 @@ interface PendingOperation {
   title: string
   command: string
   warning: string
+  elevated: boolean
 }
 
 export function PackagesPanel() {
@@ -114,12 +115,16 @@ export function PackagesPanel() {
   }
 
   const requestRemove = (packageName: string) => {
+    const criticalWarning = getCriticalPackageRemoveWarning(packageName)
     setPendingOperation({
       kind: 'remove',
       packageName,
       title: `Remove ${packageName}`,
       command: `apt-get remove -y ${packageName}`,
-      warning: `This will remove ${packageName} and may uninstall dependent packages.`
+      warning:
+        criticalWarning ??
+        `This will remove ${packageName} and may uninstall dependent packages.`,
+      elevated: criticalWarning !== null
     })
   }
 
@@ -129,7 +134,8 @@ export function PackagesPanel() {
       packageName,
       title: `Upgrade ${packageName}`,
       command: `apt-get install --only-upgrade -y ${packageName}`,
-      warning: `This will upgrade ${packageName} to the latest available version.`
+      warning: `This will upgrade ${packageName} to the latest available version.`,
+      elevated: false
     })
   }
 
@@ -138,7 +144,8 @@ export function PackagesPanel() {
       kind: 'upgrade-all',
       title: 'Upgrade all packages',
       command: 'apt-get upgrade -y',
-      warning: 'This will upgrade every package with available updates.'
+      warning: 'This will upgrade every package with available updates.',
+      elevated: false
     })
   }
 
@@ -318,6 +325,12 @@ export function PackagesPanel() {
 
           <div className="space-y-4">
             <ServerScopeNotice />
+            {pendingOperation?.elevated && (
+              <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-3 text-xs leading-relaxed text-text">
+                This package is critical to system operation or remote access. Removing it can lock
+                you out or leave the server unstable.
+              </div>
+            )}
             <div className="rounded-sm bg-bg-secondary p-2 font-mono text-[11px] text-text-secondary">
               {pendingOperation?.command}
             </div>

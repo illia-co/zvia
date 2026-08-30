@@ -126,3 +126,55 @@ export function isPackageOperation(value: unknown): value is PackageOperation {
 export function isPackageManagerId(value: unknown): value is PackageManagerId {
   return typeof value === 'string' && (PACKAGE_MANAGER_IDS as readonly string[]).includes(value)
 }
+
+/**
+ * Packages whose removal can break SSH access, privilege escalation, or core
+ * system services. Matched case-insensitively on the package name.
+ */
+const CRITICAL_REMOVE_PACKAGES = new Set([
+  'openssh-server',
+  'openssh-sftp-server',
+  'sudo',
+  'systemd',
+  'systemd-sysv',
+  'systemd-timesyncd',
+  'dbus',
+  'dbus-user-session',
+  'login',
+  'passwd',
+  'apt',
+  'dpkg',
+  'bash',
+  'coreutils',
+  'libc6',
+  'init',
+  'procps',
+  'netbase'
+])
+
+/**
+ * Returns a user-facing warning when removing this package could severely
+ * damage the remote system or lock you out. Null for ordinary packages.
+ */
+export function getCriticalPackageRemoveWarning(packageName: string): string | null {
+  const normalized = packageName.trim().toLowerCase()
+  if (!CRITICAL_REMOVE_PACKAGES.has(normalized)) return null
+
+  if (normalized.startsWith('openssh')) {
+    return 'Removing OpenSSH can disconnect you from this server and prevent future SSH access until it is reinstalled from the console.'
+  }
+  if (normalized === 'sudo') {
+    return 'Removing sudo removes your ability to run privileged commands non-interactively from Relay tools that depend on elevation.'
+  }
+  if (normalized.startsWith('systemd') || normalized === 'dbus' || normalized === 'dbus-user-session') {
+    return 'Removing core init or D-Bus packages can stop services, break boot, or destabilize the entire system.'
+  }
+  if (normalized === 'apt' || normalized === 'dpkg') {
+    return 'Removing the package manager can make the server impossible to repair from Relay or apt until restored from the console.'
+  }
+  if (normalized === 'libc6' || normalized === 'bash' || normalized === 'coreutils' || normalized === 'init') {
+    return 'Removing this package can render the system unbootable or unusable.'
+  }
+
+  return 'Removing this package can break essential system services or your ability to administer this server.'
+}

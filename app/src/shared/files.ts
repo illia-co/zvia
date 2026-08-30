@@ -45,6 +45,8 @@ export interface FilesReadRequest extends ServerScoped {
 export interface FilesWriteRequest extends ServerScoped {
   path: string
   content: string
+  /** Required when writing under a critical system path. */
+  dangerousPathConfirmed?: boolean
 }
 
 export interface FilesMkdirRequest extends ServerScoped {
@@ -54,16 +56,22 @@ export interface FilesMkdirRequest extends ServerScoped {
 export interface FilesRenameRequest extends ServerScoped {
   from: string
   to: string
+  /** Required when renaming from or to a critical system path. */
+  dangerousPathConfirmed?: boolean
 }
 
 export interface FilesDeleteRequest extends ServerScoped {
   path: string
   recursive?: boolean
+  /** Required when deleting a critical system path. */
+  dangerousPathConfirmed?: boolean
 }
 
 export interface FilesCopyRequest extends ServerScoped {
   from: string
   to: string
+  /** Required when copying from or to a critical system path. */
+  dangerousPathConfirmed?: boolean
 }
 
 export interface FilesUploadRequest extends ServerScoped {
@@ -74,6 +82,8 @@ export interface FilesUploadRequest extends ServerScoped {
   offset?: number
   totalSize?: number
   final?: boolean
+  /** Required when uploading to a critical system path. */
+  dangerousPathConfirmed?: boolean
 }
 
 export interface FilesDownloadRequest extends ServerScoped {

@@ -24,6 +24,8 @@ import type {
   TerminalWriteRequest
 } from './ipc'
 import { DEFAULT_LOGS_QUERY, normalizeLogsQuery } from './logQuery'
+import { isCriticalSystemPath } from './remotePaths'
+import { getProtectedSystemdUnitActionBlock } from './systemd'
 import type {
   LogFilters,
   LogPriority,
@@ -289,7 +291,27 @@ function assertRemotePath(value: unknown, field = 'path'): string {
   if (!value.startsWith('/')) {
     throw new ValidationError(`Invalid ${field}: expected absolute path`)
   }
+  if (value.split('/').includes('..')) {
+    throw new ValidationError(`Invalid ${field}: must not contain parent directory segments`)
+  }
   return value
+}
+
+function assertCriticalPathMutationAllowed(
+  paths: string[],
+  confirmed: unknown,
+  operation: string
+): void {
+  if (!paths.some(isCriticalSystemPath)) return
+  if (confirmed === true) return
+  throw new ValidationError(
+    `${operation} blocked: critical system path requires explicit confirmation`,
+    'Type DELETE in the Files tool to confirm this operation.'
+  )
+}
+
+function readDangerousPathConfirmed(record: Record<string, unknown>): boolean | undefined {
+  return record.dangerousPathConfirmed === true ? true : undefined
 }
 
 function assertTransferId(value: unknown): string {
@@ -323,7 +345,12 @@ export function validateFilesWriteRequest(value: unknown): FilesWriteRequest {
   if (typeof record.content !== 'string') {
     throw new ValidationError('Invalid content: expected string')
   }
-  return { ...scoped, path: assertRemotePath(record.path), content: record.content }
+  const path = assertRemotePath(record.path)
+  const confirmed = readDangerousPathConfirmed(record)
+  assertCriticalPathMutationAllowed([path], confirmed, 'Write')
+  const request: FilesWriteRequest = { ...scoped, path, content: record.content }
+  if (confirmed) request.dangerousPathConfirmed = true
+  return request
 }
 
 export function validateFilesMkdirRequest(value: unknown): FilesMkdirRequest {
@@ -341,11 +368,13 @@ export function validateFilesRenameRequest(value: unknown): FilesRenameRequest {
   }
   const record = value as Record<string, unknown>
   const scoped = validateServerScoped(record)
-  return {
-    ...scoped,
-    from: assertRemotePath(record.from, 'from'),
-    to: assertRemotePath(record.to, 'to')
-  }
+  const from = assertRemotePath(record.from, 'from')
+  const to = assertRemotePath(record.to, 'to')
+  const confirmed = readDangerousPathConfirmed(record)
+  assertCriticalPathMutationAllowed([from, to], confirmed, 'Rename')
+  const request: FilesRenameRequest = { ...scoped, from, to }
+  if (confirmed) request.dangerousPathConfirmed = true
+  return request
 }
 
 export function validateFilesDeleteRequest(value: unknown): FilesDeleteRequest {
@@ -354,8 +383,12 @@ export function validateFilesDeleteRequest(value: unknown): FilesDeleteRequest {
   }
   const record = value as Record<string, unknown>
   const scoped = validateServerScoped(record)
-  const request: FilesDeleteRequest = { ...scoped, path: assertRemotePath(record.path) }
+  const path = assertRemotePath(record.path)
+  const confirmed = readDangerousPathConfirmed(record)
+  assertCriticalPathMutationAllowed([path], confirmed, 'Delete')
+  const request: FilesDeleteRequest = { ...scoped, path }
   if (record.recursive === true) request.recursive = true
+  if (confirmed) request.dangerousPathConfirmed = true
   return request
 }
 
@@ -365,11 +398,13 @@ export function validateFilesCopyRequest(value: unknown): FilesCopyRequest {
   }
   const record = value as Record<string, unknown>
   const scoped = validateServerScoped(record)
-  return {
-    ...scoped,
-    from: assertRemotePath(record.from, 'from'),
-    to: assertRemotePath(record.to, 'to')
-  }
+  const from = assertRemotePath(record.from, 'from')
+  const to = assertRemotePath(record.to, 'to')
+  const confirmed = readDangerousPathConfirmed(record)
+  assertCriticalPathMutationAllowed([from, to], confirmed, 'Copy')
+  const request: FilesCopyRequest = { ...scoped, from, to }
+  if (confirmed) request.dangerousPathConfirmed = true
+  return request
 }
 
 export function validateFilesUploadRequest(value: unknown): FilesUploadRequest {
@@ -417,6 +452,10 @@ export function validateFilesUploadRequest(value: unknown): FilesUploadRequest {
   if (!hasData && !hasLocalPath) {
     throw new ValidationError('Upload requires localPath or data')
   }
+
+  const confirmed = readDangerousPathConfirmed(record)
+  assertCriticalPathMutationAllowed([remotePath], confirmed, 'Upload')
+  if (confirmed) request.dangerousPathConfirmed = true
 
   return request
 }
@@ -690,7 +729,13 @@ export function validateServicesActionRequest(
   if (!isSystemdAction(record.action)) {
     throw new ValidationError('Invalid action: expected a supported systemctl action')
   }
-  return { ...scoped, unit: assertSystemdUnit(record.unit), action: record.action }
+  const unit = assertSystemdUnit(record.unit)
+  const action = record.action
+  const blockReason = getProtectedSystemdUnitActionBlock(unit, action)
+  if (blockReason) {
+    throw new ValidationError(blockReason)
+  }
+  return { ...scoped, unit, action }
 }
 
 const CRON_JOB_ID_PATTERN = /^[a-z.-]+:\S*:\d+$/

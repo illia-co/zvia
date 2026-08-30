@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   FIREWALL_NO_BACKEND_REASON,
   describeFirewallEditability,
+  getFirewallDeleteRuleWarning,
+  getFirewallDenyWarning,
   type FirewallState
 } from '@shared/ports'
 
@@ -65,5 +67,47 @@ describe('describeFirewallEditability', () => {
       expect(result.editable).toBe(false)
       expect(result.reason).toContain(backend)
     }
+  })
+})
+
+describe('getFirewallDenyWarning', () => {
+  it('mentions loss of access for deny rules', () => {
+    expect(getFirewallDenyWarning(443, 'tcp')).toMatch(/lose access/i)
+  })
+})
+
+describe('getFirewallDeleteRuleWarning', () => {
+  it('warns when deleting an allow rule for the SSH port', () => {
+    const warning = getFirewallDeleteRuleWarning(
+      {
+        id: '4',
+        raw: '22/tcp ALLOW Anywhere',
+        action: 'ALLOW',
+        target: 'Anywhere',
+        from: 'Anywhere',
+        protocol: 'tcp',
+        ports: [{ start: 22, end: 22 }]
+      },
+      22
+    )
+
+    expect(warning).toMatch(/SSH/)
+  })
+
+  it('returns null for unrelated rule deletes', () => {
+    const warning = getFirewallDeleteRuleWarning(
+      {
+        id: '5',
+        raw: '80/tcp ALLOW Anywhere',
+        action: 'ALLOW',
+        target: 'Anywhere',
+        from: 'Anywhere',
+        protocol: 'tcp',
+        ports: [{ start: 80, end: 80 }]
+      },
+      22
+    )
+
+    expect(warning).toBeNull()
   })
 })

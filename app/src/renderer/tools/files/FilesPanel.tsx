@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Group, Panel, Separator } from 'react-resizable-panels'
 import { useRequiredServerContext } from '@renderer/state/ServerContext'
 import { usePanelId } from '@renderer/state/PanelContext'
@@ -24,12 +24,17 @@ import {
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { cn } from '@renderer/lib/utils'
 import type { RemoteFileEntry } from '@shared/files'
+import {
+  CRITICAL_PATH_CONFIRMATION_PHRASE,
+  getCriticalPathMutationWarning,
+  requiresCriticalPathConfirmation
+} from '@shared/remotePaths'
 import { FileBreadcrumbs } from './FileBreadcrumbs'
 import { FileEditor } from './FileEditor'
 import { FileList } from './FileList'
 import { TransferPanel } from './TransferPanel'
 import { useFileManager } from './useFileManager'
-import { isEditableFile } from './fileUtils'
+import { isEditableFile, joinRemotePath, parentPath } from './fileUtils'
 
 type PromptMode = 'create-file' | 'create-folder' | 'rename' | 'delete' | null
 
@@ -66,6 +71,8 @@ export function FilesPanel() {
   const [promptValue, setPromptValue] = useState('')
   const [promptTarget, setPromptTarget] = useState<RemoteFileEntry | null>(null)
   const [deleteRecursive, setDeleteRecursive] = useState(false)
+  const [criticalConfirmText, setCriticalConfirmText] = useState('')
+  const [pasteConfirmOpen, setPasteConfirmOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [editorSplitLayout, setEditorSplitLayout] = useState<Record<string, number>>({
     list: 50,
@@ -74,42 +81,116 @@ export function FilesPanel() {
 
   const selectedEntries = fm.entries.filter((e) => fm.selectedPaths.has(e.path))
   const hasSelection = selectedEntries.length > 0
+  const selectedFiles = selectedEntries.filter((entry) => entry.type === 'file')
+  const canDownload = selectedFiles.length > 0
+
+  const deletePaths = useMemo(() => {
+    if (promptMode !== 'delete') return []
+    return promptTarget ? [promptTarget.path] : Array.from(fm.selectedPaths)
+  }, [promptMode, promptTarget, fm.selectedPaths])
+
+  const mutationPaths = useMemo(() => {
+    if (promptMode === 'delete') return deletePaths
+    if (promptMode === 'rename' && promptTarget && promptValue.trim()) {
+      return [promptTarget.path, joinRemotePath(parentPath(promptTarget.path), promptValue.trim())]
+    }
+    if (promptMode === 'create-file' && promptValue.trim()) {
+      return [joinRemotePath(fm.currentPath, promptValue.trim())]
+    }
+    return []
+  }, [promptMode, deletePaths, promptTarget, promptValue, fm.currentPath])
+
+  const mutationWarnings = useMemo(() => {
+    const warnings = new Set<string>()
+    for (const path of mutationPaths) {
+      const warning = getCriticalPathMutationWarning(path)
+      if (warning) warnings.add(warning)
+    }
+    return [...warnings]
+  }, [mutationPaths])
+
+  const needsCriticalConfirmation = requiresCriticalPathConfirmation(mutationPaths)
+  const criticalConfirmationReady =
+    !needsCriticalConfirmation || criticalConfirmText === CRITICAL_PATH_CONFIRMATION_PHRASE
 
   const openPrompt = useCallback((mode: PromptMode, target?: RemoteFileEntry) => {
     setPromptMode(mode)
     setPromptTarget(target ?? null)
     setPromptValue(target?.name ?? '')
     setDeleteRecursive(false)
+    setCriticalConfirmText('')
   }, [])
 
   const closePrompt = useCallback(() => {
     setPromptMode(null)
     setPromptValue('')
     setPromptTarget(null)
+    setCriticalConfirmText('')
   }, [])
+
+  const openDeletePrompt = useCallback(() => {
+    openPrompt('delete', selectedEntries.length === 1 ? selectedEntries[0] : undefined)
+  }, [openPrompt, selectedEntries])
+
+  const downloadSelection = useCallback(() => {
+    void fm.downloadEntries(selectedFiles.map((entry) => entry.path))
+  }, [fm, selectedFiles])
 
   const handlePromptConfirm = useCallback(async () => {
     try {
+      const mutationOptions = needsCriticalConfirmation
+        ? { dangerousPathConfirmed: true as const }
+        : undefined
+
       if (promptMode === 'create-file' && promptValue.trim()) {
-        await fm.createFile(promptValue.trim())
+        await fm.createFile(promptValue.trim(), mutationOptions)
       } else if (promptMode === 'create-folder' && promptValue.trim()) {
         await fm.createFolder(promptValue.trim())
       } else if (promptMode === 'rename' && promptTarget && promptValue.trim()) {
-        await fm.renameEntry(promptTarget.path, promptValue.trim())
+        await fm.renameEntry(promptTarget.path, promptValue.trim(), mutationOptions)
       } else if (promptMode === 'delete') {
         const paths = promptTarget ? [promptTarget.path] : Array.from(fm.selectedPaths)
         const needsRecursive = paths.some((path) => {
           const entry = fm.entries.find((e) => e.path === path)
           return entry?.type === 'directory'
         })
-        await fm.deleteEntries(paths, needsRecursive && deleteRecursive)
+        await fm.deleteEntries(paths, needsRecursive && deleteRecursive, mutationOptions)
+        if (fm.editor && paths.includes(fm.editor.path)) {
+          fm.closeEditor()
+        }
         fm.clearSelection()
       }
       closePrompt()
     } catch (err) {
       fm.setError(err instanceof Error ? err.message : 'Operation failed')
     }
-  }, [promptMode, promptValue, promptTarget, deleteRecursive, fm, closePrompt])
+  }, [
+    promptMode,
+    promptValue,
+    promptTarget,
+    deleteRecursive,
+    needsCriticalConfirmation,
+    fm,
+    closePrompt
+  ])
+
+  const handlePaste = useCallback(() => {
+    if (fm.getClipboardCriticalPaths().length > 0) {
+      setCriticalConfirmText('')
+      setPasteConfirmOpen(true)
+      return
+    }
+    void fm.pasteClipboard()
+  }, [fm])
+
+  const confirmPaste = useCallback(async () => {
+    setPasteConfirmOpen(false)
+    try {
+      await fm.pasteClipboard({ dangerousPathConfirmed: true })
+    } catch (err) {
+      fm.setError(err instanceof Error ? err.message : 'Paste failed')
+    }
+  }, [fm])
 
   const handleDrop = useCallback(
     async (event: React.DragEvent) => {
@@ -188,17 +269,20 @@ export function FilesPanel() {
       </ContextMenuTrigger>
 
       <ContextMenuContent>
-        <ContextMenuItem onSelect={() => void fm.openEntry(selectedEntries[0] ?? fm.entries[0])}>
-          Open
-        </ContextMenuItem>
         <ContextMenuItem
           onSelect={() => {
             const target = selectedEntries[0]
-            if (target) void fm.downloadEntry(target.path)
+            if (target) void fm.openEntry(target)
           }}
-          disabled={!hasSelection}
+          disabled={selectedEntries.length !== 1}
         >
-          Download
+          Open
+        </ContextMenuItem>
+        <ContextMenuItem
+          onSelect={() => downloadSelection()}
+          disabled={!canDownload}
+        >
+          Download{selectedFiles.length > 1 ? ` (${selectedFiles.length})` : ''}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
@@ -213,7 +297,7 @@ export function FilesPanel() {
         >
           Cut
         </ContextMenuItem>
-        <ContextMenuItem onSelect={() => void fm.pasteClipboard()} disabled={!fm.hasClipboard}>
+        <ContextMenuItem onSelect={() => handlePaste()} disabled={!fm.hasClipboard}>
           Paste
         </ContextMenuItem>
         <ContextMenuSeparator />
@@ -224,10 +308,11 @@ export function FilesPanel() {
           Rename
         </ContextMenuItem>
         <ContextMenuItem
-          onSelect={() => openPrompt('delete', selectedEntries[0])}
+          onSelect={() => openDeletePrompt()}
           disabled={!hasSelection}
+          className="text-status-error focus:text-status-error"
         >
-          Delete
+          Delete{selectedEntries.length > 1 ? ` (${selectedEntries.length})` : ''}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
@@ -273,6 +358,23 @@ export function FilesPanel() {
         <Button size="sm" variant="ghost" onClick={() => openPrompt('create-file')}>
           New File
         </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={!canDownload}
+          onClick={() => downloadSelection()}
+        >
+          Download{selectedFiles.length > 1 ? ` (${selectedFiles.length})` : ''}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={!hasSelection}
+          className={hasSelection ? 'text-status-error hover:text-status-error' : undefined}
+          onClick={() => openDeletePrompt()}
+        >
+          Delete{selectedEntries.length > 1 ? ` (${selectedEntries.length})` : ''}
+        </Button>
         <Button size="sm" variant="ghost" onClick={() => void fm.uploadFromDialog()}>
           Upload
         </Button>
@@ -309,7 +411,7 @@ export function FilesPanel() {
                 onChange={(content) =>
                   fm.setEditor(fm.editor ? { ...fm.editor, content, dirty: true } : null)
                 }
-                onSave={() => void fm.saveEditor()}
+                onSave={(options) => void fm.saveEditor(options)}
                 onClose={fm.closeEditor}
               />
             </Panel>
@@ -342,6 +444,30 @@ export function FilesPanel() {
               </DialogDescription>
             )}
           </DialogHeader>
+
+          {mutationWarnings.length > 0 && (
+            <div className="space-y-2 rounded-sm border border-destructive/30 bg-destructive/5 p-3 text-xs leading-relaxed text-text">
+              {mutationWarnings.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
+            </div>
+          )}
+
+          {needsCriticalConfirmation && (
+            <div className="space-y-2">
+              <p className="text-xs text-text-secondary">
+                Type <span className="font-mono">{CRITICAL_PATH_CONFIRMATION_PHRASE}</span> to
+                confirm this operation.
+              </p>
+              <input
+                autoFocus={promptMode === 'delete'}
+                value={criticalConfirmText}
+                onChange={(event) => setCriticalConfirmText(event.target.value)}
+                className="w-full rounded-panel border border-divider bg-bg px-3 py-2 font-mono text-sm text-text outline-none focus:border-text-tertiary"
+                placeholder={CRITICAL_PATH_CONFIRMATION_PHRASE}
+              />
+            </div>
+          )}
 
           {promptMode !== 'delete' ? (
             <input
@@ -377,13 +503,59 @@ export function FilesPanel() {
               onClick={() => void handlePromptConfirm()}
               disabled={
                 promptMode === 'delete'
-                  ? (promptTarget?.type === 'directory' ||
+                  ? ((promptTarget?.type === 'directory' ||
                       selectedEntries.some((e) => e.type === 'directory')) &&
-                    !deleteRecursive
-                  : !promptValue.trim()
+                      !deleteRecursive) ||
+                    !criticalConfirmationReady
+                  : !promptValue.trim() || !criticalConfirmationReady
               }
             >
               {promptMode === 'delete' ? 'Delete' : 'Confirm'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={pasteConfirmOpen} onOpenChange={setPasteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Paste into a critical path?</DialogTitle>
+            <DialogDescription>
+              This paste touches a critical system location and can break the server.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 rounded-sm border border-destructive/30 bg-destructive/5 p-3 text-xs leading-relaxed text-text">
+            {fm.getClipboardCriticalPaths().map((path) => {
+              const warning = getCriticalPathMutationWarning(path)
+              return <p key={path}>{warning ?? path}</p>
+            })}
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs text-text-secondary">
+              Type <span className="font-mono">{CRITICAL_PATH_CONFIRMATION_PHRASE}</span> to
+              confirm.
+            </p>
+            <input
+              autoFocus
+              value={criticalConfirmText}
+              onChange={(event) => setCriticalConfirmText(event.target.value)}
+              className="w-full rounded-panel border border-divider bg-bg px-3 py-2 font-mono text-sm text-text outline-none focus:border-text-tertiary"
+              placeholder={CRITICAL_PATH_CONFIRMATION_PHRASE}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPasteConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={criticalConfirmText !== CRITICAL_PATH_CONFIRMATION_PHRASE}
+              onClick={() => void confirmPaste()}
+            >
+              Paste
             </Button>
           </DialogFooter>
         </DialogContent>

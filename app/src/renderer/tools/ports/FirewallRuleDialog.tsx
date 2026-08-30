@@ -1,4 +1,5 @@
 import type { FirewallRule, PortProtocol } from '@shared/ports'
+import { getFirewallDeleteRuleWarning, getFirewallDenyWarning } from '@shared/ports'
 import { Button } from '@renderer/components/ui/button'
 import {
   Dialog,
@@ -16,23 +17,32 @@ export type PendingFirewallChange =
 
 interface FirewallRuleDialogProps {
   change: PendingFirewallChange | null
+  sshPort: number
   busy: boolean
   onCancel: () => void
   onConfirm: () => void
 }
 
-function describe(change: PendingFirewallChange): {
+function describe(
+  change: PendingFirewallChange,
+  sshPort: number
+): {
   title: string
   command: string
   risk: string
   destructive: boolean
+  elevated: boolean
 } {
   if (change.kind === 'delete') {
+    const deleteWarning = getFirewallDeleteRuleWarning(change.rule, sshPort)
     return {
       title: 'Delete firewall rule',
       command: `ufw --force delete ${change.rule.id}`,
-      risk: `Traffic currently matched by "${change.rule.raw}" will fall back to the default policy.`,
-      destructive: true
+      risk:
+        deleteWarning ??
+        `Traffic currently matched by "${change.rule.raw}" will fall back to the default policy.`,
+      destructive: true,
+      elevated: deleteWarning !== null
     }
   }
 
@@ -42,25 +52,28 @@ function describe(change: PendingFirewallChange): {
       title: 'Allow incoming traffic',
       command: `ufw allow ${target}`,
       risk: `Anything that can reach this server will be able to connect to ${target}.`,
-      destructive: false
+      destructive: false,
+      elevated: false
     }
   }
 
   return {
     title: 'Block incoming traffic',
     command: `ufw deny ${target}`,
-    risk: `Clients that currently depend on ${target} will stop being able to connect.`,
-    destructive: true
+    risk: getFirewallDenyWarning(change.port, change.protocol),
+    destructive: true,
+    elevated: true
   }
 }
 
 export function FirewallRuleDialog({
   change,
+  sshPort,
   busy,
   onCancel,
   onConfirm
 }: FirewallRuleDialogProps) {
-  const details = change ? describe(change) : null
+  const details = change ? describe(change, sshPort) : null
 
   return (
     <Dialog open={change !== null} onOpenChange={(open) => !open && onCancel()}>
@@ -72,6 +85,12 @@ export function FirewallRuleDialog({
 
         {details && (
           <>
+            {details.elevated && (
+              <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-3 text-xs leading-relaxed text-text">
+                Double-check that you can still reach this server after this change. Relay cannot
+                undo a firewall lockout from here.
+              </div>
+            )}
             <pre className="overflow-x-auto rounded-sm bg-bg-secondary p-2 font-mono text-[10px] text-text-secondary">
               {details.command}
             </pre>

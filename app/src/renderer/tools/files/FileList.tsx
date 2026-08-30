@@ -99,8 +99,8 @@ export function FileList({
                     transform: `translateY(${virtualRow.start}px)`
                   }}
                   className={cn(
-                    'grid cursor-pointer grid-cols-[minmax(0,1fr)_5rem_8rem_5rem] items-center gap-3 px-3 text-xs transition-colors duration-default',
-                    selected ? 'bg-bg-secondary text-text' : 'text-text hover:bg-bg-secondary/60'
+                    'group grid cursor-pointer grid-cols-[minmax(0,1fr)_5rem_8rem_5rem] items-center gap-3 px-3 text-xs transition-colors duration-default',
+                    selected ? 'bg-bg-secondary text-text' : 'text-text hover:bg-bg-secondary'
                   )}
                   onClick={(event) => {
                     onSelect(entry.path, event.metaKey || event.ctrlKey || event.shiftKey)
@@ -110,7 +110,7 @@ export function FileList({
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     <EntryIcon type={entry.type} />
-                    <span className="truncate">{entry.name}</span>
+                    <span className="truncate group-hover:underline">{entry.name}</span>
                   </div>
                   <span className="text-right font-mono text-text-secondary">
                     {entry.type === 'directory' ? '—' : formatFileSize(entry.size)}

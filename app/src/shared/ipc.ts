@@ -380,7 +380,6 @@ export type IpcChannel =
   | 'connection:test'
   | 'connection:getState'
   | 'connection:hostKeyResponse'
-  | 'connection:exec'
   | 'terminal:open'
   | 'terminal:write'
   | 'terminal:resize'
@@ -481,7 +480,6 @@ export type IpcRequestMap = {
   'connection:test': ConnectionTestRequest
   'connection:getState': ServerScoped
   'connection:hostKeyResponse': HostKeyResponseRequest
-  'connection:exec': ExecRequest
   'terminal:open': TerminalOpenRequest
   'terminal:write': TerminalWriteRequest
   'terminal:resize': TerminalResizeRequest
@@ -583,7 +581,6 @@ export type IpcResponseMap = {
   'connection:test': void
   'connection:getState': import('./server').ConnectionState
   'connection:hostKeyResponse': void
-  'connection:exec': ExecResult
   'terminal:open': void
   'terminal:write': void
   'terminal:resize': void

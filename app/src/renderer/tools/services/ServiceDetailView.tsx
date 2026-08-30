@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { RelayErrorPayload } from '@shared/errors'
 import type { ServerId } from '@shared/server'
 import type { SystemdAction, SystemdUnitDetail, SystemdUnitFile } from '@shared/systemd'
+import { getProtectedSystemdUnitActionBlock } from '@shared/systemd'
 import { Button } from '@renderer/components/ui/button'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { parseRelayError } from '@renderer/lib/errors'
@@ -109,6 +110,8 @@ export function ServiceDetailView({
 
   const isRunning = detail?.activeState === 'active'
   const isEnabled = detail?.unitFileState === 'enabled'
+  const stopBlocked = getProtectedSystemdUnitActionBlock(unit, 'stop')
+  const disableBlocked = getProtectedSystemdUnitActionBlock(unit, 'disable')
 
   return (
     <div>
@@ -150,7 +153,8 @@ export function ServiceDetailView({
               <Button
                 size="sm"
                 variant="ghost"
-                disabled={actionLoading}
+                disabled={actionLoading || stopBlocked !== null}
+                title={stopBlocked ?? undefined}
                 onClick={() => onAction(unit, 'stop')}
               >
                 Stop
@@ -165,7 +169,8 @@ export function ServiceDetailView({
             <Button
               size="sm"
               variant="ghost"
-              disabled={actionLoading}
+              disabled={actionLoading || disableBlocked !== null}
+              title={disableBlocked ?? undefined}
               onClick={() => onAction(unit, 'disable')}
             >
               Disable
