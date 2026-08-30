@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isEmptyCrontabMessage } from './CronService'
+import { isEmptyCrontabMessage } from '@main/services/CronService'
 
 describe('isEmptyCrontabMessage', () => {
   it('recognises the real Ubuntu 24.04 message for an absent crontab', () => {

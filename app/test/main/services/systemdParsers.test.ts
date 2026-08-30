@@ -8,7 +8,7 @@ import {
   parseShowProperties,
   parseUnitFilePaths,
   parseUnitFileStates
-} from './systemdParsers'
+} from '@main/services/systemdParsers'
 
 const LIST_UNITS_JSON = JSON.stringify([
   {

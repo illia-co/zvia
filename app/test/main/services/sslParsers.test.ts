@@ -8,7 +8,7 @@ import {
   parseOpensslCertificate,
   parseRenewalConf,
   parseSystemdTimer
-} from './sslParsers'
+} from '@main/services/sslParsers'
 
 const OPENSSL_OUTPUT = [
   'subject=CN = example.com',

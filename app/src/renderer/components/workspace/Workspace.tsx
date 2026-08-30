@@ -75,14 +75,14 @@ export function Workspace() {
               </div>
             )}
           </div>
-        ) : (
+        ) : workspace?.root ? (
           <PanelLayout
             serverId={serverId}
-            node={workspace!.root}
-            focusedPanelId={workspace!.focusedPanelId}
-            tabOrder={workspace!.tabOrder}
+            node={workspace.root}
+            focusedPanelId={workspace.focusedPanelId}
+            tabOrder={workspace.tabOrder}
           />
-        )}
+        ) : null}
       </div>
     </section>
   )

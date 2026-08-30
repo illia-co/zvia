@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import type { CommandRunner } from './CommandRunner'
+import type { CommandRunner } from '@main/services/CommandRunner'
 import {
   buildStatsSnapshot,
   computeCpuUsage,
   LinuxStatsService,
   type RawCpuSample
-} from './LinuxStatsService'
+} from '@main/services/LinuxStatsService'
 
 const MOCK_STATS_OUTPUT = [
   '---RELAY:STAT---',

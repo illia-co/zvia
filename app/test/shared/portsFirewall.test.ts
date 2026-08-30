@@ -3,7 +3,7 @@ import {
   FIREWALL_NO_BACKEND_REASON,
   describeFirewallEditability,
   type FirewallState
-} from './ports'
+} from '@shared/ports'
 
 function state(overrides: Partial<FirewallState>): FirewallState {
   return {

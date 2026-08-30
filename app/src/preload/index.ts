@@ -654,8 +654,7 @@ const relayApi: RelayApi = {
     if (!allowedChannels.includes(channel)) {
       return Promise.reject(new Error(`IPC channel not allowed: ${channel}`))
     }
-    const payload = args[0]
-    return invokeIpc(channel, payload) as Promise<IpcResponseMap[C]>
+    return invokeIpc(channel, ...args) as Promise<IpcResponseMap[C]>
   },
 
   on<E extends keyof IpcEventMap>(

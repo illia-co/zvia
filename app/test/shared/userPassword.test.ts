@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getPasswordPolicyIssues } from './userPassword'
+import { getPasswordPolicyIssues } from '@shared/userPassword'
 
 describe('getPasswordPolicyIssues', () => {
   it('accepts a strong password', () => {

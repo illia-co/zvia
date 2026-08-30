@@ -9,7 +9,7 @@ import {
   parseDpkgListFiles,
   parseDpkgQueryLine,
   parseDpkgQueryOutput
-} from './packagesParsers'
+} from '@main/services/packagesParsers'
 
 const DPKG_QUERY_OUTPUT = [
   'adduser\t3.118ubuntu5\tall\tinstall ok installed\tAdd and remove users and groups',

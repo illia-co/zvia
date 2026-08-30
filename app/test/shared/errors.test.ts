@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extractRelayIpcPayload, parseIpcError, RELAY_IPC_ERROR_PREFIX } from './errors'
+import { extractRelayIpcPayload, parseIpcError, RELAY_IPC_ERROR_PREFIX } from '@shared/errors'
 
 describe('parseIpcError', () => {
   it('extracts relay payloads wrapped by Electron invoke errors', () => {

@@ -14,7 +14,7 @@ import {
   ruleCoversPort,
   ruleScopeIsUnknown,
   ufwVerdictForPort
-} from './portParsers'
+} from '@main/services/portParsers'
 
 const SS_OUTPUT = [
   'udp   UNCONN 0      0          127.0.0.53%lo:53        0.0.0.0:*    users:(("systemd-resolve",pid=612,fd=13))',

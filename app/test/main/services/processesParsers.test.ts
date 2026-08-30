@@ -7,7 +7,7 @@ import {
   parsePsOutput,
   parseSshPids,
   splitDetailSections
-} from './processesParsers'
+} from '@main/services/processesParsers'
 
 const PS_OUTPUT = [
   '    PID USER      %CPU %MEM   RSS STAT ELAPSED COMMAND         COMMAND',

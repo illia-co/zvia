@@ -240,7 +240,6 @@ export function ServerProfileDialog({
               <Select
                 value={authType}
                 onValueChange={(value) => setAuthType(value as 'ssh-agent' | 'key-file')}
-                modal={false}
               >
                 <SelectTrigger className="mt-1 w-full py-1.5 text-sm">
                   <SelectValue />

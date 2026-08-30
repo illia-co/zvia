@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapTimeRangeToSince } from './logQuery'
+import { mapTimeRangeToSince } from '@shared/logQuery'
 
 describe('mapTimeRangeToSince', () => {
   it('maps preset ranges to journalctl since strings', () => {

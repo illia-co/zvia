@@ -7,7 +7,7 @@ import {
   parseCrontab,
   validateCronExpression,
   type CronSource
-} from './cron'
+} from '@shared/cron'
 
 const USER_CRONTAB = [
   '# Relay test crontab',

@@ -7,7 +7,7 @@ import {
   parseNginxTestOutput,
   parseNginxVersion,
   parseSystemctlProperties
-} from './nginxParsers'
+} from '@main/services/nginxParsers'
 
 const NGINX_V_OUTPUT = [
   'nginx version: nginx/1.24.0 (Ubuntu)',

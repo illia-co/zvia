@@ -14,7 +14,7 @@ import {
   protectedUserReason,
   resolveAdminGroup,
   splitDiscoverySections
-} from './usersParsers'
+} from '@main/services/usersParsers'
 
 const GETENT_PASSWD = [
   'root:x:0:0:root:/root:/bin/bash',

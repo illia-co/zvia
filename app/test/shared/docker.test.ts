@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parsePublishedHostPorts } from './docker'
+import { parsePublishedHostPorts } from '@shared/docker'
 
 describe('parsePublishedHostPorts', () => {
   it('collapses the IPv4 and IPv6 rows docker prints for one publish', () => {

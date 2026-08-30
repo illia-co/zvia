@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveRevealTarget } from './fileUtils'
+import { resolveRevealTarget } from '@renderer/tools/files/fileUtils'
 
 describe('resolveRevealTarget', () => {
   it('splits a file path into its directory and basename', () => {

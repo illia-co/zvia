@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PORT_RANGE_ERROR, parseFirewallPortForm } from './firewallForm'
+import { PORT_RANGE_ERROR, parseFirewallPortForm } from '@renderer/tools/ports/firewallForm'
 
 const SSH_PORT = 22
 

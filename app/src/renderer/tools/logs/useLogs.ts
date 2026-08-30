@@ -18,7 +18,10 @@ interface UseLogsResult {
   statusMessage?: string
   paused: boolean
   query: LogsQuery
-  setQuery: (query: LogsQuery | Partial<LogsQuery>) => void
+  setQuery: (
+    query: LogsQuery | Partial<LogsQuery>,
+    options?: { resetFilters?: boolean }
+  ) => void
   clearFilters: () => void
   pause: () => void
   resume: () => void

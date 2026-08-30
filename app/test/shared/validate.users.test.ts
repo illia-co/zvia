@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { ValidationError } from './errors'
-import { validateUsersActionRequest } from './validate'
+import { ValidationError } from '@shared/errors'
+import { validateUsersActionRequest } from '@shared/validate'
 
 const SERVER_ID = 'production-abc123'
 

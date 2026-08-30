@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildJournalctlCommand } from './LogService'
+import { buildJournalctlCommand } from '@main/services/LogService'
 
 describe('buildJournalctlCommand', () => {
   it('builds a live follow command with default tail size', () => {
