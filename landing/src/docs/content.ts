@@ -108,6 +108,23 @@ export const DOC_SECTIONS: DocSection[] = [
       },
       {
         type: 'subheading',
+        content: 'macOS: "damaged" or blocked on first open'
+      },
+      {
+        type: 'paragraph',
+        content:
+          'Zvia is not distributed through the Mac App Store and is not yet notarized with an Apple Developer ID. macOS may block the app after download and show a message like "Zvia is damaged and can\'t be opened." The app is not actually corrupted — Gatekeeper is rejecting an unsigned download.'
+      },
+      {
+        type: 'list',
+        content: [
+          'Open the .dmg, drag Zvia to Applications, then run: xattr -cr /Applications/Zvia.app',
+          'Alternatively, right-click Zvia in Applications and choose Open (confirm once in the dialog)',
+          'If needed, open System Settings → Privacy & Security and click Open Anyway next to the Zvia prompt'
+        ]
+      },
+      {
+        type: 'subheading',
         content: 'Add a server'
       },
       {

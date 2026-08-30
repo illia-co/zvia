@@ -138,6 +138,16 @@ Zvia is available for **macOS** and **Windows**. Linux builds (AppImage, deb) ar
 
 Download the latest release from **[GitHub Releases](https://github.com/illia-co/zvia/releases)**.
 
+### macOS install note
+
+Zvia is not notarized yet. After downloading the `.dmg`, if macOS says the app is **damaged** or refuses to open it, run:
+
+```bash
+xattr -cr /Applications/Zvia.app
+```
+
+Then open Zvia from Applications (or right-click → **Open** the first time). This removes the download quarantine flag — the app is not actually corrupted.
+
 Zvia does not auto-update yet. To update manually, download a newer release from GitHub and install over your existing copy. Server profiles are preserved on the same machine.
 
 <br />

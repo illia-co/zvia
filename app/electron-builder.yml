@@ -14,7 +14,10 @@ mac:
   target:
     - dmg
   artifactName: zvia-mac.${ext}
-  hardenedRuntime: true
+  # Unsigned open-source builds. hardenedRuntime requires a Developer ID certificate;
+  # enabling it without one produces a broken signature that macOS reports as "damaged".
+  identity: null
+  hardenedRuntime: false
   gatekeeperAssess: false
 win:
   icon: build/icon.png
