@@ -1,9 +1,11 @@
-import { SITE } from '../config'
+import { useDownloadLinks } from '../hooks/useDownloadLinks'
 import { LinkButton } from './Button'
 import { Reveal } from './Reveal'
 import { ScreenshotStack } from './ScreenshotStack'
 
 export function Hero() {
+  const downloads = useDownloadLinks()
+
   return (
     <section className="hero-section border-b border-divider">
       <div className="hero-grid" aria-hidden />
@@ -20,10 +22,10 @@ export function Hero() {
           server-scoped workspace — stats, logs, Docker, Nginx, SSL, and more.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <LinkButton href={SITE.downloadMac} rel="noopener noreferrer">
+          <LinkButton href={downloads.downloadMac} rel="noopener noreferrer">
             Download for macOS
           </LinkButton>
-          <LinkButton href={SITE.downloadWindows} variant="secondary" rel="noopener noreferrer">
+          <LinkButton href={downloads.downloadWindows} variant="secondary" rel="noopener noreferrer">
             Download for Windows
           </LinkButton>
         </div>

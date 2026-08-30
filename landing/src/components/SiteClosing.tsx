@@ -1,4 +1,5 @@
 import { SITE } from '../config'
+import { useDownloadLinks } from '../hooks/useDownloadLinks'
 import { LinkButton } from './Button'
 import { Reveal } from './Reveal'
 
@@ -6,6 +7,7 @@ const footerLinkClass =
   'text-sm text-text-secondary no-underline transition-colors duration-default hover:text-text'
 
 export function SiteClosing() {
+  const downloads = useDownloadLinks()
   const year = new Date().getFullYear()
 
   return (
@@ -24,10 +26,10 @@ export function SiteClosing() {
             </p>
           </div>
           <div className="site-closing-cta-actions">
-            <LinkButton href={SITE.downloadMac} rel="noopener noreferrer">
+            <LinkButton href={downloads.downloadMac} rel="noopener noreferrer">
               Download for macOS
             </LinkButton>
-            <LinkButton href={SITE.downloadWindows} variant="secondary" rel="noopener noreferrer">
+            <LinkButton href={downloads.downloadWindows} variant="secondary" rel="noopener noreferrer">
               Download for Windows
             </LinkButton>
           </div>
@@ -56,13 +58,13 @@ export function SiteClosing() {
             <span className="text-sm text-text-tertiary" aria-hidden>
               ·
             </span>
-            <a href={SITE.downloadMac} className={footerLinkClass} rel="noopener noreferrer">
+            <a href={downloads.downloadMac} className={footerLinkClass} rel="noopener noreferrer">
               macOS
             </a>
             <span className="text-sm text-text-tertiary" aria-hidden>
               ·
             </span>
-            <a href={SITE.downloadWindows} className={footerLinkClass} rel="noopener noreferrer">
+            <a href={downloads.downloadWindows} className={footerLinkClass} rel="noopener noreferrer">
               Windows
             </a>
           </nav>

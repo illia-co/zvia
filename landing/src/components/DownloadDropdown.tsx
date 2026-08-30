@@ -1,10 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { SITE } from '../config'
-
-const DOWNLOAD_OPTIONS = [
-  { id: 'macos', label: 'macOS', href: SITE.downloadMac },
-  { id: 'windows', label: 'Windows', href: SITE.downloadWindows }
-] as const
+import { useDownloadLinks } from '../hooks/useDownloadLinks'
 
 function ChevronIcon() {
   return (
@@ -27,9 +22,15 @@ interface DownloadDropdownProps {
 }
 
 export function DownloadDropdown({ className = '', onSelect }: DownloadDropdownProps) {
+  const downloads = useDownloadLinks()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const menuId = useId()
+
+  const downloadOptions = [
+    { id: 'macos', label: 'macOS', href: downloads.downloadMac },
+    { id: 'windows', label: 'Windows', href: downloads.downloadWindows }
+  ] as const
 
   useEffect(() => {
     if (!open) return
@@ -76,7 +77,7 @@ export function DownloadDropdown({ className = '', onSelect }: DownloadDropdownP
 
       {open && (
         <div id={menuId} className="download-dropdown-menu" role="menu" aria-label="Download Zvia">
-          {DOWNLOAD_OPTIONS.map((option) => (
+          {downloadOptions.map((option) => (
             <a
               key={option.id}
               href={option.href}
