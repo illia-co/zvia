@@ -37,7 +37,7 @@ export const ScrollArea = forwardRef<ComponentRef<typeof ScrollAreaRoot>, Scroll
       ref={ref}
       type={type}
       scrollHideDelay={scrollHideDelay}
-      className={cn('relay-scroll-area', className)}
+      className={cn('zvia-scroll-area', className)}
       {...props}
     >
       <ScrollAreaViewport className={cn('h-full w-full', viewportClassName)}>

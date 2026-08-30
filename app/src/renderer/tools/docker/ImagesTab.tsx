@@ -11,7 +11,7 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 
 interface ImagesTabProps {
   serverId: ServerId
@@ -30,10 +30,10 @@ export function ImagesTab({ serverId, isConnected }: ImagesTabProps) {
     setLoading(true)
     setError(null)
     try {
-      const result = await window.relay.docker.listImages({ serverId })
+      const result = await window.zvia.docker.listImages({ serverId })
       setImages(result)
     } catch (err) {
-      setError(parseRelayError(err).message)
+      setError(parseZviaError(err).message)
     } finally {
       setLoading(false)
     }
@@ -48,7 +48,7 @@ export function ImagesTab({ serverId, isConnected }: ImagesTabProps) {
     setActionLoading(true)
     setError(null)
     try {
-      await window.relay.docker.removeImage({
+      await window.zvia.docker.removeImage({
         serverId,
         imageId: pendingImage.id,
         force: true
@@ -56,7 +56,7 @@ export function ImagesTab({ serverId, isConnected }: ImagesTabProps) {
       setPendingImage(null)
       await loadImages()
     } catch (err) {
-      setError(parseRelayError(err).message)
+      setError(parseZviaError(err).message)
     } finally {
       setActionLoading(false)
     }

@@ -1,12 +1,12 @@
-# Relay — Coding Agent Instructions
+# Zvia — Coding Agent Instructions
 
 ## Repository
 
 This is an npm workspaces monorepo:
 
-- **`app/`** — Electron application (`@relay/app`). All application code lives under `app/src/`.
-- **`landing/`** — Static marketing site (`@relay/landing`). No Electron dependencies; deploys independently.
-- **`shared/`** — Design tokens and brand assets (`@relay/shared`). Not IPC code.
+- **`app/`** — Electron application (`@zvia/app`). All application code lives under `app/src/`.
+- **`landing/`** — Static marketing site (`@zvia/landing`). No Electron dependencies; deploys independently.
+- **`shared/`** — Design tokens and brand assets (`@zvia/shared`). Not IPC code.
 
 The IPC contracts and validators remain in **`app/src/shared/`** — do not confuse with root `shared/`.
 
@@ -31,7 +31,7 @@ User-facing docs: `landing/src/docs/content.ts` → `/documentation` on the land
 
 ## Product
 
-Relay is a native-feeling desktop application for managing remote Linux servers over SSH. macOS is the primary target; Windows and Linux builds are supported.
+Zvia is a native-feeling desktop application for managing remote Linux servers over SSH. macOS is the primary target; Windows and Linux builds are supported.
 
 The product should feel like:
 
@@ -146,7 +146,7 @@ Prefer well-maintained, focused libraries.
 
 The application is fundamentally an SSH client with a rich UI.
 
-The server should NOT require a custom Relay agent for the MVP.
+The server should NOT require a custom Zvia agent for the MVP.
 
 Communication should happen through:
 
@@ -315,13 +315,13 @@ Optimize for:
 5. Excellent workspace
 6. Server-scoped mental model
 
-Relay should feel like a serious Mac application, not a web dashboard wrapped in Electron.
+Zvia should feel like a serious desktop application, not a web dashboard wrapped in Electron.
 
 ---
 
 # Platform Strategy
 
-Relay is **macOS-first** but **cross-platform by design**.
+Zvia is **macOS-first** but **cross-platform by design**.
 
 - Ship and test primarily on macOS.
 - Do not use macOS-only APIs in non-UI code (`app/src/main`, `app/src/shared`, services).

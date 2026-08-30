@@ -16,7 +16,7 @@ Yes. I’d structure this as a small **product specification repository** that y
 I’d create these files:
 
 ```text
-relay/
+zvia/
 ├── AGENTS.md
 ├── PRODUCT.md
 ├── DESIGN.md
@@ -39,11 +39,11 @@ Below is the content for each file.
 # `AGENTS.md`
 
 ```md
-# Relay — Coding Agent Instructions
+# Zvia — Coding Agent Instructions
 
 ## Product
 
-Relay is a native-feeling macOS desktop application for managing remote Linux servers over SSH.
+Zvia is a native-feeling desktop application for managing remote Linux servers over SSH. macOS is the primary target; Windows and Linux builds are supported.
 
 The product should feel like:
 
@@ -160,7 +160,7 @@ Prefer well-maintained, focused libraries.
 
 The application is fundamentally an SSH client with a rich UI.
 
-The server should NOT require a custom Relay agent for the MVP.
+The server should NOT require a custom Zvia agent for the MVP.
 
 Communication should happen through:
 
@@ -329,7 +329,7 @@ Optimize for:
 5. Excellent workspace
 6. Server-scoped mental model
 
-Relay should feel like a serious Mac application, not a web dashboard wrapped in Electron.
+Zvia should feel like a serious desktop application, not a web dashboard wrapped in Electron.
 ```
 
 ---
@@ -337,11 +337,11 @@ Relay should feel like a serious Mac application, not a web dashboard wrapped in
 # `PRODUCT.md`
 
 ```md
-# Relay Product Specification
+# Zvia Product Specification
 
 ## Vision
 
-Relay is a macOS application that provides a beautiful native interface for working with remote Linux servers.
+Zvia is a cross-platform desktop application for managing remote Linux servers over SSH. It provides a native-feeling interface for server administration on macOS, Windows, and Linux.
 
 The goal is to make remote server administration feel as natural as working with a local computer.
 
@@ -736,11 +736,11 @@ Do not implement these in MVP.
 # `DESIGN.md`
 
 ```md
-# Relay Design Language
+# Zvia Design Language
 
 ## Design Goal
 
-Relay should feel like a native macOS utility created by Apple.
+Zvia should feel like a native macOS utility created by Apple.
 
 The design combines:
 
@@ -1110,11 +1110,11 @@ If a component looks like it belongs in a generic SaaS dashboard, redesign it.
 # `ARCHITECTURE.md`
 
 ```md
-# Relay Architecture
+# Zvia Architecture
 
 ## High Level
 
-Relay consists of four major layers:
+Zvia consists of four major layers:
 
     UI
       ↓
@@ -1459,7 +1459,7 @@ The UI should map technical errors to human-readable messages.
 # `FUNCTIONALITY.md`
 
 ```md
-# Relay Functional Requirements
+# Zvia Functional Requirements
 
 ## Server Selection
 
@@ -1741,9 +1741,9 @@ Do not install software automatically.
 # `SECURITY.md`
 
 ```md
-# Relay Security Model
+# Zvia Security Model
 
-Relay is a remote server administration application.
+Zvia is a remote server administration application.
 
 Security is critical.
 
@@ -1895,7 +1895,7 @@ Do not execute untrusted update payloads.
 # `ROADMAP.md`
 
 ```md
-# Relay Roadmap
+# Zvia Roadmap
 
 ## Phase 1 — Foundation
 
@@ -2040,7 +2040,7 @@ Temporary network failures must recover gracefully.
 
 ## UX
 
-The application must feel like a native Mac application.
+The application must feel like a native desktop application.
 
 ---
 

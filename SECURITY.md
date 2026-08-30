@@ -2,20 +2,20 @@
 
 ## Reporting a vulnerability
 
-If you discover a security vulnerability in Relay, please report it responsibly.
+If you discover a security vulnerability in Zvia, please report it responsibly.
 
 **Do not** open a public GitHub issue for security bugs.
 
 Instead:
 
-1. Open a [private security advisory](https://github.com/illia-co/relay/security/advisories/new) on GitHub, or
+1. Open a [private security advisory](https://github.com/illia-co/zvia/security/advisories/new) on GitHub, or
 2. Contact the maintainers through GitHub with minimal details and request a private channel.
 
 We will acknowledge valid reports as quickly as we can and work on a fix before public disclosure when appropriate.
 
 ## Scope
 
-Relay is a desktop SSH client. The primary security boundary is:
+Zvia is a desktop SSH client. The primary security boundary is:
 
 - **Local:** Electron main vs renderer separation, credential storage, IPC validation
 - **Remote:** the SSH account and permissions on the connected Linux server
@@ -26,7 +26,7 @@ The embedded terminal intentionally allows arbitrary remote commands over SSH. T
 
 # Security model (contributors)
 
-Relay is a remote server administration application. Security is critical.
+Zvia is a remote server administration application. Security is critical.
 
 ## SSH credentials
 

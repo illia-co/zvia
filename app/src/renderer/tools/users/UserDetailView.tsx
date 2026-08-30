@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import type { ServerId } from '@shared/server'
 import type { UserDetail } from '@shared/users'
 import { Button } from '@renderer/components/ui/button'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 import { cn } from '@renderer/lib/utils'
 import { useNavigationStore } from '@renderer/state/navigationStore'
 
@@ -63,16 +63,16 @@ export function UserDetailView({
 }: UserDetailViewProps) {
   const openWithIntent = useNavigationStore((state) => state.openWithIntent)
   const [detail, setDetail] = useState<UserDetail | null>(null)
-  const [error, setError] = useState<RelayErrorPayload | null>(null)
+  const [error, setError] = useState<ZviaErrorPayload | null>(null)
   const [loading, setLoading] = useState(false)
 
   const loadDetail = useCallback(async () => {
     setLoading(true)
     try {
-      setDetail(await window.relay.users.get({ serverId, username }))
+      setDetail(await window.zvia.users.get({ serverId, username }))
       setError(null)
     } catch (err) {
-      setError(parseRelayError(err))
+      setError(parseZviaError(err))
     } finally {
       setLoading(false)
     }

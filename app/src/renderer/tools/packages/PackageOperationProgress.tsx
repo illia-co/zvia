@@ -69,7 +69,7 @@ export function PackageOperationProgress({
   }, [stepIds])
 
   useEffect(() => {
-    const unsubStep = window.relay.packages.onOperationStep((event) => {
+    const unsubStep = window.zvia.packages.onOperationStep((event) => {
       if (event.serverId !== serverId || event.streamId !== streamId) return
       setSteps((current) => ({
         ...current,
@@ -77,13 +77,13 @@ export function PackageOperationProgress({
       }))
     })
 
-    const unsubOutput = window.relay.packages.onOperationOutput((event) => {
+    const unsubOutput = window.zvia.packages.onOperationOutput((event) => {
       if (event.serverId !== serverId || event.streamId !== streamId) return
       const text = new TextDecoder().decode(event.bytes)
       setOutput((current) => current + text)
     })
 
-    const unsubDone = window.relay.packages.onOperationDone((event) => {
+    const unsubDone = window.zvia.packages.onOperationDone((event) => {
       if (event.serverId !== serverId || event.streamId !== streamId) return
       setFinished(true)
       setFailed(!event.success)

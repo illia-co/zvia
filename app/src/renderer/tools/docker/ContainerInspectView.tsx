@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { DockerContainer } from '@shared/docker'
 import type { ServerId } from '@shared/server'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 
 interface ContainerInspectViewProps {
   serverId: ServerId
@@ -19,13 +19,13 @@ export function ContainerInspectView({ serverId, container }: ContainerInspectVi
     setLoading(true)
     setError(null)
 
-    void window.relay.docker
+    void window.zvia.docker
       .inspectContainer({ serverId, containerId: container.id })
       .then((data) => {
         if (!cancelled) setInspectData(data)
       })
       .catch((err) => {
-        if (!cancelled) setError(parseRelayError(err).message)
+        if (!cancelled) setError(parseZviaError(err).message)
       })
       .finally(() => {
         if (!cancelled) setLoading(false)

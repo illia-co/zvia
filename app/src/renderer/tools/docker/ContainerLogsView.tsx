@@ -3,7 +3,7 @@ import type { DockerContainer } from '@shared/docker'
 import type { ServerId } from '@shared/server'
 import { Button } from '@renderer/components/ui/button'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 import { cn, generateId } from '@renderer/lib/utils'
 
 interface ContainerLogsViewProps {
@@ -39,19 +39,19 @@ export function ContainerLogsView({ serverId, container }: ContainerLogsViewProp
     setLogs('')
     setError(null)
 
-    const unsubscribeData = window.relay.docker.onLogsData((event) => {
+    const unsubscribeData = window.zvia.docker.onLogsData((event) => {
       if (event.serverId !== serverId || event.streamId !== streamId) return
       appendLogs(new TextDecoder().decode(event.bytes))
     })
 
-    const unsubscribeExit = window.relay.docker.onLogsExit((event) => {
+    const unsubscribeExit = window.zvia.docker.onLogsExit((event) => {
       if (event.serverId !== serverId || event.streamId !== streamId) return
       if (event.exitCode !== 0) {
         setError(`Log stream ended with exit code ${event.exitCode}`)
       }
     })
 
-    void window.relay.docker
+    void window.zvia.docker
       .startLogs({
         serverId,
         streamId,
@@ -60,13 +60,13 @@ export function ContainerLogsView({ serverId, container }: ContainerLogsViewProp
         tail: 200
       })
       .catch((err) => {
-        setError(parseRelayError(err).message)
+        setError(parseZviaError(err).message)
       })
 
     return () => {
       unsubscribeData()
       unsubscribeExit()
-      void window.relay.docker.stopLogs({ serverId, streamId })
+      void window.zvia.docker.stopLogs({ serverId, streamId })
     }
   }, [serverId, container.id, timestamps, appendLogs])
 

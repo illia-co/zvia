@@ -2,7 +2,7 @@ export function TerminalPreview() {
   return (
     <div
       className="overflow-hidden rounded-b-panel bg-[#1a1a1a] p-4 font-mono text-[13px] leading-relaxed text-[#f2f2f2]"
-      aria-label="Example SSH terminal session inside Relay"
+      aria-label="Example SSH terminal session inside Zvia"
     >
       <div>
         <span className="text-[#4a9d5f]">ubuntu@production</span>

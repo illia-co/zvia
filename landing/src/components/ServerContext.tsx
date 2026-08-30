@@ -50,7 +50,7 @@ export function ServerContext() {
             Everything connects.
           </h2>
           <p className="mt-3 max-w-2xl text-text-secondary">
-            Relay tools cross-reference the same server state. Follow a path
+            Zvia tools cross-reference the same server state. Follow a path
             from service to process to logs without leaving the workspace.
           </p>
         </Reveal>

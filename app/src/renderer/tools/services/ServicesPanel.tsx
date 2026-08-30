@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import type { SystemdAction, SystemdUnit } from '@shared/systemd'
 import { getProtectedSystemdUnitActionBlock } from '@shared/systemd'
 import { BackButton } from '@renderer/components/ui/back-button'
@@ -14,7 +14,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { ElevationRequired } from '@renderer/components/errors/ElevationRequired'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { elevationCommand, parseRelayError } from '@renderer/lib/errors'
+import { elevationCommand, parseZviaError } from '@renderer/lib/errors'
 import { cn } from '@renderer/lib/utils'
 import { useRequiredServerContext } from '@renderer/state/ServerContext'
 import { useNavigationStore, useToolIntent } from '@renderer/state/navigationStore'
@@ -75,7 +75,7 @@ export function ServicesPanel() {
     null
   )
   const [actionLoading, setActionLoading] = useState(false)
-  const [actionError, setActionError] = useState<RelayErrorPayload | null>(null)
+  const [actionError, setActionError] = useState<ZviaErrorPayload | null>(null)
   const [detailRefreshToken, setDetailRefreshToken] = useState(0)
 
   const isConnected = connectionState === 'connected'
@@ -116,11 +116,11 @@ export function ServicesPanel() {
     setActionLoading(true)
     setActionError(null)
     try {
-      await window.relay.services.action({ serverId, unit, action })
+      await window.zvia.services.action({ serverId, unit, action })
       setDetailRefreshToken((token) => token + 1)
       await reload()
     } catch (err) {
-      setActionError(parseRelayError(err))
+      setActionError(parseZviaError(err))
     } finally {
       setActionLoading(false)
     }

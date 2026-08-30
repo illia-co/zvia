@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import type { ServerId } from '@shared/server'
 import type { UsersListResponse } from '@shared/users'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 
 const EMPTY_LISTING: UsersListResponse = {
   users: [],
@@ -24,7 +24,7 @@ interface UseUsersResult {
   available: boolean | null
   loaded: boolean
   loading: boolean
-  error: RelayErrorPayload | null
+  error: ZviaErrorPayload | null
   clearError: () => void
   reload: () => Promise<void>
 }
@@ -38,7 +38,7 @@ export function useUsers({
   const [available, setAvailable] = useState<boolean | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<RelayErrorPayload | null>(null)
+  const [error, setError] = useState<ZviaErrorPayload | null>(null)
 
   useEffect(() => {
     setListing(EMPTY_LISTING)
@@ -54,17 +54,17 @@ export function useUsers({
     }
     setLoading(true)
     try {
-      const isAvailable = await window.relay.users.isAvailable({ serverId })
+      const isAvailable = await window.zvia.users.isAvailable({ serverId })
       setAvailable(isAvailable)
       if (!isAvailable) {
         setListing(EMPTY_LISTING)
         setError(null)
         return
       }
-      setListing(await window.relay.users.list({ serverId }))
+      setListing(await window.zvia.users.list({ serverId }))
       setError(null)
     } catch (err) {
-      setError(parseRelayError(err))
+      setError(parseZviaError(err))
     } finally {
       setLoaded(true)
       setLoading(false)

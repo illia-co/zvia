@@ -81,7 +81,7 @@ export function LogsPanel() {
     }
 
     let cancelled = false
-    void window.relay.services.list({ serverId }).then((units) => {
+    void window.zvia.services.list({ serverId }).then((units) => {
       if (cancelled) return
       setServiceUnits(units.map((unit) => unit.unit))
     })

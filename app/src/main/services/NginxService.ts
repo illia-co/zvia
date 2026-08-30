@@ -392,7 +392,7 @@ export class NginxService {
     if (!wrote) {
       // execOnClient has no stdin, so stage the content over SFTP and copy it
       // into place with elevated privileges. cp preserves the destination mode.
-      const tempPath = `/tmp/relay-nginx-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+      const tempPath = `/tmp/zvia-nginx-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
       await sftpCallback<void>('writeFile', (callback) => {
         sftp.writeFile(tempPath, content, 'utf8', callback)
       })

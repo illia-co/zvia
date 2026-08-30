@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      '@relay/shared': resolve(__dirname, '../shared')
+      '@zvia/shared': resolve(__dirname, '../shared')
     }
   },
   appType: 'spa'

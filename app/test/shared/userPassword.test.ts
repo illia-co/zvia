@@ -3,7 +3,7 @@ import { getPasswordPolicyIssues } from '@shared/userPassword'
 
 describe('getPasswordPolicyIssues', () => {
   it('accepts a strong password', () => {
-    expect(getPasswordPolicyIssues('Relay-Admin-42', 'deploy')).toEqual([])
+    expect(getPasswordPolicyIssues('Zvia-Admin-42', 'deploy')).toEqual([])
   })
 
   it('rejects passwords that match or contain the username', () => {

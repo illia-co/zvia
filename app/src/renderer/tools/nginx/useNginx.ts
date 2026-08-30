@@ -37,7 +37,7 @@ export function useNginx({ serverId, isConnected }: UseNginxOptions): UseNginxRe
     if (!isConnected) return
     setLoading(true)
     try {
-      const result = await window.relay.nginx.status({ serverId })
+      const result = await window.zvia.nginx.status({ serverId })
       setStatus(result)
       setError(null)
       setElevation(null)
@@ -60,7 +60,7 @@ export function useNginx({ serverId, isConnected }: UseNginxOptions): UseNginxRe
       setError(null)
       setElevation(null)
       try {
-        await window.relay.nginx.action({ serverId, action })
+        await window.zvia.nginx.action({ serverId, action })
         await refresh()
       } catch (err) {
         const described = describeToolError(err)
@@ -78,7 +78,7 @@ export function useNginx({ serverId, isConnected }: UseNginxOptions): UseNginxRe
     setError(null)
     setElevation(null)
     try {
-      const result = await window.relay.nginx.validate({ serverId })
+      const result = await window.zvia.nginx.validate({ serverId })
       await refresh()
       return result
     } catch (err) {

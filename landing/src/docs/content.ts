@@ -26,7 +26,7 @@ export const DOC_NAV: DocNavGroup[] = [
     items: [
       { id: 'introduction', label: 'Introduction' },
       { id: 'getting-started', label: 'Getting started' },
-      { id: 'updates', label: 'Updating Relay' }
+      { id: 'updates', label: 'Updating Zvia' }
     ]
   },
   {
@@ -70,17 +70,17 @@ export const DOC_SECTIONS: DocSection[] = [
   {
     id: 'introduction',
     eyebrow: 'Documentation',
-    title: 'Relay documentation',
+    title: 'Zvia documentation',
     blocks: [
       {
         type: 'paragraph',
         content:
-          'Relay is a native desktop application for managing remote Linux servers over SSH. It provides a calm, server-scoped workspace for system administration — stats, logs, Docker, Nginx, SSL, systemd, files, and a full terminal — without installing a custom agent on the remote machine.'
+          'Zvia is a native desktop application for managing remote Linux servers over SSH. It provides a calm, server-scoped workspace for system administration — stats, logs, Docker, Nginx, SSL, systemd, files, and a full terminal — without installing a custom agent on the remote machine.'
       },
       {
         type: 'paragraph',
         content:
-          'Everything in Relay is scoped to the server you select. When Production is selected, every tool, panel, and command operates on Production. There are no global fleet views in the current release.'
+          'Everything in Zvia is scoped to the server you select. When Production is selected, every tool, panel, and command operates on Production. There are no global fleet views in the current release.'
       },
       {
         type: 'list',
@@ -99,12 +99,12 @@ export const DOC_SECTIONS: DocSection[] = [
     blocks: [
       {
         type: 'subheading',
-        content: 'Install Relay'
+        content: 'Install Zvia'
       },
       {
         type: 'paragraph',
         content:
-          'Download Relay for macOS or Windows from the landing page. Linux builds are also available as AppImage or deb packages. See Requirements for minimum system specs before installing. For updates after installation, see Updating Relay.'
+          'Download Zvia for macOS or Windows from the landing page. Linux builds are also available as AppImage or deb packages. See Requirements for minimum system specs before installing. For updates after installation, see Updating Zvia.'
       },
       {
         type: 'subheading',
@@ -129,19 +129,19 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Select the server, then connect. Relay shows connection state clearly — disconnected, connecting, connected, reconnecting, or error. Pick a tool from the sidebar or press a keyboard shortcut to open a panel in the workspace.'
+          'Select the server, then connect. Zvia shows connection state clearly — disconnected, connecting, connected, reconnecting, or error. Pick a tool from the sidebar or press a keyboard shortcut to open a panel in the workspace.'
       }
     ]
   },
   {
     id: 'updates',
     eyebrow: 'Start',
-    title: 'Updating Relay',
+    title: 'Updating Zvia',
     blocks: [
       {
         type: 'paragraph',
         content:
-          'Relay does not check for or install updates automatically. When a new version is released, download the latest installer from the Relay website or GitHub Releases and install it over your existing copy.'
+          'Zvia does not check for or install updates automatically. When a new version is released, download the latest installer from the Zvia website or GitHub Releases and install it over your existing copy.'
       },
       {
         type: 'subheading',
@@ -150,8 +150,8 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'list',
         content: [
-          'GitHub Releases — https://github.com/illia-co/relay/releases',
-          'Relay landing page — use the Download button and pick macOS or Windows'
+          'GitHub Releases — https://github.com/illia-co/zvia/releases',
+          'Zvia landing page — use the Download button and pick macOS or Windows'
         ]
       },
       {
@@ -161,7 +161,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'list',
         content: [
-          'macOS — download the new .dmg or .zip, quit Relay, then drag the app into Applications (or replace the existing app)',
+          'macOS — download the new .dmg or .zip, quit Zvia, then drag the app into Applications (or replace the existing app)',
           'Windows — download the new installer (.exe) and run it, or replace the portable build if you use that format',
           'Linux — download the new AppImage or .deb and install it over the previous version'
         ]
@@ -217,7 +217,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'On first connect to a host, Relay prompts you to accept or reject the SSH host key. If a known host key changes, Relay warns you before proceeding — the same trust model as OpenSSH.'
+          'On first connect to a host, Zvia prompts you to accept or reject the SSH host key. If a known host key changes, Zvia warns you before proceeding — the same trust model as OpenSSH.'
       },
       {
         type: 'subheading',
@@ -226,7 +226,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'The remote machine remains a normal Linux server. Relay connects with standard SSH, SFTP, and remote command execution. No Relay agent or custom daemon is required on the VPS.'
+          'The remote machine remains a normal Linux server. Zvia connects with standard SSH, SFTP, and remote command execution. No Zvia agent or custom daemon is required on the VPS.'
       }
     ]
   },
@@ -272,7 +272,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Relay is keyboard-friendly. Shortcuts use ⌘ on macOS and Ctrl on Windows and Linux unless noted otherwise.'
+          'Zvia is keyboard-friendly. Shortcuts use ⌘ on macOS and Ctrl on Windows and Linux unless noted otherwise.'
       },
       {
         type: 'list',
@@ -342,7 +342,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Search, install, update, and remove system packages. Relay detects the package manager on Debian and Ubuntu systems (apt) and surfaces installed packages, available updates, and search results in dedicated tabs.'
+          'Search, install, update, and remove system packages. Zvia detects the package manager on Debian and Ubuntu systems (apt) and surfaces installed packages, available updates, and search results in dedicated tabs.'
       }
     ]
   },
@@ -366,7 +366,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'A full interactive SSH shell embedded in the workspace. Relay allocates a PTY on the remote host so programs like vim, htop, and interactive prompts behave as they would in a native terminal. Terminal sessions are server-scoped and tied to the active SSH connection.'
+          'A full interactive SSH shell embedded in the workspace. Zvia allocates a PTY on the remote host so programs like vim, htop, and interactive prompts behave as they would in a native terminal. Terminal sessions are server-scoped and tied to the active SSH connection.'
       }
     ]
   },
@@ -462,7 +462,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Relay is an Electron application with a clear separation between UI and remote access. The renderer process handles React UI and state; the main process owns SSH connections, credential access, and command execution.'
+          'Zvia is an Electron application with a clear separation between UI and remote access. The renderer process handles React UI and state; the main process owns SSH connections, credential access, and command execution.'
       },
       {
         type: 'subheading',
@@ -472,7 +472,7 @@ export const DOC_SECTIONS: DocSection[] = [
         type: 'list',
         content: [
           'Renderer — React UI, Zustand state, workspace layout',
-          'Preload bridge — typed IPC surface exposed as window.relay',
+          'Preload bridge — typed IPC surface exposed as window.zvia',
           'Main process — connection manager, services, SSH2 client',
           'Remote server — standard SSH, SFTP, PTY, and Linux commands'
         ]
@@ -496,7 +496,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Relay follows Electron security best practices for a desktop SSH client.'
+          'Zvia follows Electron security best practices for a desktop SSH client.'
       },
       {
         type: 'list',
@@ -517,12 +517,12 @@ export const DOC_SECTIONS: DocSection[] = [
     blocks: [
       {
         type: 'subheading',
-        content: 'Install Relay'
+        content: 'Install Zvia'
       },
       {
         type: 'paragraph',
         content:
-          'Relay runs on your desktop. You need a 64-bit computer with enough memory and disk space for a native Electron application, plus network access to reach your servers over SSH.'
+          'Zvia runs on your desktop. You need a 64-bit computer with enough memory and disk space for a native Electron application, plus network access to reach your servers over SSH.'
       },
       {
         type: 'list',
@@ -557,7 +557,7 @@ export const DOC_SECTIONS: DocSection[] = [
           'Any normal Linux VPS or bare-metal host reachable over SSH',
           'Ubuntu and Debian are the primary targets for package management features',
           'Docker, Nginx, Certbot, and systemd features require the respective tools on the remote host',
-          'No Relay agent or inbound ports beyond SSH'
+          'No Zvia agent or inbound ports beyond SSH'
         ]
       }
     ]

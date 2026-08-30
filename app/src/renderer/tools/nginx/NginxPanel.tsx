@@ -73,7 +73,7 @@ export function NginxPanel() {
       setSslOverview(null)
       return
     }
-    void window.relay.ssl.overview({ serverId }).then(setSslOverview).catch(() => setSslOverview(null))
+    void window.zvia.ssl.overview({ serverId }).then(setSslOverview).catch(() => setSslOverview(null))
   }, [isConnected, serverId])
 
   if (!isConnected) {

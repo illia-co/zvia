@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { PROBLEM_COMMANDS, RELAY_TOOL_GROUPS } from '../config'
+import { PROBLEM_COMMANDS, ZVIA_TOOL_GROUPS } from '../config'
 import { Reveal } from './Reveal'
 import { SegmentedControl } from './SegmentedControl'
 
-type ProblemView = 'today' | 'with-relay'
+type ProblemView = 'today' | 'with-zvia'
 
 const VIEW_OPTIONS = [
   { id: 'today' as const, label: 'Today' },
-  { id: 'with-relay' as const, label: 'With Relay' }
+  { id: 'with-zvia' as const, label: 'With Zvia' }
 ]
 
 export function Problem() {
@@ -18,11 +18,11 @@ export function Problem() {
       <div className="mx-auto max-w-6xl px-6">
         <Reveal>
           <h2 className="m-0 text-2xl font-medium text-text md:text-3xl">
-            Server administration is fragmented.
+            Linux server administration is fragmented.
           </h2>
           <p className="mt-3 max-w-2xl text-text-secondary">
             You reach for a dozen commands and tools to understand and operate a
-            single machine.
+            single VPS or bare-metal host.
           </p>
         </Reveal>
 
@@ -50,10 +50,10 @@ export function Problem() {
               </ul>
             </div>
           ) : (
-            <div role="tabpanel" aria-label="With Relay">
-              <div className="relay-groups">
-                {RELAY_TOOL_GROUPS.map((group) => (
-                  <div key={group.label} className="relay-group">
+            <div role="tabpanel" aria-label="With Zvia">
+              <div className="zvia-groups">
+                {ZVIA_TOOL_GROUPS.map((group) => (
+                  <div key={group.label} className="zvia-group">
                     <p className="m-0 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
                       {group.label}
                     </p>

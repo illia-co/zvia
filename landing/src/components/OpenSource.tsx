@@ -28,8 +28,8 @@ export function OpenSource() {
             Built in the open.
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-text-secondary">
-            Relay is open source. Inspect the code, report issues, and contribute
-            on GitHub.
+            Zvia is an open-source SSH server management tool. Inspect the code,
+            report issues, and contribute on GitHub.
           </p>
           <div className="mt-8">
             <LinkButton
@@ -40,7 +40,7 @@ export function OpenSource() {
               rel="noopener noreferrer"
             >
               <GitHubIcon />
-              Relay
+              Zvia
             </LinkButton>
           </div>
         </Reveal>

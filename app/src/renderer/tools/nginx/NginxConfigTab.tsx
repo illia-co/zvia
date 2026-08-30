@@ -35,7 +35,7 @@ export function NginxConfigTab({
   const loadTree = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await window.relay.nginx.configTree({ serverId })
+      const result = await window.zvia.nginx.configTree({ serverId })
       setTree(result)
       setError(null)
     } catch (err) {
@@ -58,7 +58,7 @@ export function NginxConfigTab({
         return
       }
       try {
-        const result = await window.relay.nginx.readConfig({ serverId, path: file.path })
+        const result = await window.zvia.nginx.readConfig({ serverId, path: file.path })
         setOpenFile({ path: result.path, name: file.name, content: result.content, dirty: false })
         setError(null)
       } catch (err) {
@@ -83,7 +83,7 @@ export function NginxConfigTab({
   const save = async (): Promise<void> => {
     if (!openFile) return
     try {
-      await window.relay.nginx.writeConfig({
+      await window.zvia.nginx.writeConfig({
         serverId,
         path: openFile.path,
         content: openFile.content

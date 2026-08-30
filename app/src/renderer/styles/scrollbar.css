@@ -1,7 +1,7 @@
 /*
- * Relay scrollbars — thin, monochrome, macOS-inspired overlay thumbs.
+ * Zvia scrollbars — thin, monochrome, macOS-inspired overlay thumbs.
  * Applied globally to native overflow scrollers; Radix ScrollArea uses
- * the .relay-scroll-area rules below for auto-hiding overlay bars.
+ * the .zvia-scroll-area rules below for auto-hiding overlay bars.
  */
 
 @layer base {
@@ -43,15 +43,15 @@
 }
 
 /* Radix overlay scroll area — hides native bars, renders custom thumbs */
-.relay-scroll-area {
+.zvia-scroll-area {
   overflow: hidden;
 }
 
-.relay-scroll-area [data-radix-scroll-area-viewport] > div {
+.zvia-scroll-area [data-radix-scroll-area-viewport] > div {
   display: block !important;
 }
 
-.relay-scroll-area [data-radix-scroll-area-scrollbar] {
+.zvia-scroll-area [data-radix-scroll-area-scrollbar] {
   display: flex;
   touch-action: none;
   user-select: none;
@@ -59,36 +59,36 @@
   transition: opacity var(--transition-duration-default) ease;
 }
 
-.relay-scroll-area [data-radix-scroll-area-scrollbar][data-orientation='vertical'] {
+.zvia-scroll-area [data-radix-scroll-area-scrollbar][data-orientation='vertical'] {
   width: calc(var(--scrollbar-size) + 2px);
 }
 
-.relay-scroll-area [data-radix-scroll-area-scrollbar][data-orientation='horizontal'] {
+.zvia-scroll-area [data-radix-scroll-area-scrollbar][data-orientation='horizontal'] {
   flex-direction: column;
   height: calc(var(--scrollbar-size) + 2px);
 }
 
-.relay-scroll-area [data-radix-scroll-area-scrollbar][data-state='hidden'] {
+.zvia-scroll-area [data-radix-scroll-area-scrollbar][data-state='hidden'] {
   opacity: 0;
   pointer-events: none;
 }
 
-.relay-scroll-area [data-radix-scroll-area-scrollbar][data-state='visible'] {
+.zvia-scroll-area [data-radix-scroll-area-scrollbar][data-state='visible'] {
   opacity: 1;
 }
 
-.relay-scroll-area [data-radix-scroll-area-thumb] {
+.zvia-scroll-area [data-radix-scroll-area-thumb] {
   flex: 1;
   border-radius: var(--scrollbar-radius);
   background-color: var(--color-scrollbar-thumb);
   transition: background-color var(--transition-duration-default) ease;
 }
 
-.relay-scroll-area [data-radix-scroll-area-scrollbar]:hover [data-radix-scroll-area-thumb],
-.relay-scroll-area [data-radix-scroll-area-thumb]:hover {
+.zvia-scroll-area [data-radix-scroll-area-scrollbar]:hover [data-radix-scroll-area-thumb],
+.zvia-scroll-area [data-radix-scroll-area-thumb]:hover {
   background-color: var(--color-scrollbar-thumb-hover);
 }
 
-.relay-scroll-area [data-radix-scroll-area-thumb]:active {
+.zvia-scroll-area [data-radix-scroll-area-thumb]:active {
   background-color: var(--color-scrollbar-thumb-active);
 }

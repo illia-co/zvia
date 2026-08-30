@@ -63,7 +63,7 @@ export const useTerminalSessionStore = create<TerminalSessionStore>((set, get) =
   },
 
   closeTab(panelId, tabId, serverId) {
-    void window.relay.terminal.close({ serverId, sessionId: tabId })
+    void window.zvia.terminal.close({ serverId, sessionId: tabId })
     disposeTerminalInstance(serverId, tabId)
 
     set((state) => {
@@ -125,7 +125,7 @@ export const useTerminalSessionStore = create<TerminalSessionStore>((set, get) =
     if (!current) return
 
     for (const tab of current.tabs) {
-      void window.relay.terminal.close({ serverId, sessionId: tab.id })
+      void window.zvia.terminal.close({ serverId, sessionId: tab.id })
       disposeTerminalInstance(serverId, tab.id)
     }
 

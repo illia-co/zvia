@@ -10,7 +10,7 @@ import {
   CommandError,
   ConnectionError,
   PrivilegeRequiredError,
-  RelayError,
+  ZviaError,
   ValidationError
 } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
@@ -109,7 +109,7 @@ export class ProcessService {
     const summaries = await this.fetchList(serverId)
     const summary = summaries.find((entry) => entry.pid === validPid)
     if (!summary) {
-      throw new RelayError('NOT_FOUND', `Process ${validPid} is no longer running`)
+      throw new ZviaError('NOT_FOUND', `Process ${validPid} is no longer running`)
     }
 
     const sections = await this.fetchDetailSections(serverId, validPid, summary)
@@ -147,7 +147,7 @@ export class ProcessService {
     const summaries = await this.fetchList(serverId)
     const summary = summaries.find((entry) => entry.pid === validPid)
     if (!summary) {
-      throw new RelayError('NOT_FOUND', `Process ${validPid} is no longer running`)
+      throw new ZviaError('NOT_FOUND', `Process ${validPid} is no longer running`)
     }
 
     const sshPids = new Set(await this.fetchSshPids(serverId))

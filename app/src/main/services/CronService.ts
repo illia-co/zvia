@@ -172,7 +172,7 @@ function periodicJobs(entries: { period: string; path: string }[]): CronJob[] {
 /**
  * `crontab -l` exits non-zero and prints "no crontab for <user>" when the
  * crontab is merely empty. That is an empty crontab, not a read failure — the
- * distinction decides whether Relay offers to edit it at all.
+ * distinction decides whether Zvia offers to edit it at all.
  */
 export function isEmptyCrontabMessage(details: string): boolean {
   return /no crontab for/i.test(details)
@@ -324,7 +324,7 @@ export class CronService {
     content: string
   ): Promise<void> {
     const connection = this.getConnection(serverId)
-    const tempPath = `/tmp/.relay-crontab-${randomUUID()}`
+    const tempPath = `/tmp/.zvia-crontab-${randomUUID()}`
     const command = await this.buildCrontabCommand(serverId, target, tempPath)
     const normalized = content.endsWith('\n') ? content : `${content}\n`
 

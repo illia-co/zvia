@@ -17,7 +17,7 @@ import type {
   FilesWriteRequest,
   RemoteFileEntry
 } from '@shared/files'
-import { CommandError, ConnectionError, PermissionError, RelayError, SFTPError } from '@shared/errors'
+import { CommandError, ConnectionError, PermissionError, ZviaError, SFTPError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
 
 const S_IFMT = 0o170000
@@ -230,7 +230,7 @@ export class FileService {
     const isDirectory = ((stats.mode ?? 0) & S_IFMT) === S_IFDIR
     if (isDirectory) {
       if (!request.recursive) {
-        throw new RelayError('VALIDATION_ERROR', 'Directory delete requires recursive confirmation')
+        throw new ZviaError('VALIDATION_ERROR', 'Directory delete requires recursive confirmation')
       }
       await this.getConnection(request.serverId).exec(
         `rm -rf ${shellQuote(request.path)}`
@@ -265,7 +265,7 @@ export class FileService {
     if (!localPath) {
       const picked = await this.pickUploadPaths()
       if (!picked || picked.length === 0) {
-        throw new RelayError('VALIDATION_ERROR', 'Upload cancelled')
+        throw new ZviaError('VALIDATION_ERROR', 'Upload cancelled')
       }
       localPath = picked[0]
     }
@@ -361,7 +361,7 @@ export class FileService {
     if (!localPath) {
       const picked = await this.pickDownloadPath(name)
       if (!picked) {
-        throw new RelayError('VALIDATION_ERROR', 'Download cancelled')
+        throw new ZviaError('VALIDATION_ERROR', 'Download cancelled')
       }
       localPath = picked
     }

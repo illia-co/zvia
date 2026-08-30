@@ -19,9 +19,9 @@ export function configureScreenshotWindow(window: BrowserWindow): void {
 export async function captureScreenshotIfReady(window: BrowserWindow): Promise<void> {
   if (!isScreenshotMode()) return
 
-  const outputPath = process.env.RELAY_SCREENSHOT_OUTPUT
+  const outputPath = process.env.ZVIA_SCREENSHOT_OUTPUT
   if (!outputPath) {
-    console.error('[Relay] RELAY_SCREENSHOT_OUTPUT is required in screenshot mode')
+    console.error('[Zvia] ZVIA_SCREENSHOT_OUTPUT is required in screenshot mode')
     process.exit(1)
   }
 
@@ -48,5 +48,5 @@ export async function captureScreenshotIfReady(window: BrowserWindow): Promise<v
 
   const image = await window.webContents.capturePage()
   writeFileSync(outputPath, image.toPNG())
-  console.log(`[Relay] Screenshot saved to ${outputPath}`)
+  console.log(`[Zvia] Screenshot saved to ${outputPath}`)
 }

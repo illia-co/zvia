@@ -81,10 +81,10 @@
 
 /* The source mark is a light gradient, which disappears on light surfaces.
    Masking it paints the shape in the surrounding text colour instead. */
-.relay-mark {
+.zvia-mark {
   background-color: currentColor;
-  mask-image: url('@relay/shared/assets/relay-mark.png');
-  -webkit-mask-image: url('@relay/shared/assets/relay-mark.png');
+  mask-image: url('@zvia/shared/assets/zvia-mark.png');
+  -webkit-mask-image: url('@zvia/shared/assets/zvia-mark.png');
   mask-size: contain;
   -webkit-mask-size: contain;
   mask-repeat: no-repeat;

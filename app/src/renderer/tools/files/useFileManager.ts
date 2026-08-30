@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FileTransferProgressEvent, RemoteFileEntry } from '@shared/files'
 import type { ServerId } from '@shared/server'
 import { generateId } from '@renderer/lib/utils'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 import type { SortDirection, SortField } from './fileUtils'
 import { isCriticalSystemPath } from '@shared/remotePaths'
 import {
@@ -63,11 +63,11 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
     setLoading(true)
     setError(null)
     try {
-      const result = await window.relay.files.list({ serverId, path: currentPath })
+      const result = await window.zvia.files.list({ serverId, path: currentPath })
       setEntries(result.entries)
       setSelectedPaths(new Set())
     } catch (err) {
-      setError(parseRelayError(err).message)
+      setError(parseZviaError(err).message)
     } finally {
       setLoading(false)
     }
@@ -88,7 +88,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
   }, [refresh])
 
   useEffect(() => {
-    const unsubProgress = window.relay.files.onTransferProgress((event) => {
+    const unsubProgress = window.zvia.files.onTransferProgress((event) => {
       if (event.serverId !== serverId) return
       setTransfers((current) => {
         const existing = current.find((t) => t.transferId === event.transferId)
@@ -101,7 +101,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
       })
     })
 
-    const unsubComplete = window.relay.files.onTransferComplete((event) => {
+    const unsubComplete = window.zvia.files.onTransferComplete((event) => {
       if (event.serverId !== serverId) return
       setTransfers((current) =>
         current.map((t) =>
@@ -201,10 +201,10 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
         return
       }
       try {
-        const result = await window.relay.files.read({ serverId, path: entry.path })
+        const result = await window.zvia.files.read({ serverId, path: entry.path })
         setEditor({ path: entry.path, name: entry.name, content: result.content, dirty: false })
       } catch (err) {
-        setError(parseRelayError(err).message)
+        setError(parseZviaError(err).message)
       }
     },
     [serverId, navigateTo]
@@ -228,7 +228,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
 
       const filePath = joinRemotePath(target.directory, target.fileName)
       try {
-        const result = await window.relay.files.read({ serverId, path: filePath })
+        const result = await window.zvia.files.read({ serverId, path: filePath })
         setEditor({
           path: filePath,
           name: target.fileName,
@@ -236,7 +236,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
           dirty: false
         })
       } catch (err) {
-        setError(parseRelayError(err).message)
+        setError(parseZviaError(err).message)
       }
     },
     [navigateTo, serverId]
@@ -246,7 +246,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
     async (options?: MutationOptions) => {
       if (!editor) return
       try {
-        await window.relay.files.write({
+        await window.zvia.files.write({
           serverId,
           path: editor.path,
           content: editor.content,
@@ -255,7 +255,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
         setEditor({ ...editor, dirty: false })
         void refresh()
       } catch (err) {
-        setError(parseRelayError(err).message)
+        setError(parseZviaError(err).message)
       }
     },
     [editor, serverId, refresh]
@@ -268,7 +268,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
   const createFolder = useCallback(
     async (name: string) => {
       const path = joinRemotePath(currentPath, name)
-      await window.relay.files.mkdir({ serverId, path })
+      await window.zvia.files.mkdir({ serverId, path })
       void refresh()
     },
     [serverId, currentPath, refresh]
@@ -277,7 +277,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
   const createFile = useCallback(
     async (name: string, options?: MutationOptions) => {
       const path = joinRemotePath(currentPath, name)
-      await window.relay.files.write({
+      await window.zvia.files.write({
         serverId,
         path,
         content: '',
@@ -293,7 +293,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
     async (from: string, toName: string, options?: MutationOptions) => {
       const parent = parentPath(from)
       const to = joinRemotePath(parent, toName)
-      await window.relay.files.rename({
+      await window.zvia.files.rename({
         serverId,
         from,
         to,
@@ -307,7 +307,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
   const deleteEntries = useCallback(
     async (paths: string[], recursive = false, options?: MutationOptions) => {
       for (const path of paths) {
-        await window.relay.files.delete({
+        await window.zvia.files.delete({
           serverId,
           path,
           recursive,
@@ -347,14 +347,14 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
         const name = sourcePath.split('/').pop() ?? sourcePath
         const dest = joinRemotePath(currentPath, name)
         if (clipboard.mode === 'copy') {
-          await window.relay.files.copy({
+          await window.zvia.files.copy({
             serverId,
             from: sourcePath,
             to: dest,
             dangerousPathConfirmed: confirmed
           })
         } else {
-          await window.relay.files.rename({
+          await window.zvia.files.rename({
             serverId,
             from: sourcePath,
             to: dest,
@@ -381,7 +381,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
           binary += String.fromCharCode(bytes[i])
         }
         const data = btoa(binary)
-        await window.relay.files.upload({
+        await window.zvia.files.upload({
           serverId,
           transferId,
           remotePath,
@@ -398,7 +398,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
   const uploadFromDialog = useCallback(async () => {
     const transferId = generateId()
     try {
-      await window.relay.files.upload({ serverId, transferId, remotePath: currentPath })
+      await window.zvia.files.upload({ serverId, transferId, remotePath: currentPath })
     } catch {
       // cancelled dialog
     }
@@ -408,7 +408,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
     async (path: string) => {
       const transferId = generateId()
       try {
-        await window.relay.files.download({ serverId, transferId, remotePath: path })
+        await window.zvia.files.download({ serverId, transferId, remotePath: path })
       } catch {
         // cancelled dialog
       }
@@ -426,7 +426,7 @@ export function useFileManager({ serverId, isConnected, homePath = '/' }: UseFil
   )
 
   const cancelTransfer = useCallback((transferId: string) => {
-    void window.relay.files.cancelTransfer({ transferId })
+    void window.zvia.files.cancelTransfer({ transferId })
     setTransfers((current) =>
       current.map((t) => (t.transferId === transferId ? { ...t, status: 'cancelled' } : t))
     )

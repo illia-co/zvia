@@ -1,10 +1,10 @@
-# Relay Design Language
+# Zvia Design Language
 
 > Shared package documentation. UI implementation rules: [UI.md](./UI.md).
 
 ## Design Goal
 
-Relay should feel like a native macOS utility created by Apple.
+Zvia should feel like a native macOS utility created by Apple.
 
 The design combines:
 

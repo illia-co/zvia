@@ -1,6 +1,6 @@
 # App documentation
 
-Documentation for the Electron desktop application (`@relay/app`).
+Documentation for the Electron desktop application (`@zvia/app`).
 
 ## Core
 
@@ -31,7 +31,7 @@ See [tools/README.md](./tools/README.md) for the full index.
 app/src/
 ├── shared/     IPC contracts, validators, types
 ├── main/       SSH, services, IPC handlers
-├── preload/    window.relay bridge
+├── preload/    window.zvia bridge
 └── renderer/   React UI, stores, tools/
 ```
 

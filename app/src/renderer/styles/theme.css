@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "@relay/shared/design/tokens.css";
+@import "@zvia/shared/design/tokens.css";
 @import "./base.css";
 @import "./forms.css";
 @import "./scrollbar.css";

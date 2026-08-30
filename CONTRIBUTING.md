@@ -1,6 +1,6 @@
-# Contributing to Relay
+# Contributing to Zvia
 
-Thank you for your interest in contributing. Relay is an open-source desktop SSH workspace for Linux servers.
+Thank you for your interest in contributing. Zvia is an open-source desktop SSH workspace for Linux servers.
 
 ## Getting started
 
@@ -36,7 +36,7 @@ See [AGENTS.md](./AGENTS.md) for product rules, architecture constraints, and co
 
 ## Pull requests
 
-- Keep changes focused and server-scoped — Relay does not use global fleet views.
+- Keep changes focused and server-scoped — Zvia does not use global fleet views.
 - Match existing TypeScript, React, and Electron patterns in the codebase.
 - Do not expose SSH credentials or raw keys to the renderer process.
 - Add or update tests when behavior changes.
@@ -45,7 +45,7 @@ See [AGENTS.md](./AGENTS.md) for product rules, architecture constraints, and co
 
 ## Reporting issues
 
-Use [GitHub Issues](https://github.com/illia-co/relay/issues) for bugs and feature requests.
+Use [GitHub Issues](https://github.com/illia-co/zvia/issues) for bugs and feature requests.
 
 For security vulnerabilities, see [SECURITY.md](./SECURITY.md). Do not file public issues for security bugs.
 

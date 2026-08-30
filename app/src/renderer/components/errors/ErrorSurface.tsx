@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import { humanizeError } from '@renderer/lib/errors'
 import { cn } from '@renderer/lib/utils'
 import { Button } from '@renderer/components/ui/button'
 
 interface ErrorSurfaceProps {
-  error: RelayErrorPayload | string
+  error: ZviaErrorPayload | string
   className?: string
   onRetry?: () => void
   onDismiss?: () => void
@@ -20,7 +20,7 @@ export function ErrorSurface({
   secondaryAction
 }: ErrorSurfaceProps) {
   const [showDetails, setShowDetails] = useState(false)
-  const payload: RelayErrorPayload =
+  const payload: ZviaErrorPayload =
     typeof error === 'string' ? { code: 'INTERNAL_ERROR', message: error } : error
   const message = humanizeError(payload)
 

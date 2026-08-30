@@ -164,13 +164,13 @@ export function getCriticalPackageRemoveWarning(packageName: string): string | n
     return 'Removing OpenSSH can disconnect you from this server and prevent future SSH access until it is reinstalled from the console.'
   }
   if (normalized === 'sudo') {
-    return 'Removing sudo removes your ability to run privileged commands non-interactively from Relay tools that depend on elevation.'
+    return 'Removing sudo removes your ability to run privileged commands non-interactively from Zvia tools that depend on elevation.'
   }
   if (normalized.startsWith('systemd') || normalized === 'dbus' || normalized === 'dbus-user-session') {
     return 'Removing core init or D-Bus packages can stop services, break boot, or destabilize the entire system.'
   }
   if (normalized === 'apt' || normalized === 'dpkg') {
-    return 'Removing the package manager can make the server impossible to repair from Relay or apt until restored from the console.'
+    return 'Removing the package manager can make the server impossible to repair from Zvia or apt until restored from the console.'
   }
   if (normalized === 'libc6' || normalized === 'bash' || normalized === 'coreutils' || normalized === 'init') {
     return 'Removing this package can render the system unbootable or unusable.'

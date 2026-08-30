@@ -34,8 +34,8 @@ export function SiteClosing() {
         <footer className="site-closing-footer">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2 text-sm font-medium text-text">
-              <span className="relay-mark size-3.5" aria-hidden />
-              <span>Relay</span>
+              <span className="zvia-mark size-3.5" aria-hidden />
+              <span>Zvia</span>
             </div>
           </div>
 
@@ -66,7 +66,7 @@ export function SiteClosing() {
           </nav>
 
           <p className="m-0 text-sm text-text-tertiary md:text-right">
-            © {year} Relay
+            © {year} Zvia
           </p>
         </footer>
       </div>

@@ -24,7 +24,7 @@ export function CertbotNotInstalled({
     <div className="flex h-full flex-col items-center justify-center p-8 text-center">
       <p className="text-sm font-medium text-text">Certbot not found</p>
       <p className="mt-2 max-w-md text-xs leading-relaxed text-text-secondary">
-        Relay uses Certbot with the nginx plugin to issue and renew Let&apos;s Encrypt certificates.
+        Zvia uses Certbot with the nginx plugin to issue and renew Let&apos;s Encrypt certificates.
         Install it on the server before enabling HTTPS.
       </p>
       {certbot.installHint && (

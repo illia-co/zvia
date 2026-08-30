@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { PackageDetail, PackageOperation } from '@shared/packages'
 import { getCriticalPackageRemoveWarning, normalizePackageDetail } from '@shared/packages'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import { BackButton } from '@renderer/components/ui/back-button'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -16,7 +16,7 @@ import { SegmentedControl } from '@renderer/components/ui/segmented-control'
 import { ElevationRequired } from '@renderer/components/errors/ElevationRequired'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { ServerScopeNotice } from '@renderer/components/ServerScopeNotice'
-import { elevationCommand, parseRelayError } from '@renderer/lib/errors'
+import { elevationCommand, parseZviaError } from '@renderer/lib/errors'
 import { useRequiredServerContext } from '@renderer/state/ServerContext'
 import { useToolIntent } from '@renderer/state/navigationStore'
 import { useWorkspaceStore } from '@renderer/state/workspaceStore'
@@ -63,7 +63,7 @@ export function PackagesPanel() {
   const [operationSteps, setOperationSteps] = useState<
     ReturnType<typeof operationStepsForKind>
   >([])
-  const [actionError, setActionError] = useState<RelayErrorPayload | null>(null)
+  const [actionError, setActionError] = useState<ZviaErrorPayload | null>(null)
 
   const isConnected = connectionState === 'connected'
   const showingDetail = selectedPackage !== null
@@ -103,12 +103,12 @@ export function PackagesPanel() {
     setActionError(null)
     try {
       const detail = normalizePackageDetail(
-        await window.relay.packages.info({ serverId, packageName })
+        await window.zvia.packages.info({ serverId, packageName })
       )
       setInstallDetail(detail)
       setInstallDialogOpen(true)
     } catch (error) {
-      setActionError(parseRelayError(error))
+      setActionError(parseZviaError(error))
     } finally {
       setInstallLoading(false)
     }
@@ -159,10 +159,10 @@ export function PackagesPanel() {
     setInstallDialogOpen(false)
 
     try {
-      await window.relay.packages.operationStart({ serverId, streamId, operation })
+      await window.zvia.packages.operationStart({ serverId, streamId, operation })
     } catch (error) {
       setOperationStreamId(null)
-      setActionError(parseRelayError(error))
+      setActionError(parseZviaError(error))
     }
   }
 
@@ -175,7 +175,7 @@ export function PackagesPanel() {
 
   const cancelOperation = () => {
     if (!operationStreamId) return
-    void window.relay.packages.operationCancel({ serverId, streamId: operationStreamId })
+    void window.zvia.packages.operationCancel({ serverId, streamId: operationStreamId })
   }
 
   if (!isConnected) {

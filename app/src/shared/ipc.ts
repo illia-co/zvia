@@ -846,7 +846,7 @@ export interface SslApi {
   onWorkflowDone(listener: (event: SslWorkflowDoneEvent) => void): () => void
 }
 
-export interface RelayApi {
+export interface ZviaApi {
   platform: NodeJS.Platform
   version: string
 
@@ -883,6 +883,6 @@ export interface RelayApi {
 
 declare global {
   interface Window {
-    relay: RelayApi
+    zvia: ZviaApi
   }
 }

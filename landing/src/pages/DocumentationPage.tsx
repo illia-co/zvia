@@ -3,9 +3,13 @@ import { DocMobileNav } from '../components/docs/DocMobileNav'
 import { DocProse } from '../components/docs/DocProse'
 import { DocSidebar } from '../components/docs/DocSidebar'
 import { Header } from '../components/Header'
+import { DOC_PAGE_META } from '../config'
 import { DOC_SECTIONS } from '../docs/content'
+import { usePageMeta } from '../hooks/usePageMeta'
 
 export function DocumentationPage() {
+  usePageMeta(DOC_PAGE_META.title, DOC_PAGE_META.description)
+
   return (
     <>
       <Header />
@@ -16,6 +20,7 @@ export function DocumentationPage() {
           </aside>
 
           <article className="doc-content">
+            <h1 className="sr-only">Zvia documentation — Linux server management over SSH</h1>
             <DocMobileNav />
             {DOC_SECTIONS.map((section) => (
               <section

@@ -11,7 +11,7 @@ import {
   ContextMenuTrigger
 } from '@renderer/components/ui/context-menu'
 
-const PANEL_DRAG_MIME = 'application/x-relay-panel-id'
+const PANEL_DRAG_MIME = 'application/x-zvia-panel-id'
 
 export function TabStrip() {
   const { serverId } = useServerContext()

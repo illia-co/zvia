@@ -74,7 +74,7 @@ export function EnableHttpsDialog({
         <DialogHeader>
           <DialogTitle>Enable HTTPS</DialogTitle>
           <DialogDescription>
-            Issue a Let&apos;s Encrypt certificate with certbot --nginx. Relay backs up the site
+            Issue a Let&apos;s Encrypt certificate with certbot --nginx. Zvia backs up the site
             configuration first and reloads nginx only after a successful test.
           </DialogDescription>
         </DialogHeader>

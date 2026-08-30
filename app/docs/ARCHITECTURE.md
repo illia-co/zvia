@@ -1,10 +1,10 @@
-# Relay Architecture
+# Zvia Architecture
 
 > App package documentation. See [README.md](./README.md) for the full index.
 
 ## High Level
 
-Relay consists of four major layers:
+Zvia consists of four major layers:
 
     UI
       ↓

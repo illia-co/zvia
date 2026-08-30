@@ -1,4 +1,4 @@
-export type RelayErrorCode =
+export type ZviaErrorCode =
   | 'CONNECTION_ERROR'
   | 'AUTHENTICATION_ERROR'
   | 'PERMISSION_ERROR'
@@ -9,24 +9,24 @@ export type RelayErrorCode =
   | 'NOT_FOUND'
   | 'INTERNAL_ERROR'
 
-export interface RelayErrorPayload {
-  code: RelayErrorCode
+export interface ZviaErrorPayload {
+  code: ZviaErrorCode
   message: string
   details?: string
 }
 
-export class RelayError extends Error {
-  readonly code: RelayErrorCode
+export class ZviaError extends Error {
+  readonly code: ZviaErrorCode
   readonly details?: string
 
-  constructor(code: RelayErrorCode, message: string, details?: string) {
+  constructor(code: ZviaErrorCode, message: string, details?: string) {
     super(message)
-    this.name = 'RelayError'
+    this.name = 'ZviaError'
     this.code = code
     this.details = details
   }
 
-  toPayload(): RelayErrorPayload {
+  toPayload(): ZviaErrorPayload {
     return {
       code: this.code,
       message: this.message,
@@ -35,28 +35,28 @@ export class RelayError extends Error {
   }
 }
 
-export class ConnectionError extends RelayError {
+export class ConnectionError extends ZviaError {
   constructor(message: string, details?: string) {
     super('CONNECTION_ERROR', message, details)
     this.name = 'ConnectionError'
   }
 }
 
-export class AuthenticationError extends RelayError {
+export class AuthenticationError extends ZviaError {
   constructor(message: string, details?: string) {
     super('AUTHENTICATION_ERROR', message, details)
     this.name = 'AuthenticationError'
   }
 }
 
-export class PermissionError extends RelayError {
+export class PermissionError extends ZviaError {
   constructor(message: string, details?: string) {
     super('PERMISSION_ERROR', message, details)
     this.name = 'PermissionError'
   }
 }
 
-export class PrivilegeRequiredError extends RelayError {
+export class PrivilegeRequiredError extends ZviaError {
   readonly command: string
 
   constructor(message: string, command: string) {
@@ -66,41 +66,41 @@ export class PrivilegeRequiredError extends RelayError {
   }
 }
 
-export class SFTPError extends RelayError {
+export class SFTPError extends ZviaError {
   constructor(message: string, details?: string) {
     super('SFTP_ERROR', message, details)
     this.name = 'SFTPError'
   }
 }
 
-export class CommandError extends RelayError {
+export class CommandError extends ZviaError {
   constructor(message: string, details?: string) {
     super('COMMAND_ERROR', message, details)
     this.name = 'CommandError'
   }
 }
 
-export class DockerUnavailableError extends RelayError {
+export class DockerUnavailableError extends ZviaError {
   constructor(message: string, details?: string) {
     super('DOCKER_UNAVAILABLE_ERROR', message, details)
     this.name = 'DockerUnavailableError'
   }
 }
 
-export class ValidationError extends RelayError {
+export class ValidationError extends ZviaError {
   constructor(message: string, details?: string) {
     super('VALIDATION_ERROR', message, details)
     this.name = 'ValidationError'
   }
 }
 
-export function isRelayErrorPayload(value: unknown): value is RelayErrorPayload {
+export function isZviaErrorPayload(value: unknown): value is ZviaErrorPayload {
   if (!value || typeof value !== 'object') return false
   const record = value as Record<string, unknown>
   return typeof record.code === 'string' && typeof record.message === 'string'
 }
 
-export function serializeError(error: unknown): RelayErrorPayload {
+export function serializeError(error: unknown): ZviaErrorPayload {
   if (error instanceof PrivilegeRequiredError) {
     return {
       code: error.code,
@@ -108,7 +108,7 @@ export function serializeError(error: unknown): RelayErrorPayload {
       details: error.command
     }
   }
-  if (error instanceof RelayError) {
+  if (error instanceof ZviaError) {
     return error.toPayload()
   }
   if (error instanceof Error) {
@@ -123,33 +123,33 @@ export function serializeError(error: unknown): RelayErrorPayload {
   }
 }
 
-export const RELAY_IPC_ERROR_PREFIX = 'RELAY_IPC_ERROR:'
+export const ZVIA_IPC_ERROR_PREFIX = 'ZVIA_IPC_ERROR:'
 
-export function extractRelayIpcPayload(message: string): RelayErrorPayload | null {
-  const relayIndex = message.indexOf(RELAY_IPC_ERROR_PREFIX)
-  if (relayIndex === -1) return null
+export function extractZviaIpcPayload(message: string): ZviaErrorPayload | null {
+  const zviaIndex = message.indexOf(ZVIA_IPC_ERROR_PREFIX)
+  if (zviaIndex === -1) return null
 
   try {
     const parsed = JSON.parse(
-      message.slice(relayIndex + RELAY_IPC_ERROR_PREFIX.length)
+      message.slice(zviaIndex + ZVIA_IPC_ERROR_PREFIX.length)
     ) as unknown
-    return isRelayErrorPayload(parsed) ? parsed : null
+    return isZviaErrorPayload(parsed) ? parsed : null
   } catch {
     return null
   }
 }
 
-export function formatIpcError(payload: RelayErrorPayload): Error {
-  return new Error(`${RELAY_IPC_ERROR_PREFIX}${JSON.stringify(payload)}`)
+export function formatIpcError(payload: ZviaErrorPayload): Error {
+  return new Error(`${ZVIA_IPC_ERROR_PREFIX}${JSON.stringify(payload)}`)
 }
 
-export function parseIpcError(error: unknown): RelayErrorPayload {
-  if (isRelayErrorPayload(error)) {
+export function parseIpcError(error: unknown): ZviaErrorPayload {
+  if (isZviaErrorPayload(error)) {
     return error
   }
 
   if (error instanceof Error) {
-    const embedded = extractRelayIpcPayload(error.message)
+    const embedded = extractZviaIpcPayload(error.message)
     if (embedded) return embedded
 
     return {
@@ -159,7 +159,7 @@ export function parseIpcError(error: unknown): RelayErrorPayload {
   }
 
   if (typeof error === 'string') {
-    const embedded = extractRelayIpcPayload(error)
+    const embedded = extractZviaIpcPayload(error)
     if (embedded) return embedded
     return { code: 'INTERNAL_ERROR', message: error }
   }

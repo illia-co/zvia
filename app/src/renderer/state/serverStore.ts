@@ -1,22 +1,22 @@
 import { create } from 'zustand'
 import type { ConnectionTestRequest, ProfileCreateRequest, ProfileUpdateRequest } from '@shared/ipc'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import type {
   ConnectionState,
   HostKeyPrompt,
   ServerId,
   ServerProfile
 } from '@shared/server'
-import { humanizeError, parseRelayError } from '@renderer/lib/errors'
+import { humanizeError, parseZviaError } from '@renderer/lib/errors'
 
 interface ServerStoreState {
   profiles: ServerProfile[]
   selectedServerId: ServerId | null
   connectionStates: Record<ServerId, ConnectionState>
-  connectionErrors: Record<ServerId, RelayErrorPayload | undefined>
+  connectionErrors: Record<ServerId, ZviaErrorPayload | undefined>
   hostKeyPrompt: HostKeyPrompt | null
   isLoadingProfiles: boolean
-  actionError: RelayErrorPayload | null
+  actionError: ZviaErrorPayload | null
 
   loadProfiles: () => Promise<void>
   selectServer: (serverId: ServerId) => void
@@ -60,11 +60,11 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
   async loadProfiles() {
     set({ isLoadingProfiles: true, actionError: null })
     try {
-      const profiles = await window.relay.invoke('profiles:list')
+      const profiles = await window.zvia.invoke('profiles:list')
       const states: Record<ServerId, ConnectionState> = {}
       await Promise.all(
         profiles.map(async (profile) => {
-          states[profile.id] = await window.relay.invoke('connection:getState', {
+          states[profile.id] = await window.zvia.invoke('connection:getState', {
             serverId: profile.id
           })
         })
@@ -79,7 +79,7 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
         isLoadingProfiles: false
       }))
     } catch (error) {
-      set({ isLoadingProfiles: false, actionError: parseRelayError(error) })
+      set({ isLoadingProfiles: false, actionError: parseZviaError(error) })
     }
   },
 
@@ -94,9 +94,9 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
       actionError: null
     }))
     try {
-      await window.relay.invoke('connection:connect', { serverId })
+      await window.zvia.invoke('connection:connect', { serverId })
     } catch (error) {
-      const parsed = parseRelayError(error)
+      const parsed = parseZviaError(error)
       set((state) => ({
         connectionStates: { ...state.connectionStates, [serverId]: 'error' },
         connectionErrors: { ...state.connectionErrors, [serverId]: parsed },
@@ -107,16 +107,16 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
 
   async disconnect(serverId) {
     try {
-      await window.relay.invoke('connection:disconnect', { serverId })
+      await window.zvia.invoke('connection:disconnect', { serverId })
     } catch (error) {
-      set({ actionError: parseRelayError(error) })
+      set({ actionError: parseZviaError(error) })
     }
   },
 
   async createProfile(request) {
     set({ actionError: null })
     try {
-      const profile = await window.relay.invoke('profiles:create', request)
+      const profile = await window.zvia.invoke('profiles:create', request)
       set((state) => ({
         profiles: [...state.profiles, profile],
         connectionStates: { ...state.connectionStates, [profile.id]: 'disconnected' },
@@ -124,7 +124,7 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
       }))
       return profile
     } catch (error) {
-      const parsed = parseRelayError(error)
+      const parsed = parseZviaError(error)
       set({ actionError: parsed })
       throw parsed
     }
@@ -141,26 +141,26 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
       await get().disconnect(request.id)
     }
     try {
-      const profile = await window.relay.invoke('profiles:update', request)
+      const profile = await window.zvia.invoke('profiles:update', request)
       set((state) => ({
         profiles: state.profiles.map((item) => (item.id === profile.id ? profile : item))
       }))
       return profile
     } catch (error) {
-      const parsed = parseRelayError(error)
+      const parsed = parseZviaError(error)
       set({ actionError: parsed })
       throw parsed
     }
   },
 
   async testConnection(request) {
-    await window.relay.invoke('connection:test', request)
+    await window.zvia.invoke('connection:test', request)
   },
 
   async removeProfile(serverId) {
     set({ actionError: null })
     try {
-      await window.relay.invoke('profiles:remove', { id: serverId })
+      await window.zvia.invoke('profiles:remove', { id: serverId })
       set((state) => {
         const profiles = state.profiles.filter((p) => p.id !== serverId)
         const { [serverId]: _removedState, ...connectionStates } = state.connectionStates
@@ -174,7 +174,7 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
         }
       })
     } catch (error) {
-      set({ actionError: parseRelayError(error) })
+      set({ actionError: parseZviaError(error) })
     }
   },
 
@@ -183,13 +183,13 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
     if (!prompt) return
     set({ actionError: null })
     try {
-      await window.relay.invoke('connection:hostKeyResponse', {
+      await window.zvia.invoke('connection:hostKeyResponse', {
         serverId: prompt.serverId,
         decision
       })
       set({ hostKeyPrompt: null })
     } catch (error) {
-      set({ actionError: parseRelayError(error) })
+      set({ actionError: parseZviaError(error) })
     }
   },
 
@@ -200,7 +200,7 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
   initialize() {
     void get().loadProfiles()
 
-    const unsubscribeState = window.relay.on('connection:stateChanged', (event) => {
+    const unsubscribeState = window.zvia.on('connection:stateChanged', (event) => {
       set((state) => ({
         connectionStates: { ...state.connectionStates, [event.serverId]: event.state },
         connectionErrors: event.error
@@ -219,7 +219,7 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
       }))
     })
 
-    const unsubscribeHostKey = window.relay.on('connection:hostKeyPrompt', (prompt) => {
+    const unsubscribeHostKey = window.zvia.on('connection:hostKeyPrompt', (prompt) => {
       set({ hostKeyPrompt: prompt })
     })
 

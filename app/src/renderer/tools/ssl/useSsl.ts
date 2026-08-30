@@ -40,7 +40,7 @@ export function useSsl({ serverId, isConnected, paused = false }: UseSslOptions)
     if (!isConnected || paused) return
     setLoading(true)
     try {
-      const result = await window.relay.ssl.overview({ serverId })
+      const result = await window.zvia.ssl.overview({ serverId })
       setOverview(result)
       setError(null)
       setElevation(null)
@@ -80,24 +80,24 @@ export function useSsl({ serverId, isConnected, paused = false }: UseSslOptions)
 
   const renew = useCallback(
     async (certName: string) => {
-      await runAction(() => window.relay.ssl.renew({ serverId, certName }))
+      await runAction(() => window.zvia.ssl.renew({ serverId, certName }))
     },
     [runAction, serverId]
   )
 
   const testRenewal = useCallback(
     async (certName: string) => {
-      return runAction(() => window.relay.ssl.testRenewal({ serverId, certName }))
+      return runAction(() => window.zvia.ssl.testRenewal({ serverId, certName }))
     },
     [runAction, serverId]
   )
 
   const enableAutoRenewal = useCallback(async () => {
-    await runAction(() => window.relay.ssl.enableAutoRenewal({ serverId }))
+    await runAction(() => window.zvia.ssl.enableAutoRenewal({ serverId }))
   }, [runAction, serverId])
 
   const installCertbot = useCallback(async () => {
-    await runAction(() => window.relay.ssl.installCertbot({ serverId }))
+    await runAction(() => window.zvia.ssl.installCertbot({ serverId }))
   }, [runAction, serverId])
 
   const clearError = useCallback(() => {

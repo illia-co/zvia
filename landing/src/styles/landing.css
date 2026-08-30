@@ -1,4 +1,4 @@
-@import "@relay/shared/design/tokens.css";
+@import "@zvia/shared/design/tokens.css";
 @import "tailwindcss";
 
 @layer base {
@@ -45,10 +45,10 @@
   }
 }
 
-.relay-mark {
+.zvia-mark {
   background-color: currentColor;
-  mask-image: url('@relay/shared/assets/relay-mark.png');
-  -webkit-mask-image: url('@relay/shared/assets/relay-mark.png');
+  mask-image: url('@zvia/shared/assets/zvia-mark.png');
+  -webkit-mask-image: url('@zvia/shared/assets/zvia-mark.png');
   mask-size: contain;
   -webkit-mask-size: contain;
   mask-repeat: no-repeat;
@@ -494,24 +494,24 @@
   }
 }
 
-.relay-groups {
+.zvia-groups {
   display: grid;
   gap: 1rem;
 }
 
 @media (min-width: 640px) {
-  .relay-groups {
+  .zvia-groups {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (min-width: 1024px) {
-  .relay-groups {
+  .zvia-groups {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
-.relay-group {
+.zvia-group {
   padding: 1rem;
   border: 1px solid var(--color-divider);
   border-radius: var(--radius-panel);

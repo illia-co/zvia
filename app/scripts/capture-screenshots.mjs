@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Capture real Relay UI screenshots for the landing page.
+ * Capture real Zvia UI screenshots for the landing page.
  * Launches the built Electron app in screenshot mode with demo data stubs.
  */
 import { spawn } from 'node:child_process'
@@ -40,9 +40,9 @@ async function runCapture(name, tool) {
       env: {
         ...process.env,
         ELECTRON_RUN_AS_NODE: undefined,
-        RELAY_SCREENSHOT: '1',
-        RELAY_SCREENSHOT_TOOL: tool,
-        RELAY_SCREENSHOT_OUTPUT: outputPath
+        ZVIA_SCREENSHOT: '1',
+        ZVIA_SCREENSHOT_TOOL: tool,
+        ZVIA_SCREENSHOT_OUTPUT: outputPath
       },
       stdio: 'inherit'
     })

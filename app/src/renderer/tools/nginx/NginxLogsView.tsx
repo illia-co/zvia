@@ -46,7 +46,7 @@ export function NginxLogsView({ serverId }: NginxLogsViewProps) {
 
     void (async () => {
       try {
-        const result = await window.relay.nginx.logPaths({ serverId })
+        const result = await window.zvia.nginx.logPaths({ serverId })
         if (cancelled) return
         setPaths(result)
         setSelectedPath(result.errorLogs[0] ?? result.accessLogs[0] ?? null)
@@ -70,19 +70,19 @@ export function NginxLogsView({ serverId }: NginxLogsViewProps) {
     const streamId = streamIdRef.current
     setLogs('')
 
-    const unsubscribeData = window.relay.nginx.onLogsData((event) => {
+    const unsubscribeData = window.zvia.nginx.onLogsData((event) => {
       if (event.serverId !== serverId || event.streamId !== streamId) return
       appendLogs(new TextDecoder().decode(event.bytes))
     })
 
-    const unsubscribeExit = window.relay.nginx.onLogsExit((event) => {
+    const unsubscribeExit = window.zvia.nginx.onLogsExit((event) => {
       if (event.serverId !== serverId || event.streamId !== streamId) return
       if (event.exitCode !== 0) {
         setError(`Log stream ended with exit code ${event.exitCode}`)
       }
     })
 
-    void window.relay.nginx
+    void window.zvia.nginx
       .startLogs({ serverId, streamId, path: selectedPath })
       .catch((err) => {
         const described = describeToolError(err)
@@ -93,7 +93,7 @@ export function NginxLogsView({ serverId }: NginxLogsViewProps) {
     return () => {
       unsubscribeData()
       unsubscribeExit()
-      void window.relay.nginx.stopLogs({ serverId, streamId })
+      void window.zvia.nginx.stopLogs({ serverId, streamId })
     }
   }, [appendLogs, selectedPath, serverId])
 

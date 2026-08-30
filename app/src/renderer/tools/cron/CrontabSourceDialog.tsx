@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { CronTarget } from '@shared/cron'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import type { ServerId } from '@shared/server'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -12,13 +12,13 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 import { cn } from '@renderer/lib/utils'
 
 interface CrontabSourceDialogProps {
   open: boolean
   serverId: ServerId
-  /** Crontabs Relay can read on this server, in the order they are offered. */
+  /** Crontabs Zvia can read on this server, in the order they are offered. */
   targets: CronTarget[]
   onClose: () => void
 }
@@ -37,7 +37,7 @@ export function CrontabSourceDialog({
 }: CrontabSourceDialogProps) {
   const [target, setTarget] = useState<CronTarget>(targets[0] ?? 'user')
   const [content, setContent] = useState<string | null>(null)
-  const [error, setError] = useState<RelayErrorPayload | null>(null)
+  const [error, setError] = useState<ZviaErrorPayload | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -48,10 +48,10 @@ export function CrontabSourceDialog({
     setContent(null)
     setError(null)
     try {
-      const source = await window.relay.cron.getSource({ serverId, target })
+      const source = await window.zvia.cron.getSource({ serverId, target })
       setContent(source.content)
     } catch (err) {
-      setError(parseRelayError(err))
+      setError(parseZviaError(err))
     }
   }, [serverId, target])
 

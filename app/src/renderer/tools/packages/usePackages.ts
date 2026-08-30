@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import type {
   InstalledPackage,
   PackageDetail,
@@ -10,7 +10,7 @@ import type {
 } from '@shared/packages'
 import { normalizePackageDetail } from '@shared/packages'
 import type { ServerId } from '@shared/server'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 
 const SEARCH_DEBOUNCE_MS = 300
 const LIST_CHUNK_SIZE = 500
@@ -24,7 +24,7 @@ async function fetchAllInstalled(
   let total = 0
 
   while (true) {
-    const page = await window.relay.packages.list({
+    const page = await window.zvia.packages.list({
       serverId,
       query,
       offset,
@@ -63,7 +63,7 @@ interface UsePackagesResult {
   updatesLoading: boolean
   searchLoading: boolean
   detailLoading: boolean
-  error: RelayErrorPayload | null
+  error: ZviaErrorPayload | null
   setInstalledQuery: (query: string) => void
   setSearchQuery: (query: string) => void
   loadDetail: (packageName: string) => Promise<void>
@@ -97,7 +97,7 @@ export function usePackages({
   const [updatesLoading, setUpdatesLoading] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
-  const [error, setError] = useState<RelayErrorPayload | null>(null)
+  const [error, setError] = useState<ZviaErrorPayload | null>(null)
 
   const debouncedInstalledQueryRef = useRef(debouncedInstalledQuery)
   const debouncedSearchQueryRef = useRef(debouncedSearchQuery)
@@ -128,11 +128,11 @@ export function usePackages({
   const reloadOverview = useCallback(async () => {
     if (!isConnected || available === false) return
     try {
-      const next = await window.relay.packages.overview({ serverId })
+      const next = await window.zvia.packages.overview({ serverId })
       setOverview(next)
       setError(null)
     } catch (err) {
-      setError(parseRelayError(err))
+      setError(parseZviaError(err))
     }
   }, [available, isConnected, serverId])
 
@@ -145,7 +145,7 @@ export function usePackages({
       setInstalled(next)
       setError(null)
     } catch (err) {
-      setError(parseRelayError(err))
+      setError(parseZviaError(err))
     } finally {
       setInstalledLoading(false)
     }
@@ -155,11 +155,11 @@ export function usePackages({
     if (!isConnected || available === false) return
     setUpdatesLoading(true)
     try {
-      const next = await window.relay.packages.updates({ serverId })
+      const next = await window.zvia.packages.updates({ serverId })
       setUpdates(next)
       setError(null)
     } catch (err) {
-      setError(parseRelayError(err))
+      setError(parseZviaError(err))
     } finally {
       setUpdatesLoading(false)
     }
@@ -174,11 +174,11 @@ export function usePackages({
     }
     setSearchLoading(true)
     try {
-      const next = await window.relay.packages.search({ serverId, query })
+      const next = await window.zvia.packages.search({ serverId, query })
       setSearchResults(next)
       setError(null)
     } catch (err) {
-      setError(parseRelayError(err))
+      setError(parseZviaError(err))
     } finally {
       setSearchLoading(false)
     }
@@ -192,7 +192,7 @@ export function usePackages({
 
     setLoading(true)
     try {
-      const availability = await window.relay.packages.isAvailable({ serverId })
+      const availability = await window.zvia.packages.isAvailable({ serverId })
       setAvailable(availability.available)
       setUnavailableReason(availability.reason ?? null)
       if (!availability.available) {
@@ -206,16 +206,16 @@ export function usePackages({
 
       const query = debouncedInstalledQueryRef.current.trim()
       const [nextOverview, nextInstalled, nextUpdates] = await Promise.all([
-        window.relay.packages.overview({ serverId }),
+        window.zvia.packages.overview({ serverId }),
         fetchAllInstalled(serverId, query || undefined),
-        window.relay.packages.updates({ serverId })
+        window.zvia.packages.updates({ serverId })
       ])
       setOverview(nextOverview)
       setInstalled(nextInstalled)
       setUpdates(nextUpdates)
       setError(null)
     } catch (err) {
-      setError(parseRelayError(err))
+      setError(parseZviaError(err))
     } finally {
       setLoading(false)
     }
@@ -273,12 +273,12 @@ export function usePackages({
       setDetailLoading(true)
       try {
         const next = normalizePackageDetail(
-          await window.relay.packages.info({ serverId, packageName })
+          await window.zvia.packages.info({ serverId, packageName })
         )
         setDetail(next)
         setError(null)
       } catch (err) {
-        setError(parseRelayError(err))
+        setError(parseZviaError(err))
       } finally {
         setDetailLoading(false)
       }

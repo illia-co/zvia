@@ -213,7 +213,7 @@ describe('groupsForUser', () => {
 })
 
 describe('buildDiscoveryCommand', () => {
-  it('includes all relay markers', () => {
+  it('includes all zvia markers', () => {
     const command = buildDiscoveryCommand()
     expect(command).toContain('---RELAY:PASSWD---')
     expect(command).toContain('getent passwd')

@@ -54,7 +54,7 @@ export function PortDetailView({
       setSslCert(null)
       return
     }
-    void window.relay.ssl
+    void window.zvia.ssl
       .overview({ serverId })
       .then((overview) => {
         const match = overview.certificates.find((cert) =>
@@ -126,14 +126,14 @@ export function PortDetailView({
 
       {firewallUnavailableReason ? (
         <div className="mb-5 rounded-panel bg-bg-secondary p-3">
-          <p className="text-xs text-text">This port cannot be opened or closed from Relay</p>
+          <p className="text-xs text-text">This port cannot be opened or closed from Zvia</p>
           <p className="mt-1 text-xs leading-relaxed text-text-secondary">
             {firewallUnavailableReason}
           </p>
         </div>
       ) : isSshPort ? (
         <p className="mb-5 rounded-panel bg-bg-secondary p-3 text-xs leading-relaxed text-text-secondary">
-          This is the SSH port for this connection. Relay refuses firewall changes here to avoid
+          This is the SSH port for this connection. Zvia refuses firewall changes here to avoid
           locking you out — make them from the Terminal, where you can verify access first.
         </p>
       ) : null}
@@ -146,7 +146,7 @@ export function PortDetailView({
           <p className="text-xs text-text-secondary">
             {snapshot.firewall.backend === 'none'
               ? 'There is no firewall on this server, so nothing filters this port.'
-              : 'Relay could not read the ruleset, so matching rules are unknown.'}
+              : 'Zvia could not read the ruleset, so matching rules are unknown.'}
           </p>
         ) : matchingRules.length === 0 ? (
           <p className="text-xs text-text-secondary">

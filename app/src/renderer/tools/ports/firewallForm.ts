@@ -13,7 +13,7 @@ export type FirewallPortFormResult =
 export const PORT_RANGE_ERROR = 'Enter a port number between 1 and 65535.'
 
 export function sshLockoutMessage(sshPort: number): string {
-  return `Port ${sshPort} is the SSH port for this connection. Relay refuses firewall changes there to avoid locking you out — make them from the Terminal, where you can verify access first.`
+  return `Port ${sshPort} is the SSH port for this connection. Zvia refuses firewall changes there to avoid locking you out — make them from the Terminal, where you can verify access first.`
 }
 
 /**

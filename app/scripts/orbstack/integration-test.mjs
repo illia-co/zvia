@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 /**
- * Integration test harness — connects to the OrbStack VM via SSH (same path as Relay)
+ * Integration test harness — connects to the OrbStack VM via SSH (same path as Zvia)
  * and validates every remote command category the app depends on.
  *
  * Usage:
  *   node scripts/orbstack/integration-test.mjs
- *   RELAY_SSH_HOST=orb node scripts/orbstack/integration-test.mjs
+ *   ZVIA_SSH_HOST=orb node scripts/orbstack/integration-test.mjs
  */
 import { Client } from 'ssh2'
 import { homedir } from 'node:os'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-const SSH_HOST = process.env.RELAY_SSH_HOST ?? '127.0.0.1'
-const SSH_PORT = Number(process.env.RELAY_SSH_PORT ?? 32222)
-const SSH_USER = process.env.RELAY_SSH_USER ?? 'default'
-const SSH_KEY = process.env.RELAY_SSH_KEY ?? join(homedir(), '.orbstack/ssh/id_ed25519')
+const SSH_HOST = process.env.ZVIA_SSH_HOST ?? '127.0.0.1'
+const SSH_PORT = Number(process.env.ZVIA_SSH_PORT ?? 32222)
+const SSH_USER = process.env.ZVIA_SSH_USER ?? 'default'
+const SSH_KEY = process.env.ZVIA_SSH_KEY ?? join(homedir(), '.orbstack/ssh/id_ed25519')
 const TIMEOUT_MS = 30_000
 
 const results = []
@@ -165,8 +165,8 @@ async function testSystemd(conn) {
   const logs = await exec(conn, 'journalctl -u nginx.service -n 10 --no-pager')
   record('systemd', 'unit logs', logs.exitCode === 0)
 
-  const timer = await exec(conn, 'systemctl show relay-heartbeat.timer --property=ActiveState,NextElapseUSecRealtime --no-pager')
-  record('systemd', 'relay-heartbeat.timer', timer.exitCode === 0 && timer.stdout.includes('ActiveState=active'))
+  const timer = await exec(conn, 'systemctl show zvia-heartbeat.timer --property=ActiveState,NextElapseUSecRealtime --no-pager')
+  record('systemd', 'zvia-heartbeat.timer', timer.exitCode === 0 && timer.stdout.includes('ActiveState=active'))
 }
 
 async function testCron(conn) {
@@ -187,8 +187,8 @@ async function testCron(conn) {
   ].join('\n')
   const r = await exec(conn, cmd)
   record('cron', 'crontab available', r.stdout.includes('yes'))
-  record('cron', 'user crontab', r.stdout.includes('relay-user-cron') || r.stdout.includes('relay-test'))
-  record('cron', '/etc/cron.d', r.stdout.includes('relay-cron-d') || r.stdout.includes('/etc/cron.d/relay-test'))
+  record('cron', 'user crontab', r.stdout.includes('zvia-user-cron') || r.stdout.includes('zvia-test'))
+  record('cron', '/etc/cron.d', r.stdout.includes('zvia-cron-d') || r.stdout.includes('/etc/cron.d/zvia-test'))
   record('cron', 'periodic scripts', r.stdout.includes('hourly') || r.stdout.includes('daily'))
 }
 
@@ -223,7 +223,7 @@ async function testSSL(conn) {
   const certs = await exec(conn, 'sudo -n certbot certificates 2>&1')
   record('ssl', 'certbot certificates', certs.exitCode === 0)
 
-  const openssl = await exec(conn, 'openssl x509 -noout -subject -issuer -dates -in /etc/ssl/relay-test/fullchain.pem 2>&1')
+  const openssl = await exec(conn, 'openssl x509 -noout -subject -issuer -dates -in /etc/ssl/zvia-test/fullchain.pem 2>&1')
   record('ssl', 'openssl x509 inspect', openssl.exitCode === 0 && openssl.stdout.includes('subject='))
 
   const timers = await exec(conn, 'systemctl list-timers --all --no-pager 2>/dev/null; systemctl show certbot.timer --property=NextElapseUSecRealtime --no-pager 2>/dev/null')
@@ -243,7 +243,7 @@ async function testDocker(conn) {
   record('docker', 'docker info', true)
 
   const ps = await exec(conn, "docker ps --format '{{json .}}'")
-  record('docker', 'docker ps', ps.exitCode === 0 && ps.stdout.includes('relay-web'))
+  record('docker', 'docker ps', ps.exitCode === 0 && ps.stdout.includes('zvia-web'))
 
   const images = await exec(conn, "docker images --format '{{json .}}'")
   record('docker', 'docker images', images.exitCode === 0 && images.stdout.includes('nginx'))
@@ -364,7 +364,7 @@ async function testFiles(conn) {
 }
 
 async function main() {
-  console.log(`Relay OrbStack Integration Test`)
+  console.log(`Zvia OrbStack Integration Test`)
   console.log(`SSH: ${SSH_USER}@${SSH_HOST}:${SSH_PORT} (key: ${SSH_KEY})`)
 
   let conn

@@ -43,7 +43,7 @@ export function isSystemdAction(value: unknown): value is SystemdAction {
 const PROTECTED_SYSTEMD_ACTIONS = new Set<SystemdAction>(['stop', 'disable'])
 
 /**
- * Unit name patterns that must not be stopped or disabled from Relay — doing so
+ * Unit name patterns that must not be stopped or disabled from Zvia — doing so
  * can lock you out or break core system services. Restart/reload remain available.
  */
 const PROTECTED_SYSTEMD_UNIT_PATTERNS = [

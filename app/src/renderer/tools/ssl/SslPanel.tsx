@@ -68,13 +68,13 @@ export function SslPanel() {
 
   useEffect(() => {
     if (!isConnected) return
-    void window.relay.ssl.nginxSites({ serverId }).then(setSites).catch(() => setSites([]))
+    void window.zvia.ssl.nginxSites({ serverId }).then(setSites).catch(() => setSites([]))
   }, [isConnected, serverId, ssl.overview])
 
   const loadSites = useCallback(async () => {
     if (!isConnected) return
     try {
-      setSites(await window.relay.ssl.nginxSites({ serverId }))
+      setSites(await window.zvia.ssl.nginxSites({ serverId }))
     } catch {
       setSites([])
     }
@@ -86,7 +86,7 @@ export function SslPanel() {
       setEnableDialogOpen(false)
       setWorkflowStreamId(streamId)
       try {
-        await window.relay.ssl.enableHttpsStart({
+        await window.zvia.ssl.enableHttpsStart({
           serverId,
           streamId,
           ...values
@@ -101,7 +101,7 @@ export function SslPanel() {
 
   const cancelWorkflow = useCallback(() => {
     if (!workflowStreamId) return
-    void window.relay.ssl.enableHttpsCancel({ serverId, streamId: workflowStreamId })
+    void window.zvia.ssl.enableHttpsCancel({ serverId, streamId: workflowStreamId })
     setWorkflowStreamId(null)
     void ssl.refresh()
   }, [serverId, ssl, workflowStreamId])

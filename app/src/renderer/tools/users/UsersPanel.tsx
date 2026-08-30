@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import type { UserDetail, UserSummary } from '@shared/users'
 import { BackButton } from '@renderer/components/ui/back-button'
 import { Button } from '@renderer/components/ui/button'
 import { ElevationRequired } from '@renderer/components/errors/ElevationRequired'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { elevationCommand, parseRelayError } from '@renderer/lib/errors'
+import { elevationCommand, parseZviaError } from '@renderer/lib/errors'
 import { cn } from '@renderer/lib/utils'
 import { useRequiredServerContext } from '@renderer/state/ServerContext'
 import { useToolIntent } from '@renderer/state/navigationStore'
@@ -49,7 +49,7 @@ export function UsersPanel() {
   const [detailUser, setDetailUser] = useState<UserDetail | null>(null)
   const [pendingAction, setPendingAction] = useState<UserDetailAction | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [actionError, setActionError] = useState<RelayErrorPayload | null>(null)
+  const [actionError, setActionError] = useState<ZviaErrorPayload | null>(null)
   const [detailRefreshToken, setDetailRefreshToken] = useState(0)
 
   const isConnected = connectionState === 'connected'
@@ -75,7 +75,7 @@ export function UsersPanel() {
       setDetailUser(null)
       return
     }
-    void window.relay.users
+    void window.zvia.users
       .get({ serverId, username: selectedUsername })
       .then(setDetailUser)
       .catch(() => setDetailUser(null))
@@ -102,17 +102,17 @@ export function UsersPanel() {
     return [connectedUser, ...filtered.filter((_, index) => index !== connectedIndex)]
   }, [filter, listing.connectedUsername, listing.users, search])
 
-  const runAction = async (action: Parameters<typeof window.relay.users.action>[0]['action']) => {
+  const runAction = async (action: Parameters<typeof window.zvia.users.action>[0]['action']) => {
     setSubmitting(true)
     setActionError(null)
     try {
-      await window.relay.users.action({ serverId, action })
+      await window.zvia.users.action({ serverId, action })
       setPendingAction(null)
       setCreateOpen(false)
       setDetailRefreshToken((token) => token + 1)
       await reload()
     } catch (err) {
-      const parsed = parseRelayError(err)
+      const parsed = parseZviaError(err)
       setActionError(parsed)
       const partialCreate =
         parsed.code === 'COMMAND_ERROR' && parsed.message.includes('was created, but')
@@ -162,7 +162,7 @@ export function UsersPanel() {
         <div className="max-w-sm">
           <p className="text-sm text-text">User management unavailable</p>
           <p className="mt-2 text-xs text-text-secondary">
-            getent is not available on this server, so Relay cannot enumerate local users.
+            getent is not available on this server, so Zvia cannot enumerate local users.
           </p>
           <Button
             size="sm"
@@ -323,7 +323,7 @@ export function UsersPanel() {
             setActionError(null)
             try {
               if (addGroups.length > 0) {
-                await window.relay.users.action({
+                await window.zvia.users.action({
                   serverId,
                   action: {
                     type: 'addGroups',
@@ -333,7 +333,7 @@ export function UsersPanel() {
                 })
               }
               if (removeGroups.length > 0) {
-                await window.relay.users.action({
+                await window.zvia.users.action({
                   serverId,
                   action: {
                     type: 'removeGroups',
@@ -346,7 +346,7 @@ export function UsersPanel() {
               setDetailRefreshToken((token) => token + 1)
               await reload()
             } catch (err) {
-              setActionError(parseRelayError(err))
+              setActionError(parseZviaError(err))
             } finally {
               setSubmitting(false)
             }

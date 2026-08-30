@@ -742,7 +742,7 @@ export class SSLService {
 
       this.emitStep(serverId, streamId, 'config-backed-up', 'running')
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-      backupPath = `${options.configPath}.relay-backup-${timestamp}`
+      backupPath = `${options.configPath}.zvia-backup-${timestamp}`
       const backupCommand = await this.elevate(
         serverId,
         `cp -a -- ${shellQuote(options.configPath)} ${shellQuote(backupPath)}`

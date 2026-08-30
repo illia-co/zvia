@@ -1,5 +1,5 @@
-appId: com.relay.app
-productName: Relay
+appId: com.zvia.app
+productName: Zvia
 electronVersion: "44.0.0"
 directories:
   buildResources: build

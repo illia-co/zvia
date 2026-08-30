@@ -33,10 +33,10 @@ export const SCREENSHOT_PROFILE: ServerProfile = {
 const DEMO_CONTAINERS: DockerContainer[] = [
   {
     id: 'a1b2c3d4',
-    name: 'relay-api',
+    name: 'zvia-api',
     status: 'Up 3 days',
     state: 'running',
-    image: 'relay/api:latest',
+    image: 'zvia/api:latest',
     ports: '0.0.0.0:8080->8080/tcp',
     uptime: '3 days',
     cpuPercent: '2.4%',
@@ -387,10 +387,10 @@ const DEMO_PROCESS_DETAIL: ProcessDetail = {
   cmdline: 'node /app/dist/server.js',
   exe: '/usr/bin/node',
   cwd: '/app',
-  cgroupUnit: 'relay-api.service',
+  cgroupUnit: 'zvia-api.service',
   containerId: 'a1b2c3d4',
-  containerName: 'relay-api',
-  unit: 'relay-api.service',
+  containerName: 'zvia-api',
+  unit: 'zvia-api.service',
   unitActiveState: 'active',
   listeningPorts: [{ protocol: 'tcp', address: '0.0.0.0', port: 8080 }],
   protected: false
@@ -486,7 +486,7 @@ const DEMO_LOG_ENTRIES: LogEntry[] = [
     id: 'log-4',
     timestamp: Date.now() - 30_000,
     priority: 4,
-    unit: 'relay-api.service',
+    unit: 'zvia-api.service',
     message: 'Listening on port 8080',
     hostname: 'production.example.com'
   },
@@ -593,7 +593,7 @@ const DEMO_PORTS: PortsSnapshot = {
       exposure: 'bound-all',
       unit: null,
       containerId: 'a1b2c3d4',
-      containerName: 'relay-api',
+      containerName: 'zvia-api',
       firewall: 'allowed'
     }
   ],
@@ -653,9 +653,9 @@ const DEMO_CRON: CronListResponse = {
     },
     {
       id: 'user-2',
-      raw: '*/15 * * * * /opt/relay/healthcheck.sh',
+      raw: '*/15 * * * * /opt/zvia/healthcheck.sh',
       schedule: '*/15 * * * *',
-      command: '/opt/relay/healthcheck.sh',
+      command: '/opt/zvia/healthcheck.sh',
       user: 'ubuntu',
       source: 'user-crontab',
       sourcePath: 'crontab',
@@ -841,11 +841,11 @@ const SCREENSHOT_STUBS: Partial<Record<IpcChannel, ScreenshotStub>> = {
 }
 
 export function isScreenshotMode(): boolean {
-  return process.env.RELAY_SCREENSHOT === '1'
+  return process.env.ZVIA_SCREENSHOT === '1'
 }
 
 export function getScreenshotTool(): string {
-  return process.env.RELAY_SCREENSHOT_TOOL ?? 'docker'
+  return process.env.ZVIA_SCREENSHOT_TOOL ?? 'docker'
 }
 
 export function getScreenshotStub(channel: IpcChannel): ScreenshotStub | undefined {

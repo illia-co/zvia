@@ -56,11 +56,11 @@ export function useLogs({ serverId, connectionState, initialQuery }: UseLogsOpti
     setPaused(false)
     setQueryState(nextQuery)
     setLoadGeneration(0)
-    void window.relay.logs.stop({ serverId })
+    void window.zvia.logs.stop({ serverId })
   }, [serverId])
 
   useEffect(() => {
-    const unsubscribeEntries = window.relay.logs.onEntries((event) => {
+    const unsubscribeEntries = window.zvia.logs.onEntries((event) => {
       if (event.serverId !== serverId) return
 
       setEntries((current) => {
@@ -73,7 +73,7 @@ export function useLogs({ serverId, connectionState, initialQuery }: UseLogsOpti
       })
     })
 
-    const unsubscribeStatus = window.relay.logs.onStatus((event) => {
+    const unsubscribeStatus = window.zvia.logs.onStatus((event) => {
       if (event.serverId !== serverId) return
       setStatus(event.status)
       setStatusMessage(event.message)
@@ -87,16 +87,16 @@ export function useLogs({ serverId, connectionState, initialQuery }: UseLogsOpti
 
   useEffect(() => {
     if (!isConnected) {
-      void window.relay.logs.stop({ serverId })
+      void window.zvia.logs.stop({ serverId })
       return
     }
 
-    void window.relay.logs.start({ serverId, query: queryRef.current }).catch(() => {
+    void window.zvia.logs.start({ serverId, query: queryRef.current }).catch(() => {
       setStatus('error')
     })
 
     return () => {
-      void window.relay.logs.stop({ serverId })
+      void window.zvia.logs.stop({ serverId })
     }
   }, [isConnected, serverId])
 
@@ -113,7 +113,7 @@ export function useLogs({ serverId, connectionState, initialQuery }: UseLogsOpti
         setPaused(false)
       }
       if (!isConnected) return
-      void window.relay.logs.setFilters({ serverId, query: normalized })
+      void window.zvia.logs.setFilters({ serverId, query: normalized })
     },
     [isConnected, serverId]
   )
@@ -133,7 +133,7 @@ export function useLogs({ serverId, connectionState, initialQuery }: UseLogsOpti
   const refresh = useCallback(() => {
     if (!isConnected) return
     setLoadGeneration((current) => current + 1)
-    void window.relay.logs.setFilters({ serverId, query: queryRef.current })
+    void window.zvia.logs.setFilters({ serverId, query: queryRef.current })
   }, [isConnected, serverId])
 
   const jumpToLatest = useCallback(() => {

@@ -1,4 +1,4 @@
-# Relay Functional Requirements
+# Zvia Functional Requirements
 
 > App package documentation. See [tools/](./tools/) for per-tool specifications.
 

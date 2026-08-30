@@ -1,7 +1,7 @@
 import type { BrowserWindow } from 'electron'
 import type { ServerProfile, ConnectionState } from '@shared/server'
 import type { ConnectionTestRequest, ExecResult } from '@shared/ipc'
-import { ConnectionError, RelayError } from '@shared/errors'
+import { ConnectionError, ZviaError } from '@shared/errors'
 import { ServerConnection } from './ServerConnection'
 import { runTestConnection } from './testConnection'
 import { profileStore } from '../store/profiles'
@@ -128,7 +128,7 @@ export class ConnectionManager {
 
     const connection = this.connections.get(serverId)
     if (!connection) {
-      throw new RelayError('NOT_FOUND', `No active connection for server: ${serverId}`)
+      throw new ZviaError('NOT_FOUND', `No active connection for server: ${serverId}`)
     }
     connection.respondToHostKey(decision)
   }
@@ -136,7 +136,7 @@ export class ConnectionManager {
   async exec(serverId: string, command: string, timeoutMs?: number): Promise<ExecResult> {
     const connection = this.connections.get(serverId)
     if (!connection) {
-      throw new RelayError('CONNECTION_ERROR', `Server is not connected: ${serverId}`)
+      throw new ZviaError('CONNECTION_ERROR', `Server is not connected: ${serverId}`)
     }
     return connection.exec(command, timeoutMs)
   }

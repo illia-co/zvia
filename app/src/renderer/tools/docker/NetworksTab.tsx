@@ -3,7 +3,7 @@ import type { DockerNetwork } from '@shared/docker'
 import type { ServerId } from '@shared/server'
 import { Button } from '@renderer/components/ui/button'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 
 interface NetworksTabProps {
   serverId: ServerId
@@ -20,10 +20,10 @@ export function NetworksTab({ serverId, isConnected }: NetworksTabProps) {
     setLoading(true)
     setError(null)
     try {
-      const result = await window.relay.docker.listNetworks({ serverId })
+      const result = await window.zvia.docker.listNetworks({ serverId })
       setNetworks(result)
     } catch (err) {
-      setError(parseRelayError(err).message)
+      setError(parseZviaError(err).message)
     } finally {
       setLoading(false)
     }

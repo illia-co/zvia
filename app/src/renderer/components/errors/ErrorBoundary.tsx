@@ -17,7 +17,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error('[Relay] Uncaught render error:', error, info.componentStack)
+    console.error('[Zvia] Uncaught render error:', error, info.componentStack)
   }
 
   handleReload = (): void => {

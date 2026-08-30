@@ -99,25 +99,25 @@ function createWindow(): BrowserWindow {
   const webContents = mainWindow.webContents
 
   webContents.on('render-process-gone', (_event, details) => {
-    console.error('[Relay] Renderer process gone:', details)
+    console.error('[Zvia] Renderer process gone:', details)
     if (isDev) {
       webContents.openDevTools({ mode: 'detach' })
     }
   })
 
   webContents.on('unresponsive', () => {
-    console.error('[Relay] Renderer became unresponsive')
+    console.error('[Zvia] Renderer became unresponsive')
     if (isDev) {
       webContents.openDevTools({ mode: 'detach' })
     }
   })
 
   webContents.on('responsive', () => {
-    console.log('[Relay] Renderer became responsive again')
+    console.log('[Zvia] Renderer became responsive again')
   })
 
   webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
-    console.error('[Relay] Failed to load:', { errorCode, errorDescription, validatedURL })
+    console.error('[Zvia] Failed to load:', { errorCode, errorDescription, validatedURL })
   })
 
   if (isDev && process.env.ELECTRON_RENDERER_URL) {

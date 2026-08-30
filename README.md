@@ -1,20 +1,20 @@
 <p align="center">
-  <img src="shared/assets/relay-mark.png" width="72" height="72" alt="Relay" />
+  <img src="shared/assets/zvia-mark.png" width="72" height="72" alt="Zvia" />
 </p>
 
-<h1 align="center">Relay</h1>
+<h1 align="center">Zvia</h1>
 
 <p align="center">
-  A native workspace for your Linux servers.
-</p>
-
-<p align="center">
-  Connect over SSH and manage everything from one calm, server-scoped desktop app — stats, logs, Docker, Nginx, SSL, systemd, files, and a full terminal.
+  A native SSH workspace for your Linux servers.
 </p>
 
 <p align="center">
-  <a href="https://github.com/illia-co/relay/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/illia-co/relay/ci.yml?branch=main&label=CI" alt="CI" /></a>
-  <a href="https://github.com/illia-co/relay/blob/main/LICENSE"><img src="https://img.shields.io/github/license/illia-co/relay?label=license" alt="License" /></a>
+  Connect over SSH and manage VPS and bare-metal servers from one calm, server-scoped desktop app — stats, logs, Docker, Nginx, SSL, systemd, files, and a full terminal.
+</p>
+
+<p align="center">
+  <a href="https://github.com/illia-co/zvia/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/illia-co/zvia/ci.yml?branch=main&label=CI" alt="CI" /></a>
+  <a href="https://github.com/illia-co/zvia/blob/main/LICENSE"><img src="https://img.shields.io/github/license/illia-co/zvia?label=license" alt="License" /></a>
   <img src="https://img.shields.io/badge/Electron-44-47848F?logo=electron&logoColor=white" alt="Electron" />
   <img src="https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React" />
@@ -27,28 +27,28 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/illia-co/relay/releases"><strong>Download</strong></a>
+  <a href="https://github.com/illia-co/zvia/releases"><strong>Download</strong></a>
   ·
   <a href="./docs/README.md">Documentation</a>
   ·
-  <a href="https://github.com/illia-co/relay/issues">Issues</a>
+  <a href="https://github.com/illia-co/zvia/issues">Issues</a>
   ·
-  <a href="https://github.com/illia-co/relay/blob/main/CONTRIBUTING.md">Contributing</a>
+  <a href="https://github.com/illia-co/zvia/blob/main/CONTRIBUTING.md">Contributing</a>
 </p>
 
 <br />
 
 <p align="center">
-  <img src="landing/src/assets/screenshots/overview.png" width="880" alt="Relay overview panel showing server identity, connection status, and system metrics" />
+  <img src="landing/src/assets/screenshots/overview.png" width="880" alt="Zvia overview panel showing server identity, connection status, and system metrics" />
 </p>
 
 <br />
 
-## Why Relay
+## Why Zvia
 
 Most server work still means juggling a terminal, SFTP client, Docker CLI, `journalctl`, and a dozen tabs — with no clear sense of **which server** you're on.
 
-Relay replaces that sprawl with one native desktop workspace:
+Zvia replaces that sprawl with one native desktop workspace:
 
 | | |
 |---|---|
@@ -99,7 +99,7 @@ Select server  →  Select tool  →  Work in the workspace
 ```
 
 1. **Add a server** — hostname, user, port, SSH key or agent.
-2. **Connect** — Relay shows connection state clearly and verifies host keys.
+2. **Connect** — Zvia shows connection state clearly and verifies host keys.
 3. **Pick a tool** — Overview, Terminal, Docker, or any panel from the sidebar.
 4. **Work** — split panels, stream logs, edit files, run commands — without leaving server context.
 
@@ -134,11 +134,11 @@ Select server  →  Select tool  →  Work in the workspace
 
 ## Download
 
-Relay is available for **macOS** and **Windows**. Linux builds (AppImage, deb) are also produced by electron-builder.
+Zvia is available for **macOS** and **Windows**. Linux builds (AppImage, deb) are also produced by electron-builder.
 
-Download the latest release from **[GitHub Releases](https://github.com/illia-co/relay/releases)**.
+Download the latest release from **[GitHub Releases](https://github.com/illia-co/zvia/releases)**.
 
-Relay does not auto-update yet. To update manually, download a newer release from GitHub and install over your existing copy. Server profiles are preserved on the same machine.
+Zvia does not auto-update yet. To update manually, download a newer release from GitHub and install over your existing copy. Server profiles are preserved on the same machine.
 
 <br />
 
@@ -147,8 +147,8 @@ Relay does not auto-update yet. To update manually, download a newer release fro
 **Requirements:** Node.js 20+, npm 10+
 
 ```bash
-git clone https://github.com/illia-co/relay.git
-cd relay
+git clone https://github.com/illia-co/zvia.git
+cd zvia
 npm install
 npm run dev          # Electron app
 npm run dev:landing  # Marketing site
@@ -164,9 +164,9 @@ npm run build:landing
 Package for distribution:
 
 ```bash
-npm run dist:mac -w @relay/app
-npm run dist:win -w @relay/app
-npm run dist:linux -w @relay/app
+npm run dist:mac -w @zvia/app
+npm run dist:win -w @zvia/app
+npm run dist:linux -w @zvia/app
 ```
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for pull request guidelines, [AGENTS.md](./AGENTS.md) for product rules, and [docs/README.md](./docs/README.md) for the full documentation index.
@@ -178,9 +178,9 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for pull request guidelines, [AGENTS.md
 
 ```
 /
-├── app/          # Electron application (@relay/app)
+├── app/          # Electron application (@zvia/app)
 │   └── docs/     # Architecture, tools, roadmap
-├── landing/      # Marketing site (@relay/landing)
+├── landing/      # Marketing site (@zvia/landing)
 │   └── docs/     # Product vision
 ├── shared/       # Design tokens and brand assets
 │   └── docs/     # Design language and UI rules
@@ -196,7 +196,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for pull request guidelines, [AGENTS.md
 <br />
 
 ```
-Renderer (React) → Preload (window.relay) → Main (IPC) → SSH → Remote server
+Renderer (React) → Preload (window.zvia) → Main (IPC) → SSH → Remote server
 ```
 
 - Every IPC request requires a `serverId`
@@ -224,7 +224,7 @@ Renderer (React) → Preload (window.relay) → Main (IPC) → SSH → Remote se
 
 ## Security
 
-Relay is an SSH client with a rich UI. Private keys stay in the main process; the renderer never receives raw key material.
+Zvia is an SSH client with a rich UI. Private keys stay in the main process; the renderer never receives raw key material.
 
 Report vulnerabilities responsibly — see [SECURITY.md](./SECURITY.md).
 
@@ -232,4 +232,4 @@ Report vulnerabilities responsibly — see [SECURITY.md](./SECURITY.md).
 
 ## License
 
-[MIT](./LICENSE) © 2026 Relay contributors
+[MIT](./LICENSE) © 2026 Zvia contributors

@@ -1,4 +1,4 @@
-# Relay documentation index
+# Zvia documentation index
 
 Agent and contributor documentation is organized by workspace package.
 

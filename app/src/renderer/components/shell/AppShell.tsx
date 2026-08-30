@@ -32,12 +32,12 @@ export function AppShell() {
   const [editServerId, setEditServerId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (window.relay.screenshot) {
-      return window.relay.screenshot.onConfigure(({ tool }) => {
+    if (window.zvia.screenshot) {
+      return window.zvia.screenshot.onConfigure(({ tool }) => {
         setupScreenshotDemo(tool as ToolId)
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            window.relay.screenshot?.ready()
+            window.zvia.screenshot?.ready()
           })
         })
       })

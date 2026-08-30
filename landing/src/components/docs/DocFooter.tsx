@@ -9,8 +9,8 @@ export function DocFooter() {
   return (
     <footer className="doc-footer">
       <div className="flex items-center gap-2 text-sm font-medium text-text">
-        <span className="relay-mark size-3.5" aria-hidden />
-        <span>Relay</span>
+        <span className="zvia-mark size-3.5" aria-hidden />
+        <span>Zvia</span>
       </div>
 
       <nav className="flex flex-wrap items-center gap-3" aria-label="Footer">
@@ -36,7 +36,7 @@ export function DocFooter() {
         </a>
       </nav>
 
-      <p className="m-0 text-sm text-text-tertiary">© {year} Relay</p>
+      <p className="m-0 text-sm text-text-tertiary">© {year} Zvia</p>
     </footer>
   )
 }

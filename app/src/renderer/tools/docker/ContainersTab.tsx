@@ -13,7 +13,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { useNavigationStore } from '@renderer/state/navigationStore'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 import { cn } from '@renderer/lib/utils'
 import { ContainerInspectView } from './ContainerInspectView'
 import { ContainerLogsView } from './ContainerLogsView'
@@ -56,10 +56,10 @@ export function ContainersTab({ serverId, isConnected }: ContainersTabProps) {
     setLoading(true)
     setError(null)
     try {
-      const result = await window.relay.docker.listContainers({ serverId, all: showAll })
+      const result = await window.zvia.docker.listContainers({ serverId, all: showAll })
       setContainers(result)
     } catch (err) {
-      setError(parseRelayError(err).message)
+      setError(parseZviaError(err).message)
     } finally {
       setLoading(false)
     }
@@ -98,12 +98,12 @@ export function ContainersTab({ serverId, isConnected }: ContainersTabProps) {
     setError(null)
     try {
       const request = { serverId, containerId: container.id }
-      if (action === 'start') await window.relay.docker.startContainer(request)
-      if (action === 'stop') await window.relay.docker.stopContainer(request)
-      if (action === 'restart') await window.relay.docker.restartContainer(request)
+      if (action === 'start') await window.zvia.docker.startContainer(request)
+      if (action === 'stop') await window.zvia.docker.stopContainer(request)
+      if (action === 'restart') await window.zvia.docker.restartContainer(request)
       await loadContainers()
     } catch (err) {
-      setError(parseRelayError(err).message)
+      setError(parseZviaError(err).message)
     } finally {
       setActionLoading(false)
     }
@@ -114,7 +114,7 @@ export function ContainersTab({ serverId, isConnected }: ContainersTabProps) {
     setActionLoading(true)
     setError(null)
     try {
-      await window.relay.docker.removeContainer({
+      await window.zvia.docker.removeContainer({
         serverId,
         containerId: pendingAction.container.id,
         force: true
@@ -126,7 +126,7 @@ export function ContainersTab({ serverId, isConnected }: ContainersTabProps) {
       }
       await loadContainers()
     } catch (err) {
-      setError(parseRelayError(err).message)
+      setError(parseZviaError(err).message)
     } finally {
       setActionLoading(false)
     }

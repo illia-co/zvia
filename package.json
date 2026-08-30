@@ -1,5 +1,5 @@
 {
-  "name": "relay",
+  "name": "zvia",
   "version": "0.1.0",
   "private": true,
   "workspaces": [
@@ -8,11 +8,11 @@
     "shared"
   ],
   "scripts": {
-    "dev": "npm run dev -w @relay/app",
-    "build": "npm run build -w @relay/app",
-    "typecheck": "npm run typecheck -w @relay/app",
-    "test": "npm run test -w @relay/app",
-    "dev:landing": "npm run dev -w @relay/landing",
-    "build:landing": "npm run build -w @relay/landing"
+    "dev": "npm run dev -w @zvia/app",
+    "build": "npm run build -w @zvia/app",
+    "typecheck": "npm run typecheck -w @zvia/app",
+    "test": "npm run test -w @zvia/app",
+    "dev:landing": "npm run dev -w @zvia/landing",
+    "build:landing": "npm run build -w @zvia/landing"
   }
 }

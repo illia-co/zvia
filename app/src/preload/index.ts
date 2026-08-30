@@ -17,7 +17,7 @@ import type {
   SslWorkflowOutputEvent,
   SslWorkflowStepEventPayload,
   LogsApi,
-  RelayApi,
+  ZviaApi,
   StatsApi,
   ServicesApi,
   CronApi,
@@ -642,7 +642,7 @@ const sslApi: SslApi = {
   }
 }
 
-const relayApi: RelayApi = {
+const zviaApi: ZviaApi = {
   platform: process.platform,
   version: appPackage.version,
 
@@ -685,7 +685,7 @@ const relayApi: RelayApi = {
   users: usersApi,
   processes: processesApi,
   packages: packagesApi,
-  ...(process.env.RELAY_SCREENSHOT === '1'
+  ...(process.env.ZVIA_SCREENSHOT === '1'
     ? {
         screenshot: {
           onConfigure(listener: (payload: { tool: string }) => void) {
@@ -705,4 +705,4 @@ const relayApi: RelayApi = {
     : {})
 }
 
-contextBridge.exposeInMainWorld('relay', relayApi)
+contextBridge.exposeInMainWorld('zvia', zviaApi)

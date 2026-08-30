@@ -33,16 +33,16 @@ export function useStatsSubscription({
     }
 
     const id = subscriberId.current
-    const unsubscribeEvents = window.relay.stats.onUpdate((event) => {
+    const unsubscribeEvents = window.zvia.stats.onUpdate((event) => {
       if (event.serverId !== serverId) return
       setPayload({ info: event.info, stats: event.stats })
     })
 
-    void window.relay.stats.subscribe({ serverId, subscriberId: id, mode })
+    void window.zvia.stats.subscribe({ serverId, subscriberId: id, mode })
 
     return () => {
       unsubscribeEvents()
-      void window.relay.stats.unsubscribe({ serverId, subscriberId: id })
+      void window.zvia.stats.unsubscribe({ serverId, subscriberId: id })
     }
   }, [enabled, mode, serverId])
 

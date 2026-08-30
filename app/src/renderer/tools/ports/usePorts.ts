@@ -45,7 +45,7 @@ export function usePorts({ serverId, isConnected, paused = false }: UsePortsOpti
     if (!isConnected) return
     setLoading(true)
     try {
-      const result = await window.relay.ports.list({ serverId })
+      const result = await window.zvia.ports.list({ serverId })
       setSnapshot(result)
       setError(null)
       setElevation(null)
@@ -105,7 +105,7 @@ export function usePorts({ serverId, isConnected, paused = false }: UsePortsOpti
   const setFirewallRule = useCallback(
     async (action: FirewallRuleAction, port: number, protocol: PortProtocol) => {
       await runAction(() =>
-        window.relay.ports.setFirewallRule({ serverId, action, port, protocol })
+        window.zvia.ports.setFirewallRule({ serverId, action, port, protocol })
       )
     },
     [runAction, serverId]
@@ -113,7 +113,7 @@ export function usePorts({ serverId, isConnected, paused = false }: UsePortsOpti
 
   const deleteFirewallRule = useCallback(
     async (ruleId: string) => {
-      await runAction(() => window.relay.ports.deleteFirewallRule({ serverId, ruleId }))
+      await runAction(() => window.zvia.ports.deleteFirewallRule({ serverId, ruleId }))
     },
     [runAction, serverId]
   )

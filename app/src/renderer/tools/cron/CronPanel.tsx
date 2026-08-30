@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { describeCronEditability, type CronJob, type CronTarget } from '@shared/cron'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import { BackButton } from '@renderer/components/ui/back-button'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -13,7 +13,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { ElevationRequired } from '@renderer/components/errors/ElevationRequired'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { elevationCommand, parseRelayError } from '@renderer/lib/errors'
+import { elevationCommand, parseZviaError } from '@renderer/lib/errors'
 import { useRequiredServerContext } from '@renderer/state/ServerContext'
 import { useWorkspaceStore } from '@renderer/state/workspaceStore'
 import { CronEditorDialog } from './CronEditorDialog'
@@ -33,7 +33,7 @@ export function CronPanel() {
   const [editorJob, setEditorJob] = useState<CronJob | null>(null)
   const [pendingDelete, setPendingDelete] = useState<CronJob | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [actionError, setActionError] = useState<RelayErrorPayload | null>(null)
+  const [actionError, setActionError] = useState<ZviaErrorPayload | null>(null)
 
   const isConnected = connectionState === 'connected'
   const { listing, loaded, loading, error, clearError, reload } = useCron({
@@ -86,7 +86,7 @@ export function CronPanel() {
     setActionError(null)
     try {
       if (editorJob?.target) {
-        await window.relay.cron.updateJob({
+        await window.zvia.cron.updateJob({
           serverId,
           target: editorJob.target,
           jobId: editorJob.id,
@@ -94,7 +94,7 @@ export function CronPanel() {
           command: values.command
         })
       } else {
-        await window.relay.cron.createJob({
+        await window.zvia.cron.createJob({
           serverId,
           target: values.target,
           schedule: values.schedule,
@@ -105,7 +105,7 @@ export function CronPanel() {
       setEditorJob(null)
       await reload()
     } catch (err) {
-      setActionError(parseRelayError(err))
+      setActionError(parseZviaError(err))
     } finally {
       setSubmitting(false)
     }
@@ -117,12 +117,12 @@ export function CronPanel() {
     setSubmitting(true)
     setActionError(null)
     try {
-      await window.relay.cron.deleteJob({ serverId, target, jobId: pendingDelete.id })
+      await window.zvia.cron.deleteJob({ serverId, target, jobId: pendingDelete.id })
       setPendingDelete(null)
       setSelectedJobId(null)
       await reload()
     } catch (err) {
-      setActionError(parseRelayError(err))
+      setActionError(parseZviaError(err))
     } finally {
       setSubmitting(false)
     }

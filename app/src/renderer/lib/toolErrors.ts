@@ -1,4 +1,4 @@
-import { elevationCommand, parseRelayError } from './errors'
+import { elevationCommand, parseZviaError } from './errors'
 
 export interface ToolError {
   message: string
@@ -11,7 +11,7 @@ export interface ToolError {
  * flatten into "The request was invalid".
  */
 export function describeToolError(error: unknown): ToolError {
-  const payload = parseRelayError(error)
+  const payload = parseZviaError(error)
   const elevation = elevationCommand(payload)
   const message =
     payload.details && payload.code === 'VALIDATION_ERROR'

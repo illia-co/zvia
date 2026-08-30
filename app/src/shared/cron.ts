@@ -12,7 +12,7 @@ export type CronSource =
   | 'cron.d'
   | 'periodic'
 
-/** Crontabs Relay can install in v1. */
+/** Crontabs Zvia can install in v1. */
 export type CronTarget = 'user' | 'root'
 
 export interface CronJob {
@@ -60,9 +60,9 @@ export function cronJobFilePath(job: CronJob): string | null {
 export function describeCronEditability(listing: CronListResponse): string | null {
   if (listing.canEditUser || listing.canEditRoot) return null
   if (!listing.crontabAvailable) {
-    return 'The crontab command is not available on this server, so Relay cannot create or edit scheduled jobs. Anything listed here comes from system cron files and is read-only.'
+    return 'The crontab command is not available on this server, so Zvia cannot create or edit scheduled jobs. Anything listed here comes from system cron files and is read-only.'
   }
-  return 'Neither your own crontab nor root’s crontab can be written from this connection, so Relay cannot create or edit scheduled jobs. Anything listed here is read-only.'
+  return 'Neither your own crontab nor root’s crontab can be written from this connection, so Zvia cannot create or edit scheduled jobs. Anything listed here is read-only.'
 }
 
 export interface CrontabSource {

@@ -32,7 +32,7 @@ export function DockerPanel() {
     }
     setChecking(true)
     try {
-      const available = await window.relay.docker.isAvailable({ serverId })
+      const available = await window.zvia.docker.isAvailable({ serverId })
       setDockerAvailable(available)
     } catch {
       setDockerAvailable(false)

@@ -432,7 +432,7 @@ const REAL_UFW_VERBOSE = [
   '6000:6010/tcp              ALLOW IN    Anywhere                  ',
   '2222/tcp                   LIMIT IN    Anywhere                  ',
   '9999/tcp                   REJECT IN   Anywhere                  ',
-  '7000/tcp                   ALLOW IN    Anywhere                   # relay test comment',
+  '7000/tcp                   ALLOW IN    Anywhere                   # zvia test comment',
   '3000                       ALLOW IN    Anywhere                  ',
   '80/tcp (Nginx HTTP)        ALLOW IN    10.0.0.0/8                ',
   '4000/tcp on eth0           ALLOW IN    Anywhere                  ',
@@ -445,7 +445,7 @@ const REAL_UFW_VERBOSE = [
   '6000:6010/tcp (v6)         ALLOW IN    Anywhere (v6)             ',
   '2222/tcp (v6)              LIMIT IN    Anywhere (v6)             ',
   '9999/tcp (v6)              REJECT IN   Anywhere (v6)             ',
-  '7000/tcp (v6)              ALLOW IN    Anywhere (v6)              # relay test comment',
+  '7000/tcp (v6)              ALLOW IN    Anywhere (v6)              # zvia test comment',
   '3000 (v6)                  ALLOW IN    Anywhere (v6)             ',
   '4000/tcp (v6) on eth0      ALLOW IN    Anywhere (v6)             ',
   '22/tcp (OpenSSH (v6))      ALLOW IN    Anywhere (v6)             '
@@ -465,7 +465,7 @@ const REAL_UFW_NUMBERED = [
   '[ 6] 6000:6010/tcp              ALLOW IN    Anywhere                  ',
   '[ 7] 2222/tcp                   LIMIT IN    Anywhere                  ',
   '[ 8] 9999/tcp                   REJECT IN   Anywhere                  ',
-  '[ 9] 7000/tcp                   ALLOW IN    Anywhere                   # relay test comment',
+  '[ 9] 7000/tcp                   ALLOW IN    Anywhere                   # zvia test comment',
   '[10] 3000                       ALLOW IN    Anywhere                  ',
   '[11] Nginx HTTP                 ALLOW IN    10.0.0.0/8                ',
   '[12] 4000/tcp on eth0           ALLOW IN    Anywhere                  ',
@@ -478,7 +478,7 @@ const REAL_UFW_NUMBERED = [
   '[19] 6000:6010/tcp (v6)         ALLOW IN    Anywhere (v6)             ',
   '[20] 2222/tcp (v6)              LIMIT IN    Anywhere (v6)             ',
   '[21] 9999/tcp (v6)              REJECT IN   Anywhere (v6)             ',
-  '[22] 7000/tcp (v6)              ALLOW IN    Anywhere (v6)              # relay test comment',
+  '[22] 7000/tcp (v6)              ALLOW IN    Anywhere (v6)              # zvia test comment',
   '[23] 3000 (v6)                  ALLOW IN    Anywhere (v6)             ',
   '[24] 4000/tcp (v6) on eth0      ALLOW IN    Anywhere (v6)             ',
   '[25] OpenSSH (v6)               ALLOW IN    Anywhere (v6)             '
@@ -570,7 +570,7 @@ describe('parseUfwStatus against real ufw 0.36.2 output', () => {
       from: 'Anywhere',
       ports: [{ start: 7000, end: 7000 }]
     })
-    expect(byId('9')?.raw).toContain('# relay test comment')
+    expect(byId('9')?.raw).toContain('# zvia test comment')
   })
 
   it('records the source address of a scoped deny rule', () => {

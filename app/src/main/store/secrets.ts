@@ -2,7 +2,7 @@ import { app, safeStorage } from 'electron'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ServerId } from '@shared/server'
-import { RelayError } from '@shared/errors'
+import { ZviaError } from '@shared/errors'
 
 interface SecretsFile {
   version: 1
@@ -23,7 +23,7 @@ export class SecretsStore {
 
   private ensureEncryptionAvailable(): void {
     if (!safeStorage.isEncryptionAvailable()) {
-      throw new RelayError(
+      throw new ZviaError(
         'INTERNAL_ERROR',
         'OS secure storage is not available on this system'
       )

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import type { ServerId } from '@shared/server'
 import type { SystemdAction, SystemdUnitDetail, SystemdUnitFile } from '@shared/systemd'
 import { getProtectedSystemdUnitActionBlock } from '@shared/systemd'
 import { Button } from '@renderer/components/ui/button'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 import { cn } from '@renderer/lib/utils'
 import { useNavigationStore } from '@renderer/state/navigationStore'
 import { startupLabel, unitStateDotClass } from './ServicesTable'
@@ -48,21 +48,21 @@ export function ServiceDetailView({
 }: ServiceDetailViewProps) {
   const openWithIntent = useNavigationStore((state) => state.openWithIntent)
   const [detail, setDetail] = useState<SystemdUnitDetail | null>(null)
-  const [detailError, setDetailError] = useState<RelayErrorPayload | null>(null)
+  const [detailError, setDetailError] = useState<ZviaErrorPayload | null>(null)
   const [logs, setLogs] = useState<string[]>([])
-  const [logsError, setLogsError] = useState<RelayErrorPayload | null>(null)
+  const [logsError, setLogsError] = useState<ZviaErrorPayload | null>(null)
   const [loading, setLoading] = useState(false)
   const [unitFileOpen, setUnitFileOpen] = useState(false)
   const [unitFile, setUnitFile] = useState<SystemdUnitFile | null>(null)
-  const [unitFileError, setUnitFileError] = useState<RelayErrorPayload | null>(null)
+  const [unitFileError, setUnitFileError] = useState<ZviaErrorPayload | null>(null)
 
   const loadDetail = useCallback(async () => {
     setLoading(true)
     try {
-      setDetail(await window.relay.services.getUnit({ serverId, unit }))
+      setDetail(await window.zvia.services.getUnit({ serverId, unit }))
       setDetailError(null)
     } catch (err) {
-      setDetailError(parseRelayError(err))
+      setDetailError(parseZviaError(err))
     } finally {
       setLoading(false)
     }
@@ -70,19 +70,19 @@ export function ServiceDetailView({
 
   const loadLogs = useCallback(async () => {
     try {
-      setLogs(await window.relay.services.getUnitLogs({ serverId, unit, lines: LOG_LINES }))
+      setLogs(await window.zvia.services.getUnitLogs({ serverId, unit, lines: LOG_LINES }))
       setLogsError(null)
     } catch (err) {
-      setLogsError(parseRelayError(err))
+      setLogsError(parseZviaError(err))
     }
   }, [serverId, unit])
 
   const loadUnitFile = useCallback(async () => {
     try {
-      setUnitFile(await window.relay.services.getUnitFile({ serverId, unit }))
+      setUnitFile(await window.zvia.services.getUnitFile({ serverId, unit }))
       setUnitFileError(null)
     } catch (err) {
-      setUnitFileError(parseRelayError(err))
+      setUnitFileError(parseZviaError(err))
     }
   }, [serverId, unit])
 

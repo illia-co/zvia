@@ -32,11 +32,12 @@ export function FeatureTabs() {
             Tools
           </p>
           <h2 className="m-0 text-2xl font-medium text-text md:text-3xl">
-            Fourteen tools, one server context.
+            Every tool, one server context.
           </h2>
           <p className="mt-3 max-w-2xl text-text-secondary">
             Every view operates on the currently selected server. No fleet
-            dashboards, no cross-server aggregation.
+            dashboards, no cross-server aggregation — just focused Linux server
+            management.
           </p>
         </Reveal>
 
@@ -101,7 +102,7 @@ export function FeatureTabs() {
                     <img
                       key={activeTool.id}
                       src={activeTool.screenshot}
-                      alt={`Relay ${activeTool.label} panel`}
+                      alt={`Zvia ${activeTool.label} panel`}
                       className="feature-screenshot-image"
                       width={1440}
                       height={900}

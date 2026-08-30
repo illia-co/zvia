@@ -50,7 +50,7 @@ export function useProcesses({
     if (!isConnected) return
     setLoading(true)
     try {
-      const result = await window.relay.processes.list({ serverId })
+      const result = await window.zvia.processes.list({ serverId })
       setProcesses(result)
       setCapturedAt(new Date().toISOString())
       setError(null)
@@ -66,7 +66,7 @@ export function useProcesses({
 
   useEffect(() => {
     if (!isConnected || paused) {
-      void window.relay.processes.unsubscribe({
+      void window.zvia.processes.unsubscribe({
         serverId,
         subscriberId: subscriberId.current
       })
@@ -74,7 +74,7 @@ export function useProcesses({
     }
 
     const id = subscriberId.current
-    const unsubscribeEvents = window.relay.processes.onUpdate((event) => {
+    const unsubscribeEvents = window.zvia.processes.onUpdate((event) => {
       if (event.serverId !== serverId) return
       setProcesses(event.processes)
       setCapturedAt(event.capturedAt)
@@ -82,11 +82,11 @@ export function useProcesses({
       setElevation(null)
     })
 
-    void window.relay.processes.subscribe({ serverId, subscriberId: id, intervalMs })
+    void window.zvia.processes.subscribe({ serverId, subscriberId: id, intervalMs })
 
     return () => {
       unsubscribeEvents()
-      void window.relay.processes.unsubscribe({ serverId, subscriberId: id })
+      void window.zvia.processes.unsubscribe({ serverId, subscriberId: id })
     }
   }, [intervalMs, isConnected, paused, serverId])
 
@@ -97,7 +97,7 @@ export function useProcesses({
 
   const getDetail = useCallback(
     async (pid: number): Promise<ProcessDetail> => {
-      return window.relay.processes.get({ serverId, pid })
+      return window.zvia.processes.get({ serverId, pid })
     },
     [serverId]
   )
@@ -108,7 +108,7 @@ export function useProcesses({
       setError(null)
       setElevation(null)
       try {
-        await window.relay.processes.signal({ serverId, pid, signal: signalName })
+        await window.zvia.processes.signal({ serverId, pid, signal: signalName })
         await refresh()
       } catch (err) {
         const described = describeToolError(err)

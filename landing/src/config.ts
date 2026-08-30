@@ -13,13 +13,20 @@ import statsImg from './assets/screenshots/stats.png'
 import usersImg from './assets/screenshots/users.png'
 
 export const SITE = {
-  title: 'Relay — A native workspace for Linux servers',
+  title: 'Zvia — Open-source SSH client for Linux server management',
   description:
-    'Relay is an open-source macOS application for managing remote Linux servers over SSH. One workspace for stats, logs, Docker, Nginx, SSL, systemd, and more.',
-  canonical: 'https://relay.app',
-  github: 'https://github.com/illia-co/relay',
+    'Open-source desktop app for managing Linux servers and VPS instances over SSH. One workspace for server administration — stats, logs, Docker, Nginx, SSL, systemd, files, and terminal.',
+  canonical: 'https://zvia.app',
+  ogImage: 'https://zvia.app/og-image.png',
+  github: 'https://github.com/illia-co/zvia',
   downloadMac: '#download',
   downloadWindows: '#download-windows'
+} as const
+
+export const DOC_PAGE_META = {
+  title: 'Documentation — Zvia SSH server management',
+  description:
+    'Learn how to install Zvia, connect to Linux servers over SSH, and use tools for Docker, Nginx, SSL, systemd, logs, files, and terminal access.'
 } as const
 
 export interface HeroScreenshot {
@@ -31,27 +38,27 @@ export interface HeroScreenshot {
 export const HERO_SCREENSHOTS: HeroScreenshot[] = [
   {
     src: dockerImg,
-    alt: 'Relay Docker panel showing running containers on a production server',
+    alt: 'Zvia Docker panel showing running containers on a production server',
     label: 'Docker'
   },
   {
     src: overviewImg,
-    alt: 'Relay overview panel with server identity, connection status, and system metrics',
+    alt: 'Zvia overview panel with server identity, connection status, and system metrics',
     label: 'Overview'
   },
   {
     src: nginxImg,
-    alt: 'Relay Nginx panel showing web server status and configuration',
+    alt: 'Zvia Nginx panel showing web server status and configuration',
     label: 'Nginx'
   },
   {
     src: servicesImg,
-    alt: 'Relay services panel listing systemd units and their states',
+    alt: 'Zvia services panel listing systemd units and their states',
     label: 'Services'
   },
   {
     src: statsImg,
-    alt: 'Relay stats panel with CPU, memory, disk, and network metrics',
+    alt: 'Zvia stats panel with CPU, memory, disk, and network metrics',
     label: 'Stats'
   }
 ]
@@ -246,12 +253,12 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
   }
 ]
 
-export interface RelayToolGroup {
+export interface ZviaToolGroup {
   label: string
   tools: string[]
 }
 
-export const RELAY_TOOL_GROUPS: RelayToolGroup[] = [
+export const ZVIA_TOOL_GROUPS: ZviaToolGroup[] = [
   { label: 'General', tools: ['Overview'] },
   { label: 'System', tools: ['Stats', 'Users', 'Processes', 'Packages', 'Logs'] },
   { label: 'Workspace', tools: ['Terminal', 'Files'] },

@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ServerProfile, ServerId } from '@shared/server'
-import { RelayError } from '@shared/errors'
+import { ZviaError } from '@shared/errors'
 import type { ProfileCreateRequest, ProfileUpdateRequest } from '@shared/ipc'
 import { createServerId } from '@shared/validate'
 import { secretsStore } from './secrets'
@@ -56,7 +56,7 @@ export class ProfileStore {
   get(id: ServerId): ServerProfile {
     const profile = this.profiles.find((item) => item.id === id)
     if (!profile) {
-      throw new RelayError('NOT_FOUND', `Profile not found: ${id}`)
+      throw new ZviaError('NOT_FOUND', `Profile not found: ${id}`)
     }
     return { ...profile }
   }
@@ -87,7 +87,7 @@ export class ProfileStore {
   async update(request: ProfileUpdateRequest): Promise<ServerProfile> {
     const index = this.profiles.findIndex((item) => item.id === request.id)
     if (index === -1) {
-      throw new RelayError('NOT_FOUND', `Profile not found: ${request.id}`)
+      throw new ZviaError('NOT_FOUND', `Profile not found: ${request.id}`)
     }
     const existing = this.profiles[index]
     const updated: ServerProfile = {
@@ -123,7 +123,7 @@ export class ProfileStore {
   async remove(id: ServerId): Promise<void> {
     const index = this.profiles.findIndex((item) => item.id === id)
     if (index === -1) {
-      throw new RelayError('NOT_FOUND', `Profile not found: ${id}`)
+      throw new ZviaError('NOT_FOUND', `Profile not found: ${id}`)
     }
     this.profiles.splice(index, 1)
     await this.save()

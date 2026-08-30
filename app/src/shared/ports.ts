@@ -78,7 +78,7 @@ export type FirewallRuleAction = 'allow' | 'deny'
  * absence of a backend is easily mistaken for a broken Ports tool.
  */
 export const FIREWALL_NO_BACKEND_REASON =
-  'No firewall was detected on this server. Relay looked for ufw, nftables and iptables and found none, so ports cannot be opened or closed from here.'
+  'No firewall was detected on this server. Zvia looked for ufw, nftables and iptables and found none, so ports cannot be opened or closed from here.'
 
 export interface FirewallEditability {
   editable: boolean
@@ -95,7 +95,7 @@ export function describeFirewallEditability(state: FirewallState): FirewallEdita
   }
   return {
     editable: false,
-    reason: `Relay can read ${state.backend} rules but only writes ufw rules in this version.`
+    reason: `Zvia can read ${state.backend} rules but only writes ufw rules in this version.`
   }
 }
 

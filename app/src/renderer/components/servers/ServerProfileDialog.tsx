@@ -18,7 +18,7 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { humanizeError, parseRelayError } from '@renderer/lib/errors'
+import { humanizeError, parseZviaError } from '@renderer/lib/errors'
 import { useServerStore } from '@renderer/state/serverStore'
 import { useWorkspaceStore } from '@renderer/state/workspaceStore'
 
@@ -157,7 +157,7 @@ export function ServerProfileDialog({
 
       onOpenChange(false)
     } catch (error) {
-      const parsed = parseRelayError(error)
+      const parsed = parseZviaError(error)
       setSubmitError(
         `${humanizeError(parsed)} Check hostname, port, username, and credentials, then try again.`
       )

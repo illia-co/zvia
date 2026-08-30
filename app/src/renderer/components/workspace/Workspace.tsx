@@ -6,7 +6,7 @@ import { StatusDot } from '@renderer/components/ui/status-dot'
 import { TabStrip } from './TabStrip'
 import { PanelLayout } from './PanelLayout'
 
-const modKey = window.relay.platform === 'darwin' ? '⌘' : 'Ctrl+'
+const modKey = window.zvia.platform === 'darwin' ? '⌘' : 'Ctrl+'
 
 export function Workspace() {
   const { server, serverId, connectionState } = useServerContext()
@@ -27,7 +27,7 @@ export function Workspace() {
             {!server || !serverId ? (
               <div className="max-w-sm text-center">
                 <span
-                  className="relay-mark mx-auto mb-4 block size-10 text-text-tertiary"
+                  className="zvia-mark mx-auto mb-4 block size-10 text-text-tertiary"
                   aria-hidden
                 />
                 <p className="text-sm text-text">Select a server</p>
@@ -61,7 +61,7 @@ export function Workspace() {
             ) : (
               <div className="max-w-sm text-center">
                 <span
-                  className="relay-mark mx-auto mb-4 block size-10 text-text-tertiary"
+                  className="zvia-mark mx-auto mb-4 block size-10 text-text-tertiary"
                   aria-hidden
                 />
                 <p className="text-sm text-text">

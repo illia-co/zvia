@@ -75,7 +75,7 @@ export function DownloadDropdown({ className = '', onSelect }: DownloadDropdownP
       </button>
 
       {open && (
-        <div id={menuId} className="download-dropdown-menu" role="menu" aria-label="Download Relay">
+        <div id={menuId} className="download-dropdown-menu" role="menu" aria-label="Download Zvia">
           {DOWNLOAD_OPTIONS.map((option) => (
             <a
               key={option.id}

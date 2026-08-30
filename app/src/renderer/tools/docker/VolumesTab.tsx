@@ -11,7 +11,7 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 
 interface VolumesTabProps {
   serverId: ServerId
@@ -30,10 +30,10 @@ export function VolumesTab({ serverId, isConnected }: VolumesTabProps) {
     setLoading(true)
     setError(null)
     try {
-      const result = await window.relay.docker.listVolumes({ serverId })
+      const result = await window.zvia.docker.listVolumes({ serverId })
       setVolumes(result)
     } catch (err) {
-      setError(parseRelayError(err).message)
+      setError(parseZviaError(err).message)
     } finally {
       setLoading(false)
     }
@@ -48,7 +48,7 @@ export function VolumesTab({ serverId, isConnected }: VolumesTabProps) {
     setActionLoading(true)
     setError(null)
     try {
-      await window.relay.docker.removeVolume({
+      await window.zvia.docker.removeVolume({
         serverId,
         volumeName: pendingVolume.name,
         force: true
@@ -56,7 +56,7 @@ export function VolumesTab({ serverId, isConnected }: VolumesTabProps) {
       setPendingVolume(null)
       await loadVolumes()
     } catch (err) {
-      setError(parseRelayError(err).message)
+      setError(parseZviaError(err).message)
     } finally {
       setActionLoading(false)
     }

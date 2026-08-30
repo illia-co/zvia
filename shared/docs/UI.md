@@ -1,4 +1,4 @@
-# Relay UI Styling Rules
+# Zvia UI Styling Rules
 
 These rules keep the renderer aligned with [DESIGN.md](./DESIGN.md).
 

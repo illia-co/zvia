@@ -87,7 +87,7 @@ function fitTerminal(
   fitAddon.fit()
   const { cols, rows } = terminal
   if (shouldResizeSession && cols > 0 && rows > 0) {
-    void window.relay.terminal.resize({ serverId, sessionId, cols, rows })
+    void window.zvia.terminal.resize({ serverId, sessionId, cols, rows })
   }
 }
 
@@ -146,13 +146,13 @@ export function TerminalView({
     })
     resizeObserver.observe(container)
 
-    const unsubscribeData = window.relay.terminal.onData((event) => {
+    const unsubscribeData = window.zvia.terminal.onData((event) => {
       if (event.serverId !== serverId || event.sessionId !== sessionId) return
       setOpenError(null)
       terminal.write(event.bytes)
     })
 
-    const unsubscribeExit = window.relay.terminal.onExit((event) => {
+    const unsubscribeExit = window.zvia.terminal.onExit((event) => {
       if (event.serverId !== serverId || event.sessionId !== sessionId) return
       setSessionEnded(true)
       onSessionEndedRef.current()
@@ -160,7 +160,7 @@ export function TerminalView({
 
     const inputDisposable = terminal.onData((data) => {
       if (!isPtyOpened(serverId, sessionId) || !isConnectedRef.current) return
-      void window.relay.terminal.write({ serverId, sessionId, data })
+      void window.zvia.terminal.write({ serverId, sessionId, data })
     })
 
     return () => {
@@ -205,15 +205,15 @@ export function TerminalView({
           return
         }
         try {
-          await window.relay.terminal.open({ serverId, sessionId, cols, rows, command })
+          await window.zvia.terminal.open({ serverId, sessionId, cols, rows, command })
           if (cancelled) {
-            void window.relay.terminal.close({ serverId, sessionId })
+            void window.zvia.terminal.close({ serverId, sessionId })
             return
           }
           markPtyOpened(serverId, sessionId)
           setOpenError(null)
           if (prefill) {
-            void window.relay.terminal.write({ serverId, sessionId, data: prefill })
+            void window.zvia.terminal.write({ serverId, sessionId, data: prefill })
           }
           if (isVisibleRef.current) {
             terminal.focus()

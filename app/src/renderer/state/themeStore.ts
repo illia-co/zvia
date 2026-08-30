@@ -35,7 +35,7 @@ export const useThemeStore = create<ThemeStoreState>()(
       }
     }),
     {
-      name: 'relay-theme',
+      name: 'zvia-theme',
       onRehydrateStorage: () => (state) => {
         if (state) {
           applyThemePreference(state.preference)

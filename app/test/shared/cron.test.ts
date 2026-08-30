@@ -10,7 +10,7 @@ import {
 } from '@shared/cron'
 
 const USER_CRONTAB = [
-  '# Relay test crontab',
+  '# Zvia test crontab',
   'SHELL=/bin/sh',
   'PATH=/usr/bin:/bin',
   '',

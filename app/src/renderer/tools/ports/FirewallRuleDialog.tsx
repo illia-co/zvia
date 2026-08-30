@@ -87,7 +87,7 @@ export function FirewallRuleDialog({
           <>
             {details.elevated && (
               <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-3 text-xs leading-relaxed text-text">
-                Double-check that you can still reach this server after this change. Relay cannot
+                Double-check that you can still reach this server after this change. Zvia cannot
                 undo a firewall lockout from here.
               </div>
             )}

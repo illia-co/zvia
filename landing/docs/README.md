@@ -1,6 +1,6 @@
 # Landing documentation
 
-Documentation for the marketing site (`@relay/landing`).
+Documentation for the marketing site (`@zvia/landing`).
 
 | Document | Description |
 |----------|-------------|

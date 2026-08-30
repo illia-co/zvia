@@ -11,7 +11,7 @@ export function TerminalSection() {
             Terminal
           </p>
           <h2 className="m-0 text-2xl font-medium text-text md:text-3xl">
-            Sometimes you still want the terminal.
+            Sometimes you still want an SSH terminal.
           </h2>
           <p className="mt-3 max-w-2xl text-text-secondary">
             A full interactive SSH shell lives inside the workspace — same

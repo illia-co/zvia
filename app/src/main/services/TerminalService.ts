@@ -1,7 +1,7 @@
 import type { BrowserWindow } from 'electron'
 import type { Client, ClientChannel } from 'ssh2'
 import type { TerminalDataEvent, TerminalExitEvent } from '@shared/ipc'
-import { ConnectionError, RelayError } from '@shared/errors'
+import { ConnectionError, ZviaError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
 
 interface TerminalSession {
@@ -144,7 +144,7 @@ export class TerminalService {
   private getSession(serverId: string, sessionId: string): TerminalSession {
     const session = this.sessions.get(sessionKey(serverId, sessionId))
     if (!session) {
-      throw new RelayError('NOT_FOUND', `Terminal session not found: ${sessionId}`)
+      throw new ZviaError('NOT_FOUND', `Terminal session not found: ${sessionId}`)
     }
     return session
   }

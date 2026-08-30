@@ -61,7 +61,7 @@ export function EnableHttpsProgress({
   const outputRef = useRef<HTMLPreElement>(null)
 
   useEffect(() => {
-    const unsubStep = window.relay.ssl.onWorkflowStep((event) => {
+    const unsubStep = window.zvia.ssl.onWorkflowStep((event) => {
       if (event.serverId !== serverId || event.streamId !== streamId) return
       setSteps((current) => ({
         ...current,
@@ -69,13 +69,13 @@ export function EnableHttpsProgress({
       }))
     })
 
-    const unsubOutput = window.relay.ssl.onWorkflowOutput((event) => {
+    const unsubOutput = window.zvia.ssl.onWorkflowOutput((event) => {
       if (event.serverId !== serverId || event.streamId !== streamId) return
       const text = new TextDecoder().decode(event.bytes)
       setOutput((current) => current + text)
     })
 
-    const unsubDone = window.relay.ssl.onWorkflowDone((event) => {
+    const unsubDone = window.zvia.ssl.onWorkflowDone((event) => {
       if (event.serverId !== serverId || event.streamId !== streamId) return
       setFinished(true)
       setFailed(!event.success)

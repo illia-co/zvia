@@ -1,6 +1,6 @@
 # Shared package documentation
 
-Documentation for design tokens and brand assets (`@relay/shared`).
+Documentation for design tokens and brand assets (`@zvia/shared`).
 
 | Document | Description |
 |----------|-------------|
@@ -12,7 +12,7 @@ Documentation for design tokens and brand assets (`@relay/shared`).
 ```
 shared/
 ├── design/tokens.css    # CSS custom properties (@theme)
-└── assets/              # relay-mark, icon
+└── assets/              # zvia-mark, icon
 ```
 
 IPC contracts and validators live in `app/src/shared/` — not in this package.

@@ -22,8 +22,8 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-divider bg-bg/90 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
         <Link to="/" className="flex items-center gap-2 text-sm font-medium text-text no-underline">
-          <span className="relay-mark size-4" aria-hidden />
-          Relay
+          <span className="zvia-mark size-4" aria-hidden />
+          Zvia
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex" aria-label="Main">

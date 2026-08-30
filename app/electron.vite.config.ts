@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 const sharedAlias = {
   '@shared': resolve(__dirname, 'src/shared'),
-  '@relay/shared': resolve(__dirname, '../shared')
+  '@zvia/shared': resolve(__dirname, '../shared')
 }
 
 export default defineConfig({

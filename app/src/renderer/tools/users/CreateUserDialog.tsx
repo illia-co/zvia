@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import type { ServerId } from '@shared/server'
 import { Button } from '@renderer/components/ui/button'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
@@ -21,7 +21,7 @@ interface CreateUserDialogProps {
   open: boolean
   adminGroup: string | null
   submitting: boolean
-  error: RelayErrorPayload | null
+  error: ZviaErrorPayload | null
   onClose: () => void
   onSubmit: (values: {
     username: string

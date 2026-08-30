@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { RelayErrorPayload } from '@shared/errors'
+import type { ZviaErrorPayload } from '@shared/errors'
 import type { ServerId } from '@shared/server'
 import type { SystemdUnit } from '@shared/systemd'
-import { parseRelayError } from '@renderer/lib/errors'
+import { parseZviaError } from '@renderer/lib/errors'
 
 const REFRESH_INTERVAL_MS = 5000
 
@@ -17,7 +17,7 @@ interface UseServicesResult {
   units: SystemdUnit[]
   available: boolean | null
   loading: boolean
-  error: RelayErrorPayload | null
+  error: ZviaErrorPayload | null
   clearError: () => void
   reload: () => Promise<void>
 }
@@ -30,7 +30,7 @@ export function useServices({
   const [units, setUnits] = useState<SystemdUnit[]>([])
   const [available, setAvailable] = useState<boolean | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<RelayErrorPayload | null>(null)
+  const [error, setError] = useState<ZviaErrorPayload | null>(null)
 
   useEffect(() => {
     setUnits([])
@@ -45,16 +45,16 @@ export function useServices({
     }
     setLoading(true)
     try {
-      const isAvailable = await window.relay.services.isAvailable({ serverId })
+      const isAvailable = await window.zvia.services.isAvailable({ serverId })
       setAvailable(isAvailable)
       if (!isAvailable) {
         setUnits([])
         return
       }
-      setUnits(await window.relay.services.list({ serverId }))
+      setUnits(await window.zvia.services.list({ serverId }))
       setError(null)
     } catch (err) {
-      setError(parseRelayError(err))
+      setError(parseZviaError(err))
     } finally {
       setLoading(false)
     }

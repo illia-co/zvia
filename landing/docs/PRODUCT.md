@@ -1,10 +1,10 @@
-# Relay Product Specification
+# Zvia Product Specification
 
 > Landing package documentation. User-facing docs: `landing/src/docs/content.ts`.
 
 ## Vision
 
-Relay is a macOS application that provides a beautiful native interface for working with remote Linux servers.
+Zvia is a cross-platform desktop application for managing remote Linux servers over SSH. It provides a native-feeling interface for server administration on macOS, Windows, and Linux.
 
 The goal is to make remote server administration feel as natural as working with a local computer.
 

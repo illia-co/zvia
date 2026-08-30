@@ -1,6 +1,6 @@
-import { parseIpcError, type RelayErrorPayload } from '@shared/errors'
+import { parseIpcError, type ZviaErrorPayload } from '@shared/errors'
 
-export function parseRelayError(error: unknown): RelayErrorPayload {
+export function parseZviaError(error: unknown): ZviaErrorPayload {
   return parseIpcError(error)
 }
 
@@ -9,14 +9,14 @@ export function parseRelayError(error: unknown): RelayErrorPayload {
  * the exact command that needs elevation. Returns that command when the payload
  * came from a privilege check, otherwise null.
  */
-export function elevationCommand(error: RelayErrorPayload): string | null {
+export function elevationCommand(error: ZviaErrorPayload): string | null {
   if (error.code !== 'PERMISSION_ERROR') return null
   if (!error.details) return null
   if (!/elevated privileges/i.test(error.message)) return null
   return error.details
 }
 
-export function humanizeError(error: RelayErrorPayload): string {
+export function humanizeError(error: ZviaErrorPayload): string {
   switch (error.code) {
     case 'CONNECTION_ERROR':
       return 'Could not connect to this server. Check the hostname, port, and network.'

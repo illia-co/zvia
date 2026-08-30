@@ -100,14 +100,14 @@ export function CronJobDetailView({ serverId, job, onEdit, onDelete }: CronJobDe
             <p className="mt-1 text-xs leading-relaxed text-text-secondary">
               {job.source === 'periodic'
                 ? 'run-parts scripts are managed as files.'
-                : 'Relay edits user and root crontabs only.'}{' '}
+                : 'Zvia edits user and root crontabs only.'}{' '}
               {filePath ? (
                 <>
                   Use Open in Files to edit{' '}
                   <span className="font-mono text-text-secondary">{filePath}</span>.
                 </>
               ) : (
-                'This job has no file Relay can open.'
+                'This job has no file Zvia can open.'
               )}
             </p>
           </div>

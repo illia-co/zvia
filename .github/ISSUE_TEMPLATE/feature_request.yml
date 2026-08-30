@@ -1,11 +1,11 @@
 name: Feature request
-description: Suggest an idea for Relay
+description: Suggest an idea for Zvia
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Relay is server-scoped by design. Features should operate on the currently selected server, not across a fleet.
+        Zvia is server-scoped by design. Features should operate on the currently selected server, not across a fleet.
 
   - type: textarea
     id: problem
@@ -19,7 +19,7 @@ body:
     id: proposal
     attributes:
       label: Proposed solution
-      description: How would you like Relay to handle this?
+      description: How would you like Zvia to handle this?
     validations:
       required: true
 
