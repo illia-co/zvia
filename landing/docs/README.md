@@ -52,9 +52,9 @@ When you have a domain:
 
 Download buttons link to GitHub Releases assets:
 
-- macOS: `Zvia-mac.dmg`
-- Windows: `Zvia-windows-setup.exe`
-- Linux: `Zvia-linux.AppImage`
+- macOS: `zvia-mac.dmg`
+- Windows: `zvia-win.exe`
+- Linux: `zvia-linux.AppImage`
 
 Create a release by pushing a version tag:
 

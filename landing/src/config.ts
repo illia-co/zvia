@@ -27,9 +27,9 @@ export const SITE = {
   ogImage: `${siteUrl}/og-image.png`,
   github: GITHUB_REPO,
   releases: `${RELEASES_BASE}/latest`,
-  downloadMac: `${RELEASES_BASE}/latest/download/Zvia-mac.dmg`,
-  downloadWindows: `${RELEASES_BASE}/latest/download/Zvia-windows-setup.exe`,
-  downloadLinux: `${RELEASES_BASE}/latest/download/Zvia-linux.AppImage`
+  downloadMac: `${RELEASES_BASE}/latest/download/zvia-mac.dmg`,
+  downloadWindows: `${RELEASES_BASE}/latest/download/zvia-win.exe`,
+  downloadLinux: `${RELEASES_BASE}/latest/download/zvia-linux.AppImage`
 } as const
 
 export const DOC_PAGE_META = {

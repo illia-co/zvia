@@ -1,5 +1,6 @@
 appId: com.zvia.app
 productName: Zvia
+executableName: zvia
 electronVersion: "44.0.0"
 directories:
   buildResources: build
@@ -12,17 +13,18 @@ mac:
   icon: build/icon.png
   target:
     - dmg
-  artifactName: Zvia-mac.${ext}
+  artifactName: zvia-mac.${ext}
   hardenedRuntime: true
   gatekeeperAssess: false
 win:
   icon: build/icon.png
   target:
     - nsis
-  artifactName: Zvia-windows-setup.${ext}
+  artifactName: zvia-win.${ext}
 linux:
   icon: build/icon.png
   target:
     - AppImage
-  artifactName: Zvia-linux.${ext}
+  artifactName: zvia-linux.${ext}
   category: Development
+  syncDesktopName: true
