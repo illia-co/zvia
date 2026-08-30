@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -42,6 +47,14 @@ jobs:
 
       - name: Build distributable
         run: npm run ${{ matrix.command }} -w @zvia/app
+        env:
+          GH_TOKEN: ''
+
+      - name: Verify installer
+        shell: bash
+        run: |
+          test -f "${{ matrix.file }}"
+          ls -lh "${{ matrix.file }}"
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
@@ -49,6 +62,7 @@ jobs:
           name: release-${{ matrix.artifact }}
           path: ${{ matrix.file }}
           if-no-files-found: error
+          compression-level: 0
 
   publish:
     needs: build
@@ -57,20 +71,43 @@ jobs:
       - name: Download installers
         uses: actions/download-artifact@v4
         with:
+          pattern: release-*
           path: installers
           merge-multiple: true
 
-      - name: List release files
-        run: ls -la installers
+      - name: Prepare release assets
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          find installers -type f \( -name 'zvia-mac.dmg' -o -name 'zvia-win.exe' -o -name 'zvia-linux.AppImage' \) -exec cp -f {} release-assets/ \;
+          echo "Release assets:"
+          ls -la release-assets
+          test "$(find release-assets -maxdepth 1 -type f | wc -l)" -eq 3
 
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          fail_on_unmatched_files: true
-          overwrite_files: true
-          files: |
-            installers/zvia-mac.dmg
-            installers/zvia-win.exe
-            installers/zvia-linux.AppImage
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IS_PRERELEASE: ${{ contains(github.ref_name, '-') }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            args=(gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes)
+            if [ "$IS_PRERELEASE" = "true" ]; then
+              args+=(--prerelease)
+            fi
+            "${args[@]}"
+          fi
+
+          while read -r asset; do
+            case "$asset" in
+              zvia-mac.dmg|zvia-win.exe|zvia-linux.AppImage) ;;
+              *)
+                echo "Removing stray asset: $asset"
+                gh release delete-asset "$GITHUB_REF_NAME" "$asset" -y || true
+                ;;
+            esac
+          done < <(gh release view "$GITHUB_REF_NAME" --json assets -q '.assets[].name')
+
+          gh release upload "$GITHUB_REF_NAME" release-assets/* --clobber
