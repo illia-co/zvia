@@ -6,6 +6,7 @@
   --color-text-secondary: #777777;
   --color-text-tertiary: #a0a0a0;
   --color-divider: #e8e8e8;
+  --color-canvas-dot: rgba(17, 17, 17, 0.12);
   --color-status-healthy: #4a9d5f;
   --color-status-warning: #c8853a;
   --color-status-error: #c25450;
@@ -43,6 +44,7 @@
   --color-text-secondary: #999999;
   --color-text-tertiary: #666666;
   --color-divider: #292929;
+  --color-canvas-dot: rgba(245, 245, 245, 0.08);
   --color-status-healthy: #4a9d5f;
   --color-status-warning: #c8853a;
   --color-status-error: #c25450;

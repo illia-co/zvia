@@ -1,0 +1,58 @@
+name: zvia-demo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: zvia
+      POSTGRES_PASSWORD: zvia
+      POSTGRES_DB: zvia
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U zvia -d zvia']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    labels:
+      com.zvia.stack: demo
+      com.zvia.role: database
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://zvia:zvia@postgres:5432/zvia
+      PORT: '3001'
+    ports:
+      - '127.0.0.1:3001:3001'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3001/health | grep -q ok']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    labels:
+      com.zvia.stack: demo
+      com.zvia.role: api
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3000:80'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost/ | grep -q zvia-demo-shop']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    labels:
+      com.zvia.stack: demo
+      com.zvia.role: frontend
+
+volumes:
+  postgres_data:

@@ -12,10 +12,11 @@ Documentation for the Electron desktop application (`@zvia/app`).
 
 ## Tools
 
-Per-tool specifications for the 14 server-scoped tools:
+Per-tool specifications for the 15 server-scoped tools:
 
 | Section | Tools |
 |---------|-------|
+| Applications | [Deployments](./tools/deployments.md) |
 | General | [Overview](./tools/overview.md) |
 | System | [Stats](./tools/stats.md) · [Users](./tools/users.md) · [Processes](./tools/processes.md) · [Packages](./tools/packages.md) · [Logs](./tools/logs.md) |
 | Workspace | [Terminal](./tools/terminal.md) · [Files](./tools/files.md) |

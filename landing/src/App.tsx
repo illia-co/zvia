@@ -1,7 +1,9 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { DownloadLinksProvider } from './hooks/useDownloadLinks'
+import { DatenschutzPage } from './pages/DatenschutzPage'
 import { DocumentationPage } from './pages/DocumentationPage'
 import { HomePage } from './pages/HomePage'
+import { ImpressumPage } from './pages/ImpressumPage'
 
 export default function App() {
   return (
@@ -15,6 +17,9 @@ export default function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/documentation" element={<DocumentationPage />} />
+      <Route path="/impressum" element={<ImpressumPage />} />
+      <Route path="/datenschutz" element={<DatenschutzPage />} />
+      <Route path="/privacy" element={<Navigate to="/datenschutz" replace />} />
     </Routes>
   </DownloadLinksProvider>
   )

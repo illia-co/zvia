@@ -67,10 +67,10 @@ export function Workspace() {
                 <p className="text-sm text-text">
                   <span className="font-medium">{server.name}</span>
                   {' — '}
-                  Select a tool from the sidebar, or press {modKey}1 for Overview.
+                  Select a tool from the sidebar, or press {modKey}1 for Deployments.
                 </p>
                 <p className="mt-2 text-xs text-text-secondary">
-                  Choose Overview, Terminal, or another tool from the sidebar.
+                  Deployments maps how this server runs your apps. Use Terminal or another tool from the sidebar when you need it.
                 </p>
               </div>
             )}

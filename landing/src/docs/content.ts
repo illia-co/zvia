@@ -40,6 +40,7 @@ export const DOC_NAV: DocNavGroup[] = [
   {
     label: 'Tools',
     items: [
+      { id: 'tool-deployments', label: 'Deployments' },
       { id: 'tool-overview', label: 'Overview' },
       { id: 'tool-stats', label: 'Stats' },
       { id: 'tool-users', label: 'Users' },
@@ -75,7 +76,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Zvia is a native desktop application for managing remote Linux servers over SSH. It provides a calm, server-scoped workspace for system administration — stats, logs, Docker, Nginx, SSL, systemd, files, and a full terminal — without installing a custom agent on the remote machine.'
+          'Zvia is a native desktop application for managing remote Linux servers over SSH. It provides a calm, server-scoped workspace for system administration — deployment topology discovery, stats, logs, Docker, Nginx, SSL, systemd, files, and a full terminal — without installing a custom agent on the remote machine.'
       },
       {
         type: 'paragraph',
@@ -136,7 +137,8 @@ export const DOC_SECTIONS: DocSection[] = [
         type: 'list',
         content: [
           'SSH agent — uses keys already loaded in your system SSH agent',
-          'Key file — path to a private key on disk, with an optional passphrase stored in the OS credential store'
+          'Key file — path to a private key on disk, with an optional passphrase stored in the OS credential store',
+          'Zvia does not store or use server login passwords — authentication is SSH key-based only'
         ]
       },
       {
@@ -146,7 +148,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Select the server, then connect. Zvia shows connection state clearly — disconnected, connecting, connected, reconnecting, or error. Pick a tool from the sidebar or press a keyboard shortcut to open a panel in the workspace.'
+          'Select the server, then connect. Zvia shows connection state clearly — disconnected, connecting, connected, reconnecting, or error. When connected, Deployments opens by default. Pick another tool from the sidebar or press a keyboard shortcut to open a panel in the workspace.'
       }
     ]
   },
@@ -199,7 +201,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Compare the version shown in the app (or the release tag on GitHub, e.g. v0.1.0-beta) with the latest release on GitHub. If they match, you are up to date.'
+          'Compare the version shown in the app (or the release tag on GitHub, e.g. v0.1.1-beta) with the latest release on GitHub. If they match, you are up to date.'
       }
     ]
   },
@@ -300,6 +302,110 @@ export const DOC_SECTIONS: DocSection[] = [
           '⌘0 — open Ports',
           '⌘⇧L / Ctrl+Shift+L — cycle appearance preference'
         ]
+      }
+    ]
+  },
+  {
+    id: 'tool-deployments',
+    eyebrow: 'Applications',
+    title: 'Deployments',
+    blocks: [
+      {
+        type: 'paragraph',
+        content:
+          'Deployments discovers application topologies on the selected server by correlating nginx configuration, SSL certificates, listening ports, processes, systemd units, and Docker containers. The result is a per-domain deployment list with an interactive topology canvas and evidence-backed inspectors.'
+      },
+      {
+        type: 'subheading',
+        content: 'What it answers'
+      },
+      {
+        type: 'list',
+        content: [
+          'What applications are running on this server?',
+          'How is each one wired from domain to backend?',
+          'Why does Zvia think these resources are connected?'
+        ]
+      },
+      {
+        type: 'subheading',
+        content: 'Scan vs snapshot'
+      },
+      {
+        type: 'paragraph',
+        content:
+          'When you open Deployments or connect to a server, Zvia loads a cached snapshot of the last topology scan (60 second TTL). Use Scan to force a full rediscovery — nginx -T, port listeners, process details, systemd units, and Docker containers are collected and clustered into deployments. Scan progress appears in the panel header.'
+      },
+      {
+        type: 'subheading',
+        content: 'List view'
+      },
+      {
+        type: 'paragraph',
+        content:
+          'The deployment table groups resources by primary nginx server_name — one deployment per domain. Click a row to open the topology detail view.'
+      },
+      {
+        type: 'list',
+        content: [
+          'Domain — primary domain with a health dot; shared-backend insights appear inline (e.g. "2 domains → same backend :3000")',
+          'Status — overall health with an inline issue summary when components are degraded or failed',
+          'Components — per-component chips for SSL, Nginx, Backend, Service, Files, and Container'
+        ]
+      },
+      {
+        type: 'subheading',
+        content: 'Health indicators'
+      },
+      {
+        type: 'paragraph',
+        content:
+          'Deployment health is conservative: the worst status along the confirmed path from the domain entrypoint to the terminal backend. Component chips reflect the health of each layer independently.'
+      },
+      {
+        type: 'list',
+        content: [
+          'Green dot — healthy',
+          'Amber dot — degraded (warning icon and summary in the Status column)',
+          'Red dot — failed (error icon and summary in the Status column)',
+          'Gray dot — unknown or still discovering'
+        ]
+      },
+      {
+        type: 'subheading',
+        content: 'Topology canvas'
+      },
+      {
+        type: 'paragraph',
+        content:
+          'The detail view shows an interactive graph of entities connected by relationships. Nodes represent domains, nginx sites, SSL certificates, ports, processes, systemd units, containers, and file paths. Click a node for entity details; click an edge for the Why? evidence inspector.'
+      },
+      {
+        type: 'list',
+        content: [
+          'Solid edges — confirmed relationships with direct evidence',
+          'Dashed edges — likely connections',
+          'Dotted edges — unknown confidence',
+          'Entrypoint nodes (domains) use a stronger border emphasis'
+        ]
+      },
+      {
+        type: 'subheading',
+        content: 'Shared backends'
+      },
+      {
+        type: 'paragraph',
+        content:
+          'When multiple domains proxy to the same backend port, Zvia keeps separate deployments and surfaces a cross-deployment insight in the list view. Domains are not auto-merged — the insight explains the shared resource instead.'
+      },
+      {
+        type: 'subheading',
+        content: 'Cross-tool navigation'
+      },
+      {
+        type: 'paragraph',
+        content:
+          'Inspectors include actions to jump to related tools — Nginx config, SSL certificate, port detail, process, systemd unit, Docker container, or file path — without leaving the server context.'
       }
     ]
   },
@@ -501,7 +607,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Each tool maps to a main-process service that runs validated commands over SSH. Stats, logs, Docker, Nginx, SSL, ports, users, processes, packages, systemd, and cron each have dedicated parsers that turn command output into typed data for the UI. Connection loss clears per-server caches and closes active streams.'
+          'Each tool maps to a main-process service that runs validated commands over SSH. Deployments correlates nginx, SSL, ports, processes, systemd, and Docker into topology snapshots. Stats, logs, Docker, Nginx, SSL, ports, users, processes, packages, systemd, and cron each have dedicated parsers that turn command output into typed data for the UI. Connection loss clears per-server caches and closes active streams.'
       }
     ]
   },
@@ -513,11 +619,12 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Zvia follows Electron security best practices for a desktop SSH client.'
+          'Zvia follows Electron security best practices for a desktop SSH client. Authentication is SSH key-based — Zvia does not store or use server login passwords. Private keys stay in the main process; the renderer never receives raw key material.'
       },
       {
         type: 'list',
         content: [
+          'SSH agent or key-file authentication only — no password-based server login',
           'Private SSH keys and passphrases stay in the main process — the renderer never receives raw key material',
           'Passphrases are stored with Electron safeStorage (macOS Keychain, Windows DPAPI, Linux libsecret)',
           'IPC requests are validated before execution in the main process',

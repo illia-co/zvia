@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { TOOLS } from '@renderer/lib/tools'
+import { KEYBOARD_ZERO_TOOL, TOOLS } from '@renderer/lib/tools'
 import { useServerContext } from '@renderer/state/ServerContext'
 import { useWorkspaceStore } from '@renderer/state/workspaceStore'
 import { useThemeStore } from '@renderer/state/themeStore'
@@ -47,11 +47,8 @@ export function useShellKeyboard(): void {
 
       if (mod && !event.shiftKey && !event.altKey && serverId) {
         if (event.key === '0') {
-          const tool = TOOLS[9]
-          if (tool) {
-            event.preventDefault()
-            openTool(serverId, tool.id)
-          }
+          event.preventDefault()
+          openTool(serverId, KEYBOARD_ZERO_TOOL)
           return
         }
 

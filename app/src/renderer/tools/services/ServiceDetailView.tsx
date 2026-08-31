@@ -192,6 +192,20 @@ export function ServiceDetailView({
           >
             Open in Logs
           </Button>
+          {detail && detail.mainPid > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() =>
+                openWithIntent(serverId, {
+                  tool: 'processes',
+                  pid: detail.mainPid
+                })
+              }
+            >
+              Open in Processes
+            </Button>
+          )}
         </div>
       </div>
 

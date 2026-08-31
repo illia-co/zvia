@@ -10,6 +10,7 @@ import type { DockerLogsDataEvent, DockerLogsExitEvent } from '@shared/ipc'
 import { CommandError, ConnectionError, DockerUnavailableError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
 import { execStreamOnClient } from '../ssh/exec'
+import { topologyService } from './deployments'
 
 interface DockerPsRow {
   ID: string
@@ -249,18 +250,21 @@ export class DockerService {
     const id = assertDockerId(containerId, 'containerId')
     await this.runDocker(serverId, `start ${id}`)
     this.availabilityCache.delete(serverId)
+    topologyService.invalidate(serverId)
   }
 
   async stopContainer(serverId: string, containerId: string): Promise<void> {
     await this.ensureAvailable(serverId)
     const id = assertDockerId(containerId, 'containerId')
     await this.runDocker(serverId, `stop ${id}`)
+    topologyService.invalidate(serverId)
   }
 
   async restartContainer(serverId: string, containerId: string): Promise<void> {
     await this.ensureAvailable(serverId)
     const id = assertDockerId(containerId, 'containerId')
     await this.runDocker(serverId, `restart ${id}`)
+    topologyService.invalidate(serverId)
   }
 
   async removeContainer(serverId: string, containerId: string, force = false): Promise<void> {
@@ -268,6 +272,7 @@ export class DockerService {
     const id = assertDockerId(containerId, 'containerId')
     const forceFlag = force ? ' -f' : ''
     await this.runDocker(serverId, `rm${forceFlag} ${id}`)
+    topologyService.invalidate(serverId)
   }
 
   async inspectContainer(serverId: string, containerId: string): Promise<unknown> {

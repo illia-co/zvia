@@ -1,6 +1,6 @@
 {
   "name": "@zvia/app",
-  "version": "0.1.0-beta",
+  "version": "0.1.1-beta",
   "description": "Cross-platform SSH workspace for remote Linux servers",
   "author": "Zvia contributors",
   "desktopName": "Zvia",
@@ -14,7 +14,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "node scripts/orbstack/integration-test.mjs",
+    "test:integration:topology": "ZVIA_ORB_INTEGRATION=1 vitest run test/integration/deploymentsTopology.test.ts",
+    "test:integration:topology:break": "ZVIA_ORB_INTEGRATION=1 vitest run test/integration/deploymentsTopology.break.test.ts",
     "orbstack:provision": "node scripts/orbstack/run-provision.mjs",
+    "orbstack:provision:fullstack": "ZVIA_FULLSTACK=1 node scripts/orbstack/run-provision.mjs",
     "orbstack:test": "npm run test:integration",
     "dist": "npm run build && electron-builder --config electron-builder.yml --publish never",
     "dist:mac": "npm run build && electron-builder --mac --config electron-builder.yml --publish never",
@@ -42,6 +45,8 @@
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/addon-webgl": "^0.19.0",
     "@xterm/xterm": "^6.0.0",
+    "@xyflow/react": "^12.8.4",
+    "@dagrejs/dagre": "^1.1.5",
     "codemirror": "^6.0.2",
     "react-resizable-panels": "^4.12.3",
     "ssh2": "^1.17.0"

@@ -16,6 +16,7 @@ import { CommandError, ConnectionError, SFTPError, ValidationError } from '@shar
 import { connectionManager } from '../ssh/ConnectionManager'
 import { execStreamOnClient } from '../ssh/exec'
 import { privilegeService } from './PrivilegeService'
+import { topologyService } from './deployments'
 import {
   isInsideDirectory,
   parseNginxLogPaths,
@@ -447,6 +448,7 @@ export class NginxService {
     if (result.exitCode !== 0) {
       throw new CommandError(`Failed to ${action} nginx`, result.stdout.trim())
     }
+    topologyService.invalidate(serverId)
   }
 
   async getLogPaths(serverId: ServerId): Promise<NginxLogPaths> {

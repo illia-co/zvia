@@ -4,6 +4,7 @@ Each tool operates on the **currently selected server** only. There are no cross
 
 | ID | Tool | Spec |
 |----|------|------|
+| `deployments` | Deployments | [deployments.md](./deployments.md) |
 | `overview` | Overview | [overview.md](./overview.md) |
 | `stats` | Stats | [stats.md](./stats.md) |
 | `users` | Users | [users.md](./users.md) |

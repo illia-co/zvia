@@ -7,8 +7,8 @@ import type { SslCertificate } from '@shared/ssl'
 import type { ServerId } from '@shared/server'
 import { useEffect, useState } from 'react'
 import { Button } from '@renderer/components/ui/button'
+import { deploymentNavLink, lookupDeploymentByPort } from '@renderer/lib/deploymentCrossLinks'
 import { useNavigationStore } from '@renderer/state/navigationStore'
-import { useWorkspaceStore } from '@renderer/state/workspaceStore'
 import { exposureLabel, looksLikeNginx, verdictLabel } from './portLabels'
 import type { PendingFirewallChange } from './FirewallRuleDialog'
 
@@ -42,8 +42,10 @@ export function PortDetailView({
   onRequestChange
 }: PortDetailViewProps) {
   const openWithIntent = useNavigationStore((state) => state.openWithIntent)
-  const openTool = useWorkspaceStore((state) => state.openTool)
   const [sslCert, setSslCert] = useState<SslCertificate | null>(null)
+  const [deploymentLink, setDeploymentLink] = useState<{ label: string; onClick: () => void } | null>(
+    null
+  )
 
   const isSshPort = listener.protocol === 'tcp' && listener.port === snapshot.sshPort
   const isHttpPort = listener.protocol === 'tcp' && (listener.port === 80 || listener.port === 443)
@@ -64,6 +66,18 @@ export function PortDetailView({
       })
       .catch(() => setSslCert(null))
   }, [listener.port, serverId, showSslContext])
+
+  useEffect(() => {
+    let cancelled = false
+    void lookupDeploymentByPort(serverId, listener.port).then((match) => {
+      if (cancelled) return
+      setDeploymentLink(match ? deploymentNavLink(serverId, match, openWithIntent) : null)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [listener.port, openWithIntent, serverId])
+
   const matchingRules = snapshot.firewall.rules.filter((rule) =>
     firewallRuleCoversPort(rule, listener.port, listener.protocol)
   )
@@ -236,9 +250,37 @@ export function PortDetailView({
             Open in Services
           </Button>
         )}
+        {listener.pid !== null && listener.pid > 0 && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              openWithIntent(serverId, {
+                tool: 'processes',
+                pid: listener.pid!
+              })
+            }
+          >
+            Open in Processes
+          </Button>
+        )}
         {listener.containerId && (
-          <Button size="sm" variant="ghost" onClick={() => openTool(serverId, 'docker')}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              openWithIntent(serverId, {
+                tool: 'docker',
+                containerId: listener.containerId!
+              })
+            }
+          >
             Open in Docker
+          </Button>
+        )}
+        {deploymentLink && (
+          <Button size="sm" variant="ghost" onClick={deploymentLink.onClick}>
+            {deploymentLink.label}
           </Button>
         )}
       </div>

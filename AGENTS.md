@@ -97,10 +97,11 @@ Example:
 
 # Current tools
 
-The application ships **14 server-scoped tools**:
+The application ships **15 server-scoped tools**:
 
 | Section | Tools |
 |---------|-------|
+| Applications | Deployments |
 | General | Overview |
 | System | Stats, Users, Processes, Packages, Logs |
 | Workspace | Terminal, Files |

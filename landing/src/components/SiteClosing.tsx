@@ -1,10 +1,7 @@
-import { SITE } from '../config'
 import { useDownloadLinks } from '../hooks/useDownloadLinks'
 import { LinkButton } from './Button'
+import { FooterNav } from './FooterNav'
 import { Reveal } from './Reveal'
-
-const footerLinkClass =
-  'text-sm text-text-secondary no-underline transition-colors duration-default hover:text-text'
 
 export function SiteClosing() {
   const downloads = useDownloadLinks()
@@ -43,31 +40,9 @@ export function SiteClosing() {
             </div>
           </div>
 
-          <nav
-            className="flex items-center gap-3 md:justify-center"
-            aria-label="Footer"
-          >
-            <a
-              href={SITE.github}
-              className={footerLinkClass}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              GitHub
-            </a>
-            <span className="text-sm text-text-tertiary" aria-hidden>
-              ·
-            </span>
-            <a href={downloads.downloadMac} className={footerLinkClass} rel="noopener noreferrer">
-              macOS
-            </a>
-            <span className="text-sm text-text-tertiary" aria-hidden>
-              ·
-            </span>
-            <a href={downloads.downloadWindows} className={footerLinkClass} rel="noopener noreferrer">
-              Windows
-            </a>
-          </nav>
+          <div className="md:justify-center">
+            <FooterNav />
+          </div>
 
           <p className="m-0 text-sm text-text-tertiary md:text-right">
             © {year} Zvia

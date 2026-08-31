@@ -59,8 +59,8 @@ Download buttons link to GitHub Releases assets:
 Create a release by pushing a version tag:
 
 ```bash
-git tag v0.1.0-beta
-git push origin v0.1.0-beta
+git tag v0.1.1-beta
+git push origin v0.1.1-beta
 ```
 
 The [release workflow](../../.github/workflows/release.yml) builds platform packages and publishes them to GitHub Releases.

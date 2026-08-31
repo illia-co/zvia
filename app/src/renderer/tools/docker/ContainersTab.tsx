@@ -12,8 +12,9 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
-import { useNavigationStore } from '@renderer/state/navigationStore'
+import { useNavigationStore, useToolIntent } from '@renderer/state/navigationStore'
 import { parseZviaError } from '@renderer/lib/errors'
+import { deploymentNavLink, lookupDeploymentByContainer } from '@renderer/lib/deploymentCrossLinks'
 import { cn } from '@renderer/lib/utils'
 import { ContainerInspectView } from './ContainerInspectView'
 import { ContainerLogsView } from './ContainerLogsView'
@@ -50,6 +51,28 @@ export function ContainersTab({ serverId, isConnected }: ContainersTabProps) {
   const [actionLoading, setActionLoading] = useState(false)
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const openWithIntent = useNavigationStore((state) => state.openWithIntent)
+  const intent = useToolIntent('docker')
+
+  const openDeploymentForContainer = useCallback(
+    async (containerId: string) => {
+      const match = await lookupDeploymentByContainer(serverId, containerId)
+      if (!match) return
+      deploymentNavLink(serverId, match, openWithIntent).onClick()
+    },
+    [openWithIntent, serverId]
+  )
+
+  useEffect(() => {
+    if (!intent?.containerId || containers.length === 0) return
+    const match = containers.find(
+      (container) =>
+        container.id === intent.containerId || container.id.startsWith(intent.containerId!)
+    )
+    if (match) {
+      setSelectedContainer(match)
+      setView('inspect')
+    }
+  }, [intent, containers])
 
   const loadContainers = useCallback(async () => {
     if (!isConnected) return
@@ -316,6 +339,13 @@ export function ContainersTab({ serverId, isConnected }: ContainersTabProps) {
                           onClick={() => openDetail(container, 'terminal')}
                         >
                           Terminal
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => void openDeploymentForContainer(container.id)}
+                        >
+                          Deployments
                         </Button>
                         <Button
                           size="sm"

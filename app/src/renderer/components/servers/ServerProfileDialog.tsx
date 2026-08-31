@@ -19,6 +19,7 @@ import {
 } from '@renderer/components/ui/select'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { humanizeError, parseZviaError } from '@renderer/lib/errors'
+import { DEFAULT_TOOL } from '@renderer/lib/tools'
 import { useServerStore } from '@renderer/state/serverStore'
 import { useWorkspaceStore } from '@renderer/state/workspaceStore'
 
@@ -137,7 +138,7 @@ export function ServerProfileDialog({
           createRequest.passphrase = trimmedPassphrase
         }
         const profile = await createProfile(createRequest)
-        openTool(profile.id, 'overview')
+        openTool(profile.id, DEFAULT_TOOL)
       } else if (serverId) {
         const auth = buildAuth()
         const updateRequest: ProfileUpdateRequest = {

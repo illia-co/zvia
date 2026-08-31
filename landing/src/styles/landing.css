@@ -457,6 +457,121 @@
   }
 }
 
+.auth-process-body {
+  padding: 2rem 1.5rem;
+  background: var(--color-bg-secondary);
+}
+
+.auth-process-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-process-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 15rem;
+}
+
+.auth-process-pane {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  text-align: center;
+}
+
+.auth-process-pane--secure {
+  background: var(--color-bg-secondary);
+}
+
+.auth-process-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+}
+
+.auth-process-detail {
+  display: block;
+  margin-top: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-text);
+}
+
+.auth-process-note {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.auth-process-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0;
+}
+
+.auth-process-line {
+  flex-shrink: 0;
+  width: 2px;
+  height: 0.625rem;
+  background: var(--color-divider);
+}
+
+.auth-process-connector-label {
+  padding: 0.125rem 0.375rem;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.auth-section .section-two-col {
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .auth-section .section-two-col {
+    gap: 2rem;
+  }
+}
+
+.auth-section .auth-process-body {
+  padding: 1.25rem 1.25rem;
+}
+
+.auth-section .auth-process-pane {
+  padding: 0.5rem 0.75rem;
+}
+
+.auth-section .auth-process-detail {
+  margin-top: 0.25rem;
+}
+
+.auth-section .auth-process-connector {
+  padding: 0.25rem 0;
+}
+
+.auth-section .auth-process-line {
+  height: 0.5rem;
+}
+
 .feature-panel-enter {
   animation: feature-panel-fade 200ms ease;
 }
@@ -579,6 +694,11 @@
   max-width: 72rem;
   margin: 0 auto;
   padding: 2.5rem 1.5rem 4rem;
+}
+
+.legal-page-inner {
+  display: block;
+  max-width: 48rem;
 }
 
 @media (min-width: 1024px) {

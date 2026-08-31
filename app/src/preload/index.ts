@@ -24,6 +24,8 @@ import type {
   UsersApi,
   ProcessesApi,
   PackagesApi,
+  DeploymentsApi,
+  DeploymentsScanProgressEvent,
   TerminalApi,
   FilesApi,
   TerminalDataEvent,
@@ -88,6 +90,9 @@ const allowedChannels: IpcChannel[] = [
   'packages:updates',
   'packages:operationStart',
   'packages:operationCancel',
+  'deployments:scan',
+  'deployments:getSnapshot',
+  'deployments:lookup',
   'files:list',
   'files:read',
   'files:write',
@@ -160,7 +165,8 @@ const allowedEvents: (keyof IpcEventMap)[] = [
   'ssl:workflowStep',
   'ssl:workflowOutput',
   'ssl:workflowDone',
-  'window:fullscreenChanged'
+  'window:fullscreenChanged',
+  'deployments:scanProgress'
 ]
 
 function decodeBase64(data: string): Uint8Array {
@@ -642,6 +648,27 @@ const sslApi: SslApi = {
   }
 }
 
+const deploymentsApi: DeploymentsApi = {
+  scan(request) {
+    return invokeIpc('deployments:scan', request)
+  },
+  getSnapshot(request) {
+    return invokeIpc('deployments:getSnapshot', request)
+  },
+  lookup(request) {
+    return invokeIpc('deployments:lookup', request)
+  },
+  onScanProgress(listener) {
+    const wrapped = (_event: Electron.IpcRendererEvent, payload: DeploymentsScanProgressEvent) => {
+      listener(payload)
+    }
+    ipcRenderer.on('deployments:scanProgress', wrapped)
+    return () => {
+      ipcRenderer.removeListener('deployments:scanProgress', wrapped)
+    }
+  }
+}
+
 const zviaApi: ZviaApi = {
   platform: process.platform,
   version: appPackage.version,
@@ -685,6 +712,7 @@ const zviaApi: ZviaApi = {
   users: usersApi,
   processes: processesApi,
   packages: packagesApi,
+  deployments: deploymentsApi,
   ...(process.env.ZVIA_SCREENSHOT === '1'
     ? {
         screenshot: {

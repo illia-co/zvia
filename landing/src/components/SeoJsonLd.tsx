@@ -18,6 +18,7 @@ const SOFTWARE_APPLICATION = {
     priceCurrency: 'USD'
   },
   featureList: [
+    'Deployment topology discovery',
     'SSH and SFTP over standard connections',
     'Docker container management',
     'Nginx configuration and logs',

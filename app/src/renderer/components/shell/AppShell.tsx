@@ -3,6 +3,7 @@ import type { ToolId } from '@renderer/lib/tools'
 import { setupScreenshotDemo } from '@renderer/screenshot/setup'
 import { ServerProvider } from '@renderer/state/ServerContext'
 import { useServerStore } from '@renderer/state/serverStore'
+import { useAutoOpenDefaultTool } from '@renderer/hooks/useAutoOpenDefaultTool'
 import { useShellKeyboard } from '@renderer/hooks/useShellKeyboard'
 import { ServerSidebar } from './ServerSidebar'
 import { ToolSidebar } from './ToolSidebar'
@@ -18,6 +19,7 @@ import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 
 function ShellKeyboard() {
   useShellKeyboard()
+  useAutoOpenDefaultTool()
   return null
 }
 

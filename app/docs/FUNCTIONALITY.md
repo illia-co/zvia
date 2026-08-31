@@ -19,7 +19,13 @@ Server list displays:
 - connection state
 - hostname
 
-Selecting a server changes the complete application context.
+Selecting a server changes the complete application context. When connected, **Deployments** opens by default.
+
+---
+
+# Deployments
+
+See [tools/deployments.md](./tools/deployments.md).
 
 ---
 

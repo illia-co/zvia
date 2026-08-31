@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import type { NginxServerBlock } from './deployments/types'
 import type {
   SslCertificate,
   SslCertificateStatus,
@@ -6,6 +7,10 @@ import type {
   SslRenewalMethod
 } from '@shared/ssl'
 import { EXPIRING_SOON_DAYS } from '@shared/ssl'
+import { parseNginxServerBlocks } from './deployments/parsers'
+
+export type { NginxServerBlock }
+export { parseNginxServerBlocks }
 
 export interface OpensslCertificateInfo {
   subjectCn: string | null
@@ -23,15 +28,6 @@ export interface CertbotCertificateEntry {
   certificatePath: string
   privateKeyPath: string | null
   valid: boolean
-}
-
-export interface NginxServerBlock {
-  configPath: string
-  serverNames: string[]
-  ports: number[]
-  listensHttps: boolean
-  sslCertificate: string | null
-  sslCertificateKey: string | null
 }
 
 export interface SystemdTimerInfo {
@@ -198,110 +194,6 @@ export function parseCertbotCertificates(stdout: string): CertbotCertificateEntr
 export function parseCertbotVersion(stdout: string): string | null {
   const match = /certbot\s+([0-9][^\s]*)/i.exec(stdout)
   return match ? match[1] : null
-}
-
-function parseListenDirective(line: string): { port: number; ssl: boolean } | null {
-  const match = /^listen\s+([^;]+);/.exec(line.trim())
-  if (!match) return null
-  const value = match[1]
-  const ssl = /\bssl\b/.test(value)
-  const portMatch = /:(\d{1,5})\b/.exec(value) ?? /^(\d{1,5})\b/.exec(value)
-  if (!portMatch) return null
-  const port = Number.parseInt(portMatch[1], 10)
-  if (!Number.isInteger(port) || port < 1 || port > 65535) return null
-  return { port, ssl }
-}
-
-function parseDirectiveValue(line: string, directive: string): string | null {
-  const match = new RegExp(`^${directive}\\s+([^;]+);`).exec(line.trim())
-  return match ? match[1].trim() : null
-}
-
-/**
- * Extracts server blocks from `nginx -T`, including the originating config path
- * from nginx's `# configuration file <path>:` markers.
- */
-export function parseNginxServerBlocks(nginxDashTOutput: string): NginxServerBlock[] {
-  const blocks: NginxServerBlock[] = []
-  let currentConfigPath = ''
-  let inServer = false
-  let current: NginxServerBlock | null = null
-
-  const flush = (): void => {
-    if (!current) return
-    blocks.push(current)
-    current = null
-    inServer = false
-  }
-
-  for (const rawLine of nginxDashTOutput.split('\n')) {
-    const line = rawLine.trim()
-    if (!line || line.startsWith('#') && !line.startsWith('# configuration file')) {
-      if (line === '}' && inServer) flush()
-      continue
-    }
-
-    const configMatch = /^#\s*configuration file\s+(.+?):\s*$/.exec(line)
-    if (configMatch) {
-      currentConfigPath = configMatch[1].trim()
-      continue
-    }
-
-    if (/^server(?:\s|\{)/.test(line)) {
-      flush()
-      inServer = true
-      current = {
-        configPath: currentConfigPath,
-        serverNames: [],
-        ports: [],
-        listensHttps: false,
-        sslCertificate: null,
-        sslCertificateKey: null
-      }
-      if (line.includes('{')) continue
-    }
-
-    if (!inServer || !current) {
-      if (line === '}') flush()
-      continue
-    }
-
-    if (line === '}') {
-      flush()
-      continue
-    }
-
-    const listen = parseListenDirective(line)
-    if (listen) {
-      if (!current.ports.includes(listen.port)) current.ports.push(listen.port)
-      if (listen.ssl) current.listensHttps = true
-      continue
-    }
-
-    const serverName = parseDirectiveValue(line, 'server_name')
-    if (serverName) {
-      const names = serverName
-        .split(/\s+/)
-        .map((name) => name.trim())
-        .filter((name) => name && name !== '_')
-      current.serverNames.push(...names)
-      continue
-    }
-
-    const sslCert = parseDirectiveValue(line, 'ssl_certificate')
-    if (sslCert && !sslCert.startsWith('$')) {
-      current.sslCertificate = sslCert
-      continue
-    }
-
-    const sslKey = parseDirectiveValue(line, 'ssl_certificate_key')
-    if (sslKey && !sslKey.startsWith('$')) {
-      current.sslCertificateKey = sslKey
-    }
-  }
-
-  flush()
-  return blocks
 }
 
 /** Parses `systemctl show <timer>` output for next/last trigger and result. */

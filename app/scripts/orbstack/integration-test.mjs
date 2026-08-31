@@ -8,9 +8,11 @@
  *   ZVIA_SSH_HOST=orb node scripts/orbstack/integration-test.mjs
  */
 import { Client } from 'ssh2'
+import { execSync } from 'node:child_process'
 import { homedir } from 'node:os'
 import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const SSH_HOST = process.env.ZVIA_SSH_HOST ?? '127.0.0.1'
 const SSH_PORT = Number(process.env.ZVIA_SSH_PORT ?? 32222)
@@ -363,6 +365,120 @@ async function testFiles(conn) {
   })
 }
 
+async function isFullstackProvisioned(conn) {
+  const marker = await exec(conn, 'cat /var/lib/zvia-provisioned 2>/dev/null')
+  return marker.stdout.includes('fullstack=1')
+}
+
+async function testFullstack(conn) {
+  console.log('\n[Fullstack / Deployments]')
+  const domain = process.env.ZVIA_DOMAIN ?? 'zvia-test.local'
+  const shopDomain = `shop.${domain}`
+  const apiDomain = `api.${domain}`
+
+  const ps = await exec(conn, "docker ps --format '{{.Names}}\t{{.Status}}'")
+  const running = ps.stdout
+  record('fullstack', 'postgres container', running.includes('zvia-demo-postgres'))
+  record('fullstack', 'api container', running.includes('zvia-demo-api'))
+  record('fullstack', 'frontend container', running.includes('zvia-demo-frontend'))
+
+  const compose = await exec(conn, 'test -f /opt/zvia-demo/docker-compose.yml && echo yes || echo no')
+  record('fullstack', 'compose project deployed', compose.stdout.trim() === 'yes')
+
+  const dashT = await exec(conn, 'sudo -n nginx -T 2>/dev/null', 45000)
+  const output = dashT.stdout
+  record('fullstack', 'shop server_name in nginx -T', output.includes(`server_name ${shopDomain}`))
+  record('fullstack', 'api server_name in nginx -T', output.includes(`server_name ${apiDomain}`))
+
+  const apiHealth = await exec(conn, 'curl -sf http://127.0.0.1:3001/health')
+  record('fullstack', 'api /health direct', apiHealth.exitCode === 0 && apiHealth.stdout.includes('"status":"ok"'))
+
+  const frontend = await exec(conn, 'curl -sf http://127.0.0.1:3000/')
+  record('fullstack', 'frontend direct', frontend.exitCode === 0 && frontend.stdout.includes('zvia-demo-shop'))
+
+  const shopHttps = await exec(
+    conn,
+    `curl -sk --resolve ${shopDomain}:443:127.0.0.1 https://${shopDomain}/`
+  )
+  record('fullstack', 'shop via nginx TLS', shopHttps.exitCode === 0 && shopHttps.stdout.includes('zvia-demo-shop'))
+
+  const apiHttps = await exec(
+    conn,
+    `curl -sk --resolve ${apiDomain}:443:127.0.0.1 https://${apiDomain}/health`
+  )
+  record(
+    'fullstack',
+    'api via nginx TLS',
+    apiHttps.exitCode === 0 && apiHttps.stdout.includes('"status":"ok"')
+  )
+
+  const cron = await exec(conn, 'crontab -l 2>/dev/null; cat /etc/cron.d/zvia-test 2>/dev/null')
+  record('fullstack', 'api health cron', cron.stdout.includes('3001/health'))
+}
+
+async function testDeployments(conn, fullstack) {
+  console.log('\n[Deployments / Topology]')
+  const dashT = await exec(conn, 'sudo -n nginx -T 2>/dev/null', 45000)
+  const output = dashT.stdout
+  record('deployments', 'nginx -T for topology', dashT.exitCode === 0 && output.includes('proxy_pass'))
+
+  const serverNames = [...output.matchAll(/server_name\s+([^;]+);/g)].map((match) => match[1].trim())
+  const distinctDomains = serverNames
+    .flatMap((value) => value.split(/\s+/))
+    .filter((name) => name && name !== '_' && !name.includes('localhost'))
+  record(
+    'deployments',
+    'multiple domain server blocks',
+    distinctDomains.length >= 2,
+    distinctDomains.join(', ')
+  )
+
+  if (fullstack) {
+    const proxyTargets = [...output.matchAll(/proxy_pass\s+http:\/\/127\.0\.0\.1:(\d+)/g)].map(
+      (match) => match[1]
+    )
+    const hasSeparateBackends = proxyTargets.includes('3000') && proxyTargets.includes('3001')
+    record(
+      'deployments',
+      'separate shop/api backends',
+      hasSeparateBackends,
+      hasSeparateBackends ? ':3000 (shop), :3001 (api)' : proxyTargets.join(', ')
+    )
+    await testDeploymentsTopologyPipeline()
+  } else {
+    const proxyTargets = [...output.matchAll(/proxy_pass\s+http:\/\/127\.0\.0\.1:(\d+)/g)].map(
+      (match) => match[1]
+    )
+    const sharedBackend = proxyTargets.length >= 2 && new Set(proxyTargets).size === 1
+    record(
+      'deployments',
+      'shared backend proxy_pass',
+      sharedBackend,
+      sharedBackend ? `port ${proxyTargets[0]}` : proxyTargets.join(', ')
+    )
+  }
+}
+
+function testDeploymentsTopologyPipeline() {
+  const appRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
+  try {
+    execSync('npx vitest run test/integration/deploymentsTopology.test.ts', {
+      cwd: appRoot,
+      stdio: 'pipe',
+      env: { ...process.env, ZVIA_ORB_INTEGRATION: '1' }
+    })
+    record('deployments', 'topology scan pipeline', true)
+  } catch (error) {
+    const output = [error.stdout, error.stderr]
+      .filter(Boolean)
+      .map((chunk) => chunk.toString())
+      .join('\n')
+      .trim()
+    const detail = output.split('\n').slice(-4).join(' ') || error.message
+    record('deployments', 'topology scan pipeline', false, detail)
+  }
+}
+
 async function main() {
   console.log(`Zvia OrbStack Integration Test`)
   console.log(`SSH: ${SSH_USER}@${SSH_HOST}:${SSH_PORT} (key: ${SSH_KEY})`)
@@ -378,6 +494,11 @@ async function main() {
   }
 
   try {
+    const fullstack = await isFullstackProvisioned(conn)
+    if (fullstack) {
+      console.log('Fullstack mode detected.\n')
+    }
+
     await testOverview(conn)
     await testStats(conn)
     await testLogs(conn)
@@ -391,6 +512,10 @@ async function main() {
     await testProcesses(conn)
     await testPackages(conn)
     await testFiles(conn)
+    if (fullstack) {
+      await testFullstack(conn)
+    }
+    await testDeployments(conn, fullstack)
   } finally {
     conn.end()
   }

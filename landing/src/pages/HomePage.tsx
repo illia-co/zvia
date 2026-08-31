@@ -1,3 +1,5 @@
+import { AuthenticationSection } from '../components/AuthenticationSection'
+import { DeploymentsSection } from '../components/DeploymentsSection'
 import { SiteClosing } from '../components/SiteClosing'
 import { Header } from '../components/Header'
 import { Hero } from '../components/Hero'
@@ -20,10 +22,12 @@ export function HomePage() {
       <Header />
       <main id="main">
         <Hero />
+        <DeploymentsSection />
         <Problem />
         <FeatureTabs />
         <ServerContext />
         <RealSSH />
+        <AuthenticationSection />
         <TerminalSection />
         <OpenSource />
         <SiteClosing />

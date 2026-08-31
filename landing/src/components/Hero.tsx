@@ -15,11 +15,12 @@ export function Hero() {
           Zvia
         </p>
         <h1 className="m-0 mx-auto max-w-3xl text-4xl font-medium leading-tight tracking-tight text-text md:text-5xl">
-          A native SSH workspace for your Linux servers.
+          See how your applications are wired.
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-text-secondary">
-          Connect over SSH and manage VPS and bare-metal servers from one calm,
-          server-scoped workspace — stats, logs, Docker, Nginx, SSL, and more.
+          Zvia discovers deployment topologies over SSH — nginx, ports, containers,
+          and services — then lets you inspect every connection from one calm,
+          server-scoped workspace.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <LinkButton href={downloads.downloadMac} rel="noopener noreferrer">

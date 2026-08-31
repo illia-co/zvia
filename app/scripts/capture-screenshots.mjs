@@ -16,6 +16,9 @@ const OUTPUT_DIR = join(APP_ROOT, '..', 'landing', 'src', 'assets', 'screenshots
 const electronPath = require('electron')
 
 const CAPTURES = [
+  { name: 'deployments', tool: 'deployments' },
+  { name: 'deployments-topology', tool: 'deployments:topology' },
+  { name: 'deployments-inspector', tool: 'deployments:inspector' },
   { name: 'overview', tool: 'overview' },
   { name: 'stats', tool: 'stats' },
   { name: 'users', tool: 'users' },

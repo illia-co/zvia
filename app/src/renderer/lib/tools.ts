@@ -13,6 +13,7 @@ export type ToolId =
   | 'users'
   | 'processes'
   | 'packages'
+  | 'deployments'
 
 export interface ToolDefinition {
   id: ToolId
@@ -20,7 +21,14 @@ export interface ToolDefinition {
   section?: string
 }
 
+/** Opens automatically when connecting to a server with no workspace panels. */
+export const DEFAULT_TOOL: ToolId = 'deployments'
+
+/** Bound to ⌘0 / Ctrl+0 — kept on Docker regardless of sidebar order. */
+export const KEYBOARD_ZERO_TOOL: ToolId = 'docker'
+
 export const TOOLS: ToolDefinition[] = [
+  { id: 'deployments', label: 'Deployments', section: 'Applications' },
   { id: 'overview', label: 'Overview', section: 'General' },
   { id: 'stats', label: 'Stats', section: 'System' },
   { id: 'users', label: 'Users', section: 'System' },

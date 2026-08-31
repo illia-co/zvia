@@ -13,6 +13,7 @@ import { terminalService } from './services/TerminalService'
 import { fileService } from './services/FileService'
 import { processService } from './services/ProcessService'
 import { packageService } from './services/PackageService'
+import { topologyService } from './services/deployments'
 import { isScreenshotMode, setScreenshotMainWindow } from './screenshotMode'
 import { captureScreenshotIfReady, configureScreenshotWindow } from './screenshotCapture'
 
@@ -147,6 +148,7 @@ app.whenReady().then(async () => {
   sslService.setMainWindow(mainWindow)
   processService.setMainWindow(mainWindow)
   packageService.setMainWindow(mainWindow)
+  topologyService.setMainWindow(mainWindow)
 
   if (isScreenshotMode()) {
     await captureScreenshotIfReady(mainWindow)
@@ -167,6 +169,7 @@ app.whenReady().then(async () => {
       sslService.setMainWindow(window)
       processService.setMainWindow(window)
       packageService.setMainWindow(window)
+      topologyService.setMainWindow(window)
       terminalService.setMainWindow(window)
     }
   })

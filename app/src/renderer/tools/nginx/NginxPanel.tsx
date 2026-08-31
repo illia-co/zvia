@@ -60,6 +60,10 @@ export function NginxPanel() {
     [panelId, registerPanelDirty]
   )
 
+  const handleInitialPathApplied = useCallback(() => {
+    setConfigPathIntent(undefined)
+  }, [])
+
   useEffect(() => () => registerPanelDirty(panelId, null), [panelId, registerPanelDirty])
 
   useEffect(() => {
@@ -239,6 +243,7 @@ export function NginxPanel() {
           <NginxConfigTab
             serverId={serverId}
             initialPath={configPathIntent}
+            onInitialPathApplied={handleInitialPathApplied}
             onSaved={() => void nginx.refresh()}
             onDirtyChange={handleDirtyChange}
           />

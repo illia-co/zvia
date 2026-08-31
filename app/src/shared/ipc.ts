@@ -466,6 +466,9 @@ export type IpcChannel =
   | 'packages:updates'
   | 'packages:operationStart'
   | 'packages:operationCancel'
+  | 'deployments:scan'
+  | 'deployments:getSnapshot'
+  | 'deployments:lookup'
   | 'window:toggleMaximize'
   | 'window:isFullscreen'
 
@@ -566,6 +569,9 @@ export type IpcRequestMap = {
   'packages:updates': ServerScoped
   'packages:operationStart': PackagesOperationStartRequest
   'packages:operationCancel': PackagesOperationCancelRequest
+  'deployments:scan': ServerScoped
+  'deployments:getSnapshot': ServerScoped
+  'deployments:lookup': DeploymentsLookupRequest
   'window:toggleMaximize': void
   'window:isFullscreen': void
 }
@@ -667,6 +673,9 @@ export type IpcResponseMap = {
   'packages:updates': import('./packages').PackageUpdate[]
   'packages:operationStart': void
   'packages:operationCancel': void
+  'deployments:scan': import('./topology').TopologySnapshot
+  'deployments:getSnapshot': import('./topology').TopologySnapshot
+  'deployments:lookup': DeploymentsLookupResult | null
   'window:toggleMaximize': void
   'window:isFullscreen': boolean
 }
@@ -693,6 +702,7 @@ export type IpcEventMap = {
   'packages:operationOutput': PackagesOperationOutputEvent
   'packages:operationDone': PackagesOperationDoneEvent
   'window:fullscreenChanged': { isFullscreen: boolean }
+  'deployments:scanProgress': DeploymentsScanProgressEvent
 }
 
 export interface LogsApi {
@@ -846,6 +856,33 @@ export interface SslApi {
   onWorkflowDone(listener: (event: SslWorkflowDoneEvent) => void): () => void
 }
 
+export interface DeploymentsLookupRequest extends ServerScoped {
+  kind: 'port' | 'container' | 'domain' | 'nginxSite'
+  port?: number
+  containerId?: string
+  domain?: string
+  configPath?: string
+  startLineNumber?: number
+}
+
+export interface DeploymentsLookupResult {
+  deploymentId: string
+  entityId: string
+}
+
+export interface DeploymentsScanProgressEvent extends ServerScoped {
+  phase: string
+  message: string
+  counts?: Record<string, number>
+}
+
+export interface DeploymentsApi {
+  scan(request: ServerScoped): Promise<import('./topology').TopologySnapshot>
+  getSnapshot(request: ServerScoped): Promise<import('./topology').TopologySnapshot>
+  lookup(request: DeploymentsLookupRequest): Promise<DeploymentsLookupResult | null>
+  onScanProgress(listener: (event: DeploymentsScanProgressEvent) => void): () => void
+}
+
 export interface ZviaApi {
   platform: NodeJS.Platform
   version: string
@@ -873,6 +910,7 @@ export interface ZviaApi {
   users: UsersApi
   processes: ProcessesApi
   packages: PackagesApi
+  deployments: DeploymentsApi
 
   /** Present only when the app is launched in screenshot capture mode. */
   screenshot?: {

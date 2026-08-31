@@ -13,8 +13,9 @@
 - Server sidebar, tool sidebar, workspace
 - Tabs, split panes, panel resizing, command palette
 
-### Tools (14)
+### Tools (15)
 
+- **Applications:** Deployments (default on connect)
 - **General:** Overview
 - **System:** Stats, Users, Processes, Packages, Logs
 - **Workspace:** Terminal, Files

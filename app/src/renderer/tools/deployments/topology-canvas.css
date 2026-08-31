@@ -1,0 +1,60 @@
+.deployment-topology-canvas .react-flow,
+.deployment-topology-canvas .react-flow.dark {
+  height: 100%;
+  width: 100%;
+  border-radius: inherit;
+  overflow: hidden;
+  --xy-background-color: var(--color-bg);
+  --xy-background-color-default: var(--color-bg);
+  background-color: var(--color-bg);
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--color-canvas-dot) 70%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+}
+
+.deployment-topology-canvas .react-flow__pane {
+  background-color: transparent;
+}
+
+.deployment-topology-canvas .react-flow__edge-path {
+  stroke: var(--color-divider);
+  stroke-width: 1.5;
+}
+
+.deployment-topology-canvas .react-flow__edge.selected .react-flow__edge-path {
+  stroke-width: 2.5;
+}
+
+.deployment-topology-canvas .react-flow__edge.edge-confidence-likely .react-flow__edge-path {
+  stroke-dasharray: 6 4;
+}
+
+.deployment-topology-canvas .react-flow__edge.edge-confidence-unknown .react-flow__edge-path {
+  stroke: var(--color-text-tertiary);
+  stroke-dasharray: 2 4;
+  opacity: 0.7;
+}
+
+.deployment-topology-canvas .react-flow__edge.edge-confidence-conflicting .react-flow__edge-path {
+  stroke: var(--color-status-warning);
+  stroke-dasharray: 6 4;
+}
+
+.deployment-topology-canvas .react-flow__edge-text {
+  fill: var(--color-text-tertiary);
+  font-size: 10px;
+}
+
+.deployment-topology-canvas .react-flow__edge-textbg {
+  fill: transparent;
+}
+
+.deployment-topology-canvas .react-flow__pane {
+  cursor: grab;
+}
+
+.deployment-topology-canvas .react-flow__pane:active {
+  cursor: grabbing;
+}

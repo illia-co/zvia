@@ -9,6 +9,7 @@ import { isSystemdAction, getProtectedSystemdUnitActionBlock } from '@shared/sys
 import { assertSystemdUnit } from '@shared/validate'
 import { connectionManager } from '../ssh/ConnectionManager'
 import { privilegeService } from './PrivilegeService'
+import { topologyService } from './deployments'
 import {
   buildUnitDetail,
   mergeUnits,
@@ -185,6 +186,9 @@ export class SystemdService {
         `systemctl ${action} ${name} failed`,
         (result.stderr || result.stdout).trim()
       )
+    }
+    if (action === 'start' || action === 'stop' || action === 'restart') {
+      topologyService.invalidate(serverId)
     }
   }
 }

@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import type { NginxStatus } from '@shared/nginx'
 import type { SslOverview } from '@shared/ssl'
 import type { ServerId } from '@shared/server'
 import { Button } from '@renderer/components/ui/button'
+import { deploymentNavLink, lookupDeploymentByDomain } from '@renderer/lib/deploymentCrossLinks'
 import { useNavigationStore } from '@renderer/state/navigationStore'
 
 interface NginxOverviewTabProps {
@@ -43,10 +45,30 @@ export function NginxOverviewTab({
   onOpenService
 }: NginxOverviewTabProps) {
   const openWithIntent = useNavigationStore((state) => state.openWithIntent)
+  const [deploymentDomain, setDeploymentDomain] = useState<string | null>(null)
   const httpsCerts =
     sslOverview?.certificates.filter((cert) =>
       cert.nginxSites.some((site) => site.listensHttps)
     ) ?? []
+
+  useEffect(() => {
+    let cancelled = false
+    const domains = httpsCerts.map((cert) => cert.primaryDomain)
+    void (async () => {
+      for (const domain of domains) {
+        const match = await lookupDeploymentByDomain(serverId, domain)
+        if (cancelled) return
+        if (match) {
+          setDeploymentDomain(domain)
+          return
+        }
+      }
+      if (!cancelled) setDeploymentDomain(null)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [httpsCerts, serverId])
 
   return (
     <div className="h-full overflow-auto p-4">
@@ -83,6 +105,21 @@ export function NginxOverviewTab({
             >
               Open in SSL
             </Button>
+            {deploymentDomain && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="-ml-2"
+                onClick={() => {
+                  void lookupDeploymentByDomain(serverId, deploymentDomain).then((match) => {
+                    if (!match) return
+                    deploymentNavLink(serverId, match, openWithIntent).onClick()
+                  })
+                }}
+              >
+                View in Deployments
+              </Button>
+            )}
           </FieldBlock>
         )}
 

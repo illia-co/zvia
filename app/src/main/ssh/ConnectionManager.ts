@@ -16,6 +16,7 @@ import { privilegeService } from '../services/PrivilegeService'
 import { userService } from '../services/UserService'
 import { processService } from '../services/ProcessService'
 import { packageService } from '../services/PackageService'
+import { topologyService } from '../services/deployments'
 import { clearCache as clearLinuxOsCache } from '../services/linuxOs'
 
 export class ConnectionManager {
@@ -49,6 +50,7 @@ export class ConnectionManager {
       userService.clearServer(profile.id)
       processService.clearServer(profile.id)
       packageService.clearServer(profile.id)
+      topologyService.clearServer(profile.id)
       clearLinuxOsCache(profile.id)
       privilegeService.clearCache(profile.id)
     })
@@ -104,6 +106,7 @@ export class ConnectionManager {
     userService.clearServer(serverId)
     processService.clearServer(serverId)
     packageService.clearServer(serverId)
+    topologyService.clearServer(serverId)
     clearLinuxOsCache(serverId)
     privilegeService.clearCache(serverId)
     await connection.disconnect()

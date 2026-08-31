@@ -21,6 +21,8 @@ export type ToolIntent =
   | { tool: 'users'; username?: string }
   | { tool: 'processes'; pid?: number }
   | { tool: 'packages'; packageName?: string; view?: 'installed' | 'updates' | 'search' }
+  | { tool: 'deployments'; deploymentId?: string; entityId?: string }
+  | { tool: 'docker'; containerId?: string }
 
 function intentToToolId(intent: ToolIntent): ToolId {
   return intent.tool

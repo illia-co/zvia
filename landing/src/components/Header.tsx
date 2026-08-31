@@ -5,6 +5,7 @@ import { DownloadDropdown } from './DownloadDropdown'
 const HOME_SECTION_LINKS = [
   { hash: '#features', label: 'Features' },
   { hash: '#ssh', label: 'SSH' },
+  { hash: '#security', label: 'Security' },
   { hash: '#open-source', label: 'Open Source' }
 ] as const
 

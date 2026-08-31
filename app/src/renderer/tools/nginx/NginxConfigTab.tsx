@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { NginxConfigFile, NginxConfigTree as ConfigTree } from '@shared/nginx'
 import type { ServerId } from '@shared/server'
 import { Button } from '@renderer/components/ui/button'
@@ -10,6 +10,7 @@ import { NginxConfigTree } from './NginxConfigTree'
 interface NginxConfigTabProps {
   serverId: ServerId
   initialPath?: string
+  onInitialPathApplied?: () => void
   onSaved: () => void
   onDirtyChange: (dirty: boolean) => void
 }
@@ -24,6 +25,7 @@ interface OpenFile {
 export function NginxConfigTab({
   serverId,
   initialPath,
+  onInitialPathApplied,
   onSaved,
   onDirtyChange
 }: NginxConfigTabProps) {
@@ -31,6 +33,7 @@ export function NginxConfigTab({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [openFile, setOpenFile] = useState<OpenFile | null>(null)
+  const initialPathConsumed = useRef(false)
 
   const loadTree = useCallback(async () => {
     setLoading(true)
@@ -69,11 +72,22 @@ export function NginxConfigTab({
   )
 
   useEffect(() => {
-    if (!initialPath || !tree) return
+    if (!initialPath || !tree || initialPathConsumed.current) return
     const file = tree.files.find((entry) => entry.path === initialPath)
     if (!file) return
-    void selectFile(file)
-  }, [initialPath, selectFile, tree])
+    initialPathConsumed.current = true
+
+    void (async () => {
+      try {
+        const result = await window.zvia.nginx.readConfig({ serverId, path: file.path })
+        setOpenFile({ path: result.path, name: file.name, content: result.content, dirty: false })
+        setError(null)
+        onInitialPathApplied?.()
+      } catch (err) {
+        setError(describeToolError(err).message)
+      }
+    })()
+  }, [initialPath, onInitialPathApplied, serverId, tree])
 
   useEffect(() => {
     onDirtyChange(openFile?.dirty === true)

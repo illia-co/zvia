@@ -10,6 +10,8 @@ Agent and contributor documentation is organized by workspace package.
 | [AGENTS.md](../AGENTS.md) | Coding agent instructions (keep at repo root) |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute |
 | [SECURITY.md](../SECURITY.md) | Security policy and vulnerability reporting |
+| [CHANGELOG.md](../CHANGELOG.md) | Version history |
+| [releases/](./releases/) | Launch notes per release |
 
 ## By package
 

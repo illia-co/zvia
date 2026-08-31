@@ -17,6 +17,7 @@ import type { ServerProfile } from '@shared/server'
 import type { SslNginxLink, SslOverview } from '@shared/ssl'
 import type { ServerStatsSnapshot, SystemInfo } from '@shared/stats'
 import type { SystemdUnit } from '@shared/systemd'
+import type { TopologySnapshot } from '@shared/topology'
 import type { UsersListResponse } from '@shared/users'
 
 export const SCREENSHOT_SERVER_ID = 'production'
@@ -636,6 +637,188 @@ const DEMO_PORTS: PortsSnapshot = {
   source: 'ss'
 }
 
+const DEMO_API_DOMAIN = 'domain:api.production.example.com'
+const DEMO_WEB_DOMAIN = 'domain:production.example.com'
+const DEMO_API_SITE = 'nginx:/etc/nginx/sites-enabled/api:10'
+const DEMO_WEB_SITE = 'nginx:/etc/nginx/sites-enabled/web:20'
+const DEMO_API_PORT = 'port:tcp:127.0.0.1:8080'
+const DEMO_WEB_PORT = 'port:tcp:127.0.0.1:3000'
+const DEMO_API_CONTAINER = 'container:a1b2c3d4'
+
+const DEMO_TOPOLOGY_SNAPSHOT: TopologySnapshot = {
+  serverId: SCREENSHOT_SERVER_ID,
+  scannedAt: '2026-08-30T12:00:00.000Z',
+  scanDurationMs: 1240,
+  entities: {
+    [DEMO_API_DOMAIN]: {
+      id: DEMO_API_DOMAIN,
+      kind: 'domain',
+      label: 'api.production.example.com',
+      status: 'healthy'
+    },
+    [DEMO_WEB_DOMAIN]: {
+      id: DEMO_WEB_DOMAIN,
+      kind: 'domain',
+      label: 'production.example.com',
+      status: 'degraded'
+    },
+    [DEMO_API_SITE]: {
+      id: DEMO_API_SITE,
+      kind: 'nginx_site',
+      label: 'api.production.example.com',
+      status: 'healthy'
+    },
+    [DEMO_WEB_SITE]: {
+      id: DEMO_WEB_SITE,
+      kind: 'nginx_site',
+      label: 'production.example.com',
+      status: 'healthy'
+    },
+    [DEMO_API_PORT]: {
+      id: DEMO_API_PORT,
+      kind: 'port',
+      label: ':8080',
+      status: 'healthy'
+    },
+    [DEMO_WEB_PORT]: {
+      id: DEMO_WEB_PORT,
+      kind: 'port',
+      label: ':3000',
+      status: 'degraded'
+    },
+    [DEMO_API_CONTAINER]: {
+      id: DEMO_API_CONTAINER,
+      kind: 'docker_container',
+      label: 'zvia-api',
+      status: 'healthy'
+    }
+  },
+  relationships: [
+    {
+      id: 'rel-api-domain-site',
+      from: { kind: 'domain', id: DEMO_API_DOMAIN },
+      to: { kind: 'nginx_site', id: DEMO_API_SITE },
+      type: 'serves',
+      confidence: 'confirmed',
+      evidence: [
+        {
+          source: 'nginx-T',
+          kind: 'directive',
+          detail: 'server_name api.production.example.com',
+          observedAt: '2026-08-30T12:00:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'rel-api-site-port',
+      from: { kind: 'nginx_site', id: DEMO_API_SITE },
+      to: { kind: 'port', id: DEMO_API_PORT },
+      type: 'proxies_to',
+      confidence: 'confirmed',
+      label: 'proxy_pass',
+      evidence: [
+        {
+          source: 'nginx-T',
+          kind: 'directive',
+          detail: 'proxy_pass http://127.0.0.1:8080',
+          raw: 'proxy_pass http://127.0.0.1:8080;',
+          location: '/etc/nginx/sites-enabled/api, line 18',
+          observedAt: '2026-08-30T12:00:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'rel-api-port-container',
+      from: { kind: 'port', id: DEMO_API_PORT },
+      to: { kind: 'docker_container', id: DEMO_API_CONTAINER },
+      type: 'published_by',
+      confidence: 'confirmed',
+      evidence: [
+        {
+          source: 'docker-ps',
+          kind: 'command_output',
+          detail: '0.0.0.0:8080->8080/tcp',
+          observedAt: '2026-08-30T12:00:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'rel-web-domain-site',
+      from: { kind: 'domain', id: DEMO_WEB_DOMAIN },
+      to: { kind: 'nginx_site', id: DEMO_WEB_SITE },
+      type: 'serves',
+      confidence: 'confirmed',
+      evidence: [
+        {
+          source: 'nginx-T',
+          kind: 'directive',
+          detail: 'server_name production.example.com',
+          observedAt: '2026-08-30T12:00:00.000Z'
+        }
+      ]
+    },
+    {
+      id: 'rel-web-site-port',
+      from: { kind: 'nginx_site', id: DEMO_WEB_SITE },
+      to: { kind: 'port', id: DEMO_WEB_PORT },
+      type: 'proxies_to',
+      confidence: 'confirmed',
+      label: 'proxy_pass',
+      evidence: [
+        {
+          source: 'nginx-T',
+          kind: 'directive',
+          detail: 'proxy_pass http://127.0.0.1:3000',
+          observedAt: '2026-08-30T12:00:00.000Z'
+        }
+      ]
+    }
+  ],
+  deployments: [
+    {
+      id: 'deployment:api.production.example.com',
+      name: 'api.production.example.com',
+      health: 'healthy',
+      entityIds: [DEMO_API_DOMAIN, DEMO_API_SITE, DEMO_API_PORT, DEMO_API_CONTAINER],
+      entrypoints: [{ kind: 'domain', id: DEMO_API_DOMAIN }],
+      stackSummary: 'Nginx → :8080 → Docker → zvia-api',
+      componentStatus: { ssl: 'healthy', nginx: 'healthy', backend: 'healthy', container: 'healthy' }
+    },
+    {
+      id: 'deployment:production.example.com',
+      name: 'production.example.com',
+      health: 'degraded',
+      entityIds: [DEMO_WEB_DOMAIN, DEMO_WEB_SITE, DEMO_WEB_PORT],
+      entrypoints: [{ kind: 'domain', id: DEMO_WEB_DOMAIN }],
+      stackSummary: 'Nginx → :3000 → Node → zvia-web.service',
+      componentStatus: { ssl: 'healthy', nginx: 'healthy', backend: 'degraded', service: 'healthy' }
+    }
+  ],
+  insights: [
+    {
+      id: 'insight-shared-backend-1',
+      type: 'shared_backend',
+      deploymentIds: [
+        'deployment:api.production.example.com',
+        'deployment:admin.production.example.com'
+      ],
+      label: '2 domains → same backend :3000',
+      confidence: 'confirmed',
+      evidence: [
+        {
+          source: 'nginx-T',
+          kind: 'directive',
+          detail: 'proxy_pass http://127.0.0.1:3000',
+          raw: 'proxy_pass http://127.0.0.1:3000;',
+          location: '/etc/nginx/sites-enabled/admin, line 12',
+          observedAt: '2026-08-30T12:00:00.000Z'
+        }
+      ]
+    }
+  ],
+  warnings: []
+}
+
 const DEMO_CRON: CronListResponse = {
   jobs: [
     {
@@ -833,6 +1016,8 @@ const SCREENSHOT_STUBS: Partial<Record<IpcChannel, ScreenshotStub>> = {
     return { path: request.path, entries: [] }
   },
   'ports:list': async () => DEMO_PORTS,
+  'deployments:scan': async () => DEMO_TOPOLOGY_SNAPSHOT,
+  'deployments:getSnapshot': async () => DEMO_TOPOLOGY_SNAPSHOT,
   'cron:list': async () => DEMO_CRON,
   'terminal:open': async () => undefined,
   'terminal:write': async () => undefined,

@@ -13,6 +13,7 @@ import { SslPanel } from '@renderer/tools/ssl/SslPanel'
 import { UsersPanel } from '@renderer/tools/users/UsersPanel'
 import { ProcessesPanel } from '@renderer/tools/processes/ProcessesPanel'
 import { PackagesPanel } from '@renderer/tools/packages/PackagesPanel'
+import { DeploymentsPanel } from '@renderer/tools/deployments/DeploymentsPanel'
 export function renderToolPanel(toolId: ToolId) {
   switch (toolId) {
     case 'overview':
@@ -43,5 +44,7 @@ export function renderToolPanel(toolId: ToolId) {
       return <ProcessesPanel />
     case 'packages':
       return <PackagesPanel />
+    case 'deployments':
+      return <DeploymentsPanel />
   }
 }

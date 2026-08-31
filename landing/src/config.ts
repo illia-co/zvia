@@ -1,4 +1,7 @@
 import cronImg from './assets/screenshots/cron.png'
+import deploymentsImg from './assets/screenshots/deployments.png'
+import deploymentsInspectorImg from './assets/screenshots/deployments-inspector.png'
+import deploymentsTopologyImg from './assets/screenshots/deployments-topology.png'
 import dockerImg from './assets/screenshots/docker.png'
 import filesImg from './assets/screenshots/files.png'
 import logsImg from './assets/screenshots/logs.png'
@@ -21,7 +24,7 @@ const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://illia-co.github.io/zv
 export const SITE = {
   title: 'Zvia — Open-source SSH client for Linux server management',
   description:
-    'Open-source desktop app for managing Linux servers and VPS instances over SSH. One workspace for server administration — stats, logs, Docker, Nginx, SSL, systemd, files, and terminal.',
+    'Open-source desktop app for managing Linux servers over SSH. Discover deployment topologies, inspect nginx → ports → containers → services, and manage stats, logs, Docker, SSL, files, and terminal — all server-scoped.',
   canonical: siteUrl,
   ogImage: `${siteUrl}/og-image.png`,
   github: GITHUB_REPO,
@@ -37,6 +40,37 @@ export const DOC_PAGE_META = {
     'Learn how to install Zvia, connect to Linux servers over SSH, and use tools for Docker, Nginx, SSL, systemd, logs, files, and terminal access.'
 } as const
 
+export const IMPRESSUM_PAGE_META = {
+  title: 'Legal Notice — Zvia',
+  description: 'Legal notice and provider identification for the Zvia website.'
+} as const
+
+export const DATENSCHUTZ_PAGE_META = {
+  title: 'Privacy Policy — Zvia',
+  description:
+    'Privacy policy for the Zvia website and information about the local desktop application.'
+} as const
+
+/**
+ * Legal provider details for the Legal Notice and Privacy Policy pages.
+ * Replace placeholders before publishing.
+ */
+export const LEGAL = {
+  providerName: 'Illia Tatarchenko',
+  address: {
+    street: 'Luisenstr. 45',
+    postalCode: '76137',
+    city: 'Karlsruhe',
+    country: 'Germany'
+  },
+  contactEmail: null as string | null,
+  githubContact: `${GITHUB_REPO}/issues`,
+  hosting: {
+    provider: 'GitHub Pages (GitHub, Inc.)',
+    website: 'https://pages.github.com'
+  }
+} as const
+
 export interface HeroScreenshot {
   src: string
   alt: string
@@ -45,9 +79,19 @@ export interface HeroScreenshot {
 
 export const HERO_SCREENSHOTS: HeroScreenshot[] = [
   {
-    src: dockerImg,
-    alt: 'Zvia Docker panel showing running containers on a production server',
-    label: 'Docker'
+    src: deploymentsImg,
+    alt: 'Zvia Deployments panel listing discovered application topologies on a production server',
+    label: 'Deployments'
+  },
+  {
+    src: deploymentsTopologyImg,
+    alt: 'Zvia deployment topology canvas showing nginx, ports, and container connections',
+    label: 'Topology'
+  },
+  {
+    src: deploymentsInspectorImg,
+    alt: 'Zvia deployment inspector showing entity details and evidence-backed connections',
+    label: 'Inspector'
   },
   {
     src: overviewImg,
@@ -58,16 +102,60 @@ export const HERO_SCREENSHOTS: HeroScreenshot[] = [
     src: nginxImg,
     alt: 'Zvia Nginx panel showing web server status and configuration',
     label: 'Nginx'
+  }
+]
+
+export interface DeploymentScreenshot {
+  id: string
+  label: string
+  headline: string
+  description: string
+  bullets: string[]
+  src: string
+  alt: string
+}
+
+export const DEPLOYMENT_SCREENSHOTS: DeploymentScreenshot[] = [
+  {
+    id: 'list',
+    label: 'List',
+    headline: 'Every domain, one row.',
+    description:
+      'Deployments scans the selected server and groups resources by primary domain. Health dots, component chips, and shared-backend insights surface problems before you open a detail view.',
+    bullets: [
+      'One deployment per primary nginx server_name',
+      'Health reflects the worst status along the confirmed path to the backend',
+      'Shared backends appear as cross-deployment insights'
+    ],
+    src: deploymentsImg,
+    alt: 'Zvia Deployments table with domain, status, and component chips'
   },
   {
-    src: servicesImg,
-    alt: 'Zvia services panel listing systemd units and their states',
-    label: 'Services'
+    id: 'topology',
+    label: 'Topology',
+    headline: 'Follow the path from domain to backend.',
+    description:
+      'Open a deployment to see an interactive topology canvas. Nodes represent domains, nginx sites, ports, services, processes, and containers. Edge style reflects how confident Zvia is about each connection.',
+    bullets: [
+      'Solid edges — confirmed relationships with direct evidence',
+      'Dashed or dotted edges — likely or unknown connections',
+      'Click any node or edge to inspect details'
+    ],
+    src: deploymentsTopologyImg,
+    alt: 'Zvia deployment topology canvas with connected nodes and edges'
   },
   {
-    src: statsImg,
-    alt: 'Zvia stats panel with CPU, memory, disk, and network metrics',
-    label: 'Stats'
+    id: 'inspector',
+    label: 'Inspector',
+    headline: 'Evidence for every connection.',
+    description:
+      'The inspector panel shows structured entity details, dependencies, and the evidence behind each relationship — nginx directives, port bindings, process matches, and Docker output.',
+    bullets: [
+      'Entity inspector — status, connections, and jump links to related tools',
+      'Why? inspector — evidence snippets with source and location'
+    ],
+    src: deploymentsInspectorImg,
+    alt: 'Zvia deployment inspector with entity status and connection evidence'
   }
 ]
 
@@ -92,6 +180,24 @@ export interface FeatureGroup {
 }
 
 export const FEATURE_GROUPS: FeatureGroup[] = [
+  {
+    id: 'applications',
+    label: 'Applications',
+    headline: 'Discover how apps are deployed.',
+    description:
+      'Deployments correlates nginx, SSL, ports, processes, systemd, and Docker into per-domain topologies with evidence-backed explanations — scoped to the server you selected.',
+    tools: [
+      {
+        id: 'deployments',
+        label: 'Deployments',
+        section: 'Applications',
+        description:
+          'Topology discovery from domain to backend, with health indicators and interactive inspection.',
+        screenshot: deploymentsImg,
+        visual: 'screenshot'
+      }
+    ]
+  },
   {
     id: 'general',
     label: 'General',
@@ -267,6 +373,7 @@ export interface ZviaToolGroup {
 }
 
 export const ZVIA_TOOL_GROUPS: ZviaToolGroup[] = [
+  { label: 'Applications', tools: ['Deployments'] },
   { label: 'General', tools: ['Overview'] },
   { label: 'System', tools: ['Stats', 'Users', 'Processes', 'Packages', 'Logs'] },
   { label: 'Workspace', tools: ['Terminal', 'Files'] },

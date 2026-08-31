@@ -1,5 +1,5 @@
 import { BrowserWindow, ipcMain } from 'electron'
-import { formatIpcError, serializeError } from '@shared/errors'
+import { formatIpcError, serializeError, ValidationError } from '@shared/errors'
 import {
   validateConnectRequest,
   validateConnectionTestRequest,
@@ -83,6 +83,7 @@ import { cronService } from '../services/CronService'
 import { userService } from '../services/UserService'
 import { processService } from '../services/ProcessService'
 import { packageService } from '../services/PackageService'
+import { topologyService } from '../services/deployments'
 import { getScreenshotStub } from '../screenshotMode'
 
 function registerHandler<C extends IpcChannel>(
@@ -369,6 +370,48 @@ export function registerIpcHandlers(): void {
   registerHandler('packages:operationCancel', async (payload) => {
     const request = validatePackagesOperationCancelRequest(payload)
     packageService.cancelOperation(request.serverId, request.streamId)
+  })
+
+  registerHandler('deployments:scan', async (payload) => {
+    const request = validateServerScoped(payload)
+    return topologyService.scan(request.serverId)
+  })
+
+  registerHandler('deployments:getSnapshot', async (payload) => {
+    const request = validateServerScoped(payload)
+    return topologyService.getSnapshot(request.serverId)
+  })
+
+  registerHandler('deployments:lookup', async (payload) => {
+    const request = payload as import('@shared/ipc').DeploymentsLookupRequest
+    if (!request.serverId) {
+      throw new ValidationError('serverId is required')
+    }
+    switch (request.kind) {
+      case 'port':
+        if (request.port === undefined) throw new ValidationError('port is required')
+        return topologyService.lookup(request.serverId, { kind: 'port', port: request.port })
+      case 'container':
+        if (!request.containerId) throw new ValidationError('containerId is required')
+        return topologyService.lookup(request.serverId, {
+          kind: 'container',
+          containerId: request.containerId
+        })
+      case 'domain':
+        if (!request.domain) throw new ValidationError('domain is required')
+        return topologyService.lookup(request.serverId, { kind: 'domain', domain: request.domain })
+      case 'nginxSite':
+        if (!request.configPath || request.startLineNumber === undefined) {
+          throw new ValidationError('configPath and startLineNumber are required')
+        }
+        return topologyService.lookup(request.serverId, {
+          kind: 'nginxSite',
+          configPath: request.configPath,
+          startLineNumber: request.startLineNumber
+        })
+      default:
+        throw new ValidationError('Invalid lookup kind')
+    }
   })
 
   registerHandler('files:list', async (payload) => {
@@ -733,6 +776,9 @@ export function unregisterIpcHandlers(): void {
     'ssl:enableAutoRenewal',
     'ssl:verifyHttps',
     'ssl:renewalLog',
+    'deployments:scan',
+    'deployments:getSnapshot',
+    'deployments:lookup',
     'window:toggleMaximize',
     'window:isFullscreen'
   ]
