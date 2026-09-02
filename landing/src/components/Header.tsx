@@ -79,7 +79,7 @@ export function Header() {
 
           <button
             type="button"
-            className={`burger flex flex-col md:hidden${mobileOpen ? ' burger--open' : ''}`}
+            className={`burger${mobileOpen ? ' burger--open' : ''}`}
             aria-label="Toggle navigation menu"
             aria-expanded={mobileOpen}
             aria-controls="mobile-menu"

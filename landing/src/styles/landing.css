@@ -1378,11 +1378,19 @@
 }
 
 .burger {
+  display: flex;
+  flex-direction: column;
   gap: 5px;
   padding: 0.5rem;
   background: transparent;
   border: none;
   cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .burger {
+    display: none;
+  }
 }
 
 .burger-line {

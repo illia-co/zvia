@@ -10,3 +10,9 @@ export const SCREENSHOT_PROFILE: ServerProfile = {
   port: 22,
   auth: { type: 'ssh-agent' }
 }
+
+export const SCREENSHOT_DEPLOYMENT_ID = 'deployment:api.production.example.com'
+export const SCREENSHOT_DEPLOYMENT_ENTITY_ID = 'domain:api.production.example.com'
+export const SCREENSHOT_PROD_DEPLOYMENT_ID = 'deployment:production.example.com'
+/** Stable-tagged snapshot in screenshot demo history (see screenshotMode demoHistory). */
+export const SCREENSHOT_STABLE_BASELINE_ID = '2026-08-25T10:00:00.000Z'

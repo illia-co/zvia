@@ -6,7 +6,15 @@ import { getScreenshotTool, isScreenshotMode } from './screenshotMode'
 const CAPTURE_WIDTH = 1440
 const CAPTURE_HEIGHT = 900
 const SETTLE_MS = 2500
+const SETTLE_MS_SLOW = 4000
 const MOUNT_DELAY_MS = 750
+
+function settleMsForTool(tool: string): number {
+  if (tool === 'deployments:diff' || tool === 'deployments:snapshots') {
+    return SETTLE_MS_SLOW
+  }
+  return SETTLE_MS
+}
 
 export function configureScreenshotWindow(window: BrowserWindow): void {
   if (!isScreenshotMode()) return
@@ -28,11 +36,12 @@ export async function captureScreenshotIfReady(window: BrowserWindow): Promise<v
   }
 
   const tool = getScreenshotTool()
+  const settleMs = settleMsForTool(tool)
 
   await new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => {
       reject(new Error('Screenshot capture timed out'))
-    }, SETTLE_MS + MOUNT_DELAY_MS + 5000)
+    }, settleMs + MOUNT_DELAY_MS + 5000)
 
     window.webContents.once('did-finish-load', () => {
       setTimeout(() => {
@@ -46,7 +55,7 @@ export async function captureScreenshotIfReady(window: BrowserWindow): Promise<v
     })
   })
 
-  await new Promise((resolve) => setTimeout(resolve, SETTLE_MS))
+  await new Promise((resolve) => setTimeout(resolve, settleMs))
 
   const image = await window.webContents.capturePage()
   writeFileSync(outputPath, image.toPNG())

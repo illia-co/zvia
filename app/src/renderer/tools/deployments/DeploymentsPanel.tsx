@@ -45,9 +45,25 @@ export function DeploymentsPanel() {
   }, [serverId])
 
   useEffect(() => {
-    if (!deploymentsState.snapshot) return
+    if (!deploymentsState.snapshot || !intent) return
 
-    if (intent?.deploymentId) {
+    if (intent.view === 'snapshots' && intent.deploymentId) {
+      setSelectedDeployment(null)
+      setDiffDeploymentId(null)
+      setDiffRequest(null)
+      setSnapshotsDeploymentId(intent.deploymentId)
+      return
+    }
+
+    if (intent.view === 'diff' && intent.deploymentId && intent.baselineId) {
+      setSelectedDeployment(null)
+      setSnapshotsDeploymentId(null)
+      setDiffDeploymentId(intent.deploymentId)
+      setDiffRequest({ type: 'live', baselineId: intent.baselineId })
+      return
+    }
+
+    if (intent.deploymentId) {
       const match = deploymentsState.snapshot.deployments.find(
         (deployment) => deployment.id === intent.deploymentId
       )
@@ -55,7 +71,7 @@ export function DeploymentsPanel() {
       return
     }
 
-    if (intent?.entityId) {
+    if (intent.entityId) {
       const match = deploymentsState.snapshot.deployments.find((deployment) =>
         deployment.entityIds.includes(intent.entityId!)
       )

@@ -3,12 +3,13 @@ import { useNavigationStore } from '@renderer/state/navigationStore'
 import { useServerStore } from '@renderer/state/serverStore'
 import { useWorkspaceStore } from '@renderer/state/workspaceStore'
 import {
+  SCREENSHOT_DEPLOYMENT_ENTITY_ID,
+  SCREENSHOT_DEPLOYMENT_ID,
+  SCREENSHOT_PROD_DEPLOYMENT_ID,
   SCREENSHOT_PROFILE,
-  SCREENSHOT_SERVER_ID
+  SCREENSHOT_SERVER_ID,
+  SCREENSHOT_STABLE_BASELINE_ID
 } from '@renderer/screenshot/constants'
-
-const SCREENSHOT_DEPLOYMENT_ID = 'deployment:api.production.example.com'
-const SCREENSHOT_DEPLOYMENT_ENTITY_ID = 'domain:api.production.example.com'
 
 export function setupScreenshotDemo(tool: string): void {
   document.documentElement.classList.add('dark')
@@ -26,6 +27,25 @@ export function setupScreenshotDemo(tool: string): void {
   const [toolId, view] = tool.split(':') as [ToolId, string | undefined]
 
   if (toolId === 'deployments' && view) {
+    if (view === 'snapshots') {
+      useNavigationStore.getState().openWithIntent(SCREENSHOT_SERVER_ID, {
+        tool: 'deployments',
+        deploymentId: SCREENSHOT_PROD_DEPLOYMENT_ID,
+        view: 'snapshots'
+      })
+      return
+    }
+
+    if (view === 'diff') {
+      useNavigationStore.getState().openWithIntent(SCREENSHOT_SERVER_ID, {
+        tool: 'deployments',
+        deploymentId: SCREENSHOT_PROD_DEPLOYMENT_ID,
+        view: 'diff',
+        baselineId: SCREENSHOT_STABLE_BASELINE_ID
+      })
+      return
+    }
+
     useNavigationStore.getState().openWithIntent(SCREENSHOT_SERVER_ID, {
       tool: 'deployments',
       deploymentId: SCREENSHOT_DEPLOYMENT_ID,

@@ -19,6 +19,8 @@ const CAPTURES = [
   { name: 'deployments', tool: 'deployments' },
   { name: 'deployments-topology', tool: 'deployments:topology' },
   { name: 'deployments-inspector', tool: 'deployments:inspector' },
+  { name: 'deployments-snapshots', tool: 'deployments:snapshots' },
+  { name: 'deployments-diff', tool: 'deployments:diff' },
   { name: 'overview', tool: 'overview' },
   { name: 'stats', tool: 'stats' },
   { name: 'users', tool: 'users' },
