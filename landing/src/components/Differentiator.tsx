@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { SCREENSHOTS } from '../config'
 import { Reveal } from './Reveal'
 import { Screenshot } from './Screenshot'
@@ -13,6 +14,31 @@ function Eyebrow({ children }: { children: string }) {
     <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
       {children}
     </p>
+  )
+}
+
+function BentoDetailList({ items }: { items: ReactNode[] }) {
+  return (
+    <ul className="bento-detail-list">
+      {items.map((item, index) => (
+        <li key={index} className="bento-detail-item">
+          <span className="bento-detail-marker" aria-hidden />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function CollectorChips({ sources }: { sources: string[] }) {
+  return (
+    <div className="bento-collectors" aria-label="Correlated data sources">
+      {sources.map((source) => (
+        <span key={source} className="bento-collector-chip">
+          {source}
+        </span>
+      ))}
+    </div>
   )
 }
 
@@ -72,6 +98,15 @@ export function Differentiator() {
                   into a per-domain topology.
                 </p>
               </div>
+              <CollectorChips
+                sources={['nginx', 'SSL', 'ports', 'processes', 'systemd', 'Docker']}
+              />
+              <BentoDetailList
+                items={[
+                  'One row per domain — shared backends surfaced, never merged',
+                  'Solid, dashed, and dotted edges reflect evidence confidence'
+                ]}
+              />
             </div>
 
             <Figure
@@ -93,18 +128,15 @@ export function Differentiator() {
                   scoped to a single deployment.
                 </p>
               </div>
-              <ul className="m-0 mt-4 list-none space-y-2 p-0 text-sm text-text-secondary">
-                <li className="flex gap-2">
-                  <span className="mt-2 size-1 shrink-0 rounded-full bg-text-tertiary" aria-hidden />
-                  <span>
+              <BentoDetailList
+                items={[
+                  <>
                     Tag <span className="font-mono text-text">stable</span>, deploy, then diff.
-                  </span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="mt-2 size-1 shrink-0 rounded-full bg-text-tertiary" aria-hidden />
-                  <span>Drill to the exact before/after of one change.</span>
-                </li>
-              </ul>
+                  </>,
+                  'Drill to the exact before/after of one change.',
+                  'Scoped to one deployment — changes on other apps never leak in.'
+                ]}
+              />
             </div>
 
             <Figure
@@ -141,6 +173,10 @@ export function Differentiator() {
                   Every edge is evidence-backed. Click a connection to see the nginx
                   directive, port binding, or process match behind it.
                 </p>
+              </div>
+              <div className="bento-code-snippet" aria-label="Example nginx evidence">
+                <span className="bento-code-snippet-label">nginx directive</span>
+                <code>proxy_pass http://127.0.0.1:3000;</code>
               </div>
               <ul className="confidence-legend">
                 {CONFIDENCE.map((entry) => (
