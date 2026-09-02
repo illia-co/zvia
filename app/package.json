@@ -1,6 +1,6 @@
 {
   "name": "@zvia/app",
-  "version": "0.1.1-beta",
+  "version": "0.1.2-beta",
   "description": "Cross-platform SSH workspace for remote Linux servers",
   "author": "Zvia contributors",
   "desktopName": "Zvia",
@@ -8,6 +8,7 @@
   "private": true,
   "scripts": {
     "dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
+    "dev:demo": "env -u ELECTRON_RUN_AS_NODE ZVIA_SCREENSHOT=1 ZVIA_SCREENSHOT_TOOL=deployments electron-vite dev",
     "build": "electron-vite build",
     "preview": "env -u ELECTRON_RUN_AS_NODE electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",

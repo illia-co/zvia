@@ -383,4 +383,132 @@ describe('topologyHealth', () => {
     enrichDeployments([deployment], entities, relationships)
     expect(entities[domainId].status).toBe('failed')
   })
+
+  it('computes backend/container health for a compose container deployment', () => {
+    const composeId = 'compose:zvia-nonnginx'
+    const api = containerEntityId('api')
+    const db = containerEntityId('db')
+    const portId = portEntityId('tcp', '127.0.0.1', 4001)
+
+    const deployment: Deployment = {
+      id: deploymentEntityId('zvia-nonnginx'),
+      name: 'zvia-nonnginx',
+      health: 'unknown',
+      entityIds: [composeId, api, db, portId],
+      entrypoints: [{ kind: 'docker_compose_service', id: composeId }],
+      stackSummary: '',
+      componentStatus: {}
+    }
+
+    const entities: Record<string, TopologyEntity> = {
+      [composeId]: { id: composeId, kind: 'docker_compose_service', label: 'zvia-nonnginx', status: 'unknown' },
+      [api]: { id: api, kind: 'docker_container', label: 'api', status: 'healthy', sourceRef: { state: 'running' } },
+      [db]: { id: db, kind: 'docker_container', label: 'postgres', status: 'healthy', sourceRef: { state: 'running' } },
+      [portId]: {
+        id: portId,
+        kind: 'port',
+        label: ':4001',
+        status: 'healthy',
+        sourceRef: { protocol: 'tcp', address: '127.0.0.1', port: 4001 }
+      }
+    }
+
+    const relationships: Relationship[] = [
+      {
+        id: 'm1',
+        from: { kind: 'docker_container', id: api },
+        to: { kind: 'docker_compose_service', id: composeId },
+        type: 'member_of',
+        confidence: 'confirmed',
+        evidence: []
+      },
+      {
+        id: 'm2',
+        from: { kind: 'docker_container', id: db },
+        to: { kind: 'docker_compose_service', id: composeId },
+        type: 'member_of',
+        confidence: 'confirmed',
+        evidence: []
+      },
+      {
+        id: 'p1',
+        from: { kind: 'port', id: portId },
+        to: { kind: 'docker_container', id: api },
+        type: 'published_by',
+        confidence: 'confirmed',
+        evidence: []
+      }
+    ]
+
+    const stackSummary = buildStackSummary(deployment, entities, relationships)
+    expect(stackSummary).toContain(':4001')
+    expect(stackSummary).toContain('api')
+    expect(stackSummary).toContain('postgres')
+    expect(stackSummary).not.toContain('Nginx')
+
+    const { health, componentStatus } = computeDeploymentHealth(deployment, entities, relationships)
+    expect(componentStatus.backend).toBe('healthy')
+    expect(componentStatus.container).toBe('healthy')
+    expect(componentStatus.ssl).toBeUndefined()
+    expect(componentStatus.nginx).toBeUndefined()
+    expect(health).toBe('healthy')
+
+    const enriched = enrichDeployments([deployment], entities, relationships)
+    expect(entities[composeId].status).toBe('healthy')
+    expect(enriched[0].stackSummary).toBe(stackSummary)
+  })
+
+  it('fails a container deployment when the published container has exited', () => {
+    const composeId = 'compose:zvia-nonnginx'
+    const api = containerEntityId('api')
+    const portId = portEntityId('tcp', '127.0.0.1', 4001)
+
+    const deployment: Deployment = {
+      id: deploymentEntityId('zvia-nonnginx'),
+      name: 'zvia-nonnginx',
+      health: 'unknown',
+      entityIds: [composeId, api, portId],
+      entrypoints: [{ kind: 'docker_compose_service', id: composeId }],
+      stackSummary: '',
+      componentStatus: {}
+    }
+
+    const entities: Record<string, TopologyEntity> = {
+      [composeId]: { id: composeId, kind: 'docker_compose_service', label: 'zvia-nonnginx', status: 'unknown' },
+      [api]: { id: api, kind: 'docker_container', label: 'api', status: 'healthy', sourceRef: { state: 'exited' } },
+      [portId]: {
+        id: portId,
+        kind: 'port',
+        label: ':4001',
+        status: 'healthy',
+        sourceRef: { protocol: 'tcp', address: '127.0.0.1', port: 4001 }
+      }
+    }
+
+    const relationships: Relationship[] = [
+      {
+        id: 'm1',
+        from: { kind: 'docker_container', id: api },
+        to: { kind: 'docker_compose_service', id: composeId },
+        type: 'member_of',
+        confidence: 'confirmed',
+        evidence: []
+      },
+      {
+        id: 'p1',
+        from: { kind: 'port', id: portId },
+        to: { kind: 'docker_container', id: api },
+        type: 'published_by',
+        confidence: 'confirmed',
+        evidence: []
+      }
+    ]
+
+    applyEntityHealth(entities, relationships, [])
+    expect(entities[api].status).toBe('failed')
+
+    const { health, componentStatus } = computeDeploymentHealth(deployment, entities, relationships)
+    expect(componentStatus.container).toBe('failed')
+    expect(health).toBe('failed')
+  })
 })

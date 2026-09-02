@@ -2,6 +2,7 @@ import { getConnectionLabel, useServerStore } from '@renderer/state/serverStore'
 import { useServerContext } from '@renderer/state/ServerContext'
 import { useThemeStore } from '@renderer/state/themeStore'
 import { useWorkspaceStore } from '@renderer/state/workspaceStore'
+import { useCommandPaletteStore } from '@renderer/state/commandPaletteStore'
 import { StatusDot } from '@renderer/components/ui/status-dot'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -16,7 +17,7 @@ export function Toolbar() {
   const { server, serverId, connectionState } = useServerContext()
   const connect = useServerStore((s) => s.connect)
   const disconnect = useServerStore((s) => s.disconnect)
-  const setCommandPaletteOpen = useWorkspaceStore((s) => s.setCommandPaletteOpen)
+  const setCommandPaletteOpen = useCommandPaletteStore((s) => s.setOpen)
   const themePreference = useThemeStore((s) => s.preference)
   const cycleTheme = useThemeStore((s) => s.cyclePreference)
 

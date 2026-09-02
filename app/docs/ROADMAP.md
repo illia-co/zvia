@@ -15,7 +15,7 @@
 
 ### Tools (15)
 
-- **Applications:** Deployments (default on connect)
+- **Applications:** Deployments (default on connect), Change tracking (pin baseline, diff topology)
 - **General:** Overview
 - **System:** Stats, Users, Processes, Packages, Logs
 - **Workspace:** Terminal, Files

@@ -20,6 +20,7 @@ import type {
 } from '@shared/ipc'
 import { CommandError, ConnectionError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
+import { getServerConnection } from './ServiceBase'
 import { execStreamOnClient } from '../ssh/exec'
 import { getLinuxOsContext } from './linuxOs'
 import { privilegeService } from './PrivilegeService'
@@ -50,11 +51,7 @@ export class PackageService {
   }
 
   private getConnection(serverId: ServerId) {
-    const connection = connectionManager.getConnection(serverId)
-    if (!connection) {
-      throw new ConnectionError('Server is not connected')
-    }
-    return connection
+    return getServerConnection(serverId)
   }
 
   private sendOperationStep(event: PackagesOperationStepEvent): void {
@@ -443,3 +440,4 @@ export class PackageService {
 }
 
 export const packageService = new PackageService()
+connectionManager.registerTeardown((serverId) => packageService.clearServer(serverId))

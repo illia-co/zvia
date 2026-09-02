@@ -1,0 +1,52 @@
+name: zvia-nonnginx
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: zvia
+      POSTGRES_PASSWORD: zvia
+      POSTGRES_DB: zvia
+    volumes:
+      - nonnginx_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U zvia -d zvia']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - zvia-nonnginx-net
+    labels:
+      com.zvia.stack: demo
+      com.zvia.role: database
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://zvia:zvia@postgres:5432/zvia
+      PORT: '4001'
+    ports:
+      - '127.0.0.1:4001:4001'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:4001/health | grep -q ok']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - zvia-nonnginx-net
+    labels:
+      com.zvia.stack: demo
+      com.zvia.role: api
+
+networks:
+  zvia-nonnginx-net:
+    driver: bridge
+
+volumes:
+  nonnginx_pg_data:

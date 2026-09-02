@@ -1,15 +1,12 @@
-import { AuthenticationSection } from '../components/AuthenticationSection'
-import { DeploymentsSection } from '../components/DeploymentsSection'
-import { SiteClosing } from '../components/SiteClosing'
+import { Comparison } from '../components/Comparison'
+import { Differentiator } from '../components/Differentiator'
+import { FeatureGrid } from '../components/FeatureGrid'
 import { Header } from '../components/Header'
 import { Hero } from '../components/Hero'
 import { OpenSource } from '../components/OpenSource'
-import { Problem } from '../components/Problem'
-import { RealSSH } from '../components/RealSSH'
 import { SeoJsonLd } from '../components/SeoJsonLd'
-import { ServerContext } from '../components/ServerContext'
-import { TerminalSection } from '../components/TerminalSection'
-import { FeatureTabs } from '../components/FeatureTabs'
+import { SiteClosing } from '../components/SiteClosing'
+import { TrustSection } from '../components/TrustSection'
 import { SITE } from '../config'
 import { usePageMeta } from '../hooks/usePageMeta'
 
@@ -22,16 +19,13 @@ export function HomePage() {
       <Header />
       <main id="main">
         <Hero />
-        <DeploymentsSection />
-        <Problem />
-        <FeatureTabs />
-        <ServerContext />
-        <RealSSH />
-        <AuthenticationSection />
-        <TerminalSection />
+        <Differentiator />
+        <TrustSection />
+        <FeatureGrid />
+        <Comparison />
         <OpenSource />
-        <SiteClosing />
       </main>
+      <SiteClosing />
     </>
   )
 }

@@ -1,4 +1,5 @@
 import type { DockerContainer } from '@shared/docker'
+import { composeProjectOf, parseContainerLabels, COMPOSE_SERVICE_LABEL } from '@shared/docker'
 import type { PortListener } from '@shared/ports'
 import type { ProcessDetail } from '@shared/processes'
 import type { SslCertificate } from '@shared/ssl'
@@ -6,6 +7,7 @@ import type { SystemdUnit } from '@shared/systemd'
 import type { HealthStatus, TopologyEntity } from '@shared/topology'
 import type { NginxServerBlock } from './types'
 import {
+  composeServiceEntityId,
   containerEntityId,
   domainEntityId,
   fileEntityId,
@@ -56,6 +58,23 @@ function containerHealth(container: DockerContainer): HealthStatus {
   if (container.state === 'restarting') return 'degraded'
   if (container.state === 'running') return 'healthy'
   return 'unknown'
+}
+
+const HEALTH_RANK: Record<HealthStatus, number> = {
+  failed: 4,
+  degraded: 3,
+  unknown: 2,
+  discovering: 1,
+  healthy: 0
+}
+
+function composeServiceHealth(members: TopologyEntity[]): HealthStatus {
+  if (members.length === 0) return 'unknown'
+  let worst: HealthStatus = 'healthy'
+  for (const member of members) {
+    if (HEALTH_RANK[member.status] > HEALTH_RANK[worst]) worst = member.status
+  }
+  return worst
 }
 
 function nginxSiteLabel(block: NginxServerBlock): string {
@@ -133,15 +152,42 @@ export function normalizeEntities(data: CollectorData): Record<string, TopologyE
     )
   }
 
+  const composeProjects = new Map<string, string[]>()
+
   for (const container of data.containers) {
     const id = containerEntityId(container.id)
+    const labels = parseContainerLabels(container.labels)
+    const composeProject = labels[COMPOSE_SERVICE_LABEL] ? composeProjectOf(container) : null
+    const composeService = labels[COMPOSE_SERVICE_LABEL]
     entities[id] = entity(
       id,
       'docker_container',
       container.name,
       containerHealth(container),
       { tool: 'docker', containerId: container.id },
-      { state: container.state }
+      {
+        state: container.state,
+        ...(composeProject ? { composeProject } : {}),
+        ...(composeService ? { composeService } : {}),
+        ...(container.networks ? { networks: container.networks } : {})
+      }
+    )
+    if (composeProject && composeService) {
+      const members = composeProjects.get(composeProject) ?? []
+      members.push(id)
+      composeProjects.set(composeProject, members)
+    }
+  }
+
+  for (const [project, members] of composeProjects) {
+    const id = composeServiceEntityId(project)
+    entities[id] = entity(
+      id,
+      'docker_compose_service',
+      project,
+      composeServiceHealth(members.map((member) => entities[member])),
+      { tool: 'docker' },
+      { composeProject: project }
     )
   }
 

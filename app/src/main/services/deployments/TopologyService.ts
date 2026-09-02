@@ -14,6 +14,9 @@ import {
   nginxSiteEntityId,
   portEntityId
 } from '@shared/topology'
+import { connectionManager } from '../../ssh/ConnectionManager'
+import { topologyHistoryService } from './TopologyHistoryService'
+import { diffTopology, filterProcessChurn } from './diff'
 
 export { TOPOLOGY_CACHE_TTL_MS }
 
@@ -37,7 +40,20 @@ export class TopologyService {
   private cache = new Map<ServerId, CacheEntry>()
   private mainWindow: BrowserWindow | null = null
 
-  constructor(private readonly collector: TopologyCollector = productionTopologyCollector) {}
+  constructor(
+    private readonly collector: TopologyCollector = productionTopologyCollector,
+    private readonly recordHistory: (serverId: ServerId, snapshot: TopologySnapshot) => Promise<void> = async (
+      serverId,
+      snapshot
+    ) => {
+      const lastRecorded = topologyHistoryService.latest(serverId)
+      if (lastRecorded) {
+        const changes = diffTopology(lastRecorded.snapshot, snapshot)
+        if (filterProcessChurn(changes).length === 0) return
+      }
+      await topologyHistoryService.record(serverId, snapshot)
+    }
+  ) {}
 
   setMainWindow(window: BrowserWindow | null): void {
     this.mainWindow = window
@@ -112,6 +128,7 @@ export class TopologyService {
     )
 
     this.cache.set(serverId, { snapshot, cachedAt: Date.now() })
+    await this.recordHistory(serverId, snapshot)
     return snapshot
   }
 
@@ -133,3 +150,4 @@ export class TopologyService {
 }
 
 export const topologyService = new TopologyService()
+connectionManager.registerTeardown((serverId) => topologyService.clearServer(serverId))

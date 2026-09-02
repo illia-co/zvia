@@ -10,7 +10,6 @@ import type {
   ConnectRequest,
   ConnectionTestRequest,
   DisconnectRequest,
-  ExecRequest,
   HostKeyResponseRequest,
   ProfileCreateRequest,
   ProfileGetRequest,
@@ -123,23 +122,6 @@ export function validateConnectionTestRequest(value: unknown): ConnectionTestReq
     request.serverId = assertServerId(record.serverId)
   }
   return request
-}
-
-export function validateExecRequest(value: unknown): ExecRequest {
-  if (!value || typeof value !== 'object') {
-    throw new ValidationError('Invalid exec request: expected object')
-  }
-  const record = value as Record<string, unknown>
-  const scoped = validateServerScoped(record)
-  const command = assertString(record.command, 'command')
-  let timeoutMs: number | undefined
-  if (record.timeoutMs !== undefined) {
-    if (typeof record.timeoutMs !== 'number' || record.timeoutMs <= 0) {
-      throw new ValidationError('Invalid timeoutMs: expected positive number')
-    }
-    timeoutMs = record.timeoutMs
-  }
-  return { ...scoped, command, timeoutMs }
 }
 
 export function validateHostKeyResponseRequest(value: unknown): HostKeyResponseRequest {
@@ -1536,4 +1518,116 @@ export function validatePackagesOperationCancelRequest(
   const record = value as Record<string, unknown>
   const scoped = validateServerScoped(record)
   return { ...scoped, streamId: assertStreamId(record.streamId) }
+}
+
+export function validateDeploymentsLookupRequest(
+  value: unknown
+): import('./ipc').DeploymentsLookupRequest {
+  if (!value || typeof value !== 'object') {
+    throw new ValidationError('Invalid deployments lookup request: expected object')
+  }
+  const record = value as Record<string, unknown>
+  const scoped = validateServerScoped(record)
+  switch (record.kind) {
+    case 'port':
+      return { ...scoped, kind: 'port', port: assertPortNumber(record.port) }
+    case 'container':
+      return { ...scoped, kind: 'container', containerId: assertString(record.containerId, 'containerId') }
+    case 'domain':
+      return { ...scoped, kind: 'domain', domain: assertString(record.domain, 'domain') }
+    case 'nginxSite': {
+      if (typeof record.startLineNumber !== 'number' || !Number.isInteger(record.startLineNumber) || record.startLineNumber < 1) {
+        throw new ValidationError('Invalid startLineNumber: expected positive integer')
+      }
+      return {
+        ...scoped,
+        kind: 'nginxSite',
+        configPath: assertString(record.configPath, 'configPath'),
+        startLineNumber: record.startLineNumber
+      }
+    }
+    default:
+      throw new ValidationError('Invalid lookup kind')
+  }
+}
+
+export function validateDeploymentsTagRequest(
+  value: unknown
+): import('./ipc').DeploymentsTagRequest {
+  if (!value || typeof value !== 'object') {
+    throw new ValidationError('Invalid deployments tag request: expected object')
+  }
+  const record = value as Record<string, unknown>
+  const scoped = validateServerScoped(record)
+  const snapshotId = assertString(record.snapshotId, 'snapshotId')
+  const deploymentId = assertString(record.deploymentId, 'deploymentId')
+  const tag = assertString(record.tag, 'tag')
+  if (tag === 'latest') {
+    throw new ValidationError('"latest" is a reserved tag name')
+  }
+  const remove = record.remove === true ? true : undefined
+  return { ...scoped, snapshotId, deploymentId, tag, remove }
+}
+
+export function validateDeploymentsTagCurrentRequest(
+  value: unknown
+): import('./ipc').DeploymentsTagCurrentRequest {
+  if (!value || typeof value !== 'object') {
+    throw new ValidationError('Invalid deployments tag current request: expected object')
+  }
+  const record = value as Record<string, unknown>
+  const scoped = validateServerScoped(record)
+  const deploymentId = assertString(record.deploymentId, 'deploymentId')
+  const tag = assertString(record.tag, 'tag')
+  if (tag === 'latest') {
+    throw new ValidationError('"latest" is a reserved tag name')
+  }
+  return { ...scoped, deploymentId, tag }
+}
+
+export function validateDeploymentsSnapshotDiffRequest(
+  value: unknown
+): import('./ipc').DeploymentsSnapshotDiffRequest {
+  if (!value || typeof value !== 'object') {
+    throw new ValidationError('Invalid deployments snapshot diff request: expected object')
+  }
+  const record = value as Record<string, unknown>
+  const scoped = validateServerScoped(record)
+  return {
+    ...scoped,
+    fromSnapshotId: assertString(record.fromSnapshotId, 'fromSnapshotId'),
+    toSnapshotId: assertString(record.toSnapshotId, 'toSnapshotId'),
+    deploymentId: assertString(record.deploymentId, 'deploymentId')
+  }
+}
+
+export function validateDeploymentsDiffRequest(
+  value: unknown
+): import('./ipc').DeploymentsDiffRequest {
+  if (!value || typeof value !== 'object') {
+    throw new ValidationError('Invalid deployments diff request: expected object')
+  }
+  const record = value as Record<string, unknown>
+  const scoped = validateServerScoped(record)
+  return {
+    ...scoped,
+    baselineId: record.baselineId === null || record.baselineId === undefined
+      ? null
+      : assertString(record.baselineId, 'baselineId'),
+    deploymentId: assertString(record.deploymentId, 'deploymentId')
+  }
+}
+
+export function validateDeploymentsDeploymentHistoryRequest(
+  value: unknown
+): import('./ipc').DeploymentsDeploymentHistoryRequest {
+  if (!value || typeof value !== 'object') {
+    throw new ValidationError('Invalid deployments deployment history request: expected object')
+  }
+  const record = value as Record<string, unknown>
+  const scoped = validateServerScoped(record)
+  return {
+    ...scoped,
+    deploymentId: assertString(record.deploymentId, 'deploymentId')
+  }
 }

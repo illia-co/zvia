@@ -329,3 +329,4 @@ export class ProcessService {
 }
 
 export const processService = new ProcessService()
+connectionManager.registerTeardown((serverId) => processService.clearServer(serverId))

@@ -9,6 +9,36 @@ export interface DockerContainer {
   cpuPercent: string
   memoryUsage: string
   memoryPercent: string
+  /** Comma-joined `key=value` labels from `docker ps`, e.g. `com.docker.compose.project=myapp,role=api`. Empty when none. */
+  labels: string
+  /** Comma-joined Docker network names the container is attached to. Empty when none. */
+  networks: string
+}
+
+export const COMPOSE_PROJECT_LABEL = 'com.docker.compose.project'
+export const COMPOSE_SERVICE_LABEL = 'com.docker.compose.service'
+
+/**
+ * Parses a `docker ps` labels string (comma-joined `key=value` pairs) into a
+ * record. Values are restored verbatim, so commas inside quoted values are
+ * preserved only by a best-effort split; Zvia only relies on the compose labels,
+ * which never contain commas.
+ */
+export function parseContainerLabels(labels: string): Record<string, string> {
+  const result: Record<string, string> = {}
+  if (!labels) return result
+  for (const part of labels.split(',')) {
+    const eq = part.indexOf('=')
+    if (eq <= 0) continue
+    const key = part.slice(0, eq).trim()
+    const value = part.slice(eq + 1).trim()
+    if (key) result[key] = value
+  }
+  return result
+}
+
+export function composeProjectOf(container: DockerContainer): string | null {
+  return parseContainerLabels(container.labels)[COMPOSE_PROJECT_LABEL] ?? null
 }
 
 /**

@@ -14,6 +14,8 @@ import type {
 import type { NginxLogsDataEvent, NginxLogsExitEvent } from '@shared/ipc'
 import { CommandError, ConnectionError, SFTPError, ValidationError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
+import { getServerConnection, shellQuote } from './ServiceBase'
+import { LogStreamRegistry } from './LogStreamRegistry'
 import { execStreamOnClient } from '../ssh/exec'
 import { privilegeService } from './PrivilegeService'
 import { topologyService } from './deployments'
@@ -45,12 +47,6 @@ const CONFIG_SUBDIRECTORIES: { directory: string; group: NginxConfigGroup }[] = 
   { directory: 'modules-enabled', group: 'modules-enabled' }
 ]
 
-interface LogStream {
-  serverId: ServerId
-  streamId: string
-  channel: ClientChannel
-}
-
 interface Detection {
   installed: boolean
   version: string | null
@@ -68,10 +64,6 @@ interface ValidationTracker {
   validation: NginxValidation
 }
 
-function logStreamKey(serverId: ServerId, streamId: string): string {
-  return `${serverId}:${streamId}`
-}
-
 function sectionBetween(stdout: string, start: string, end?: string): string {
   const startIndex = stdout.indexOf(start)
   if (startIndex === -1) return ''
@@ -79,10 +71,6 @@ function sectionBetween(stdout: string, start: string, end?: string): string {
   if (!end) return stdout.slice(from)
   const endIndex = stdout.indexOf(end, from)
   return endIndex === -1 ? stdout.slice(from) : stdout.slice(from, endIndex)
-}
-
-function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`
 }
 
 function isPermissionDenied(error: unknown): boolean {
@@ -111,7 +99,10 @@ function sftpCallback<T>(
 
 export class NginxService {
   private mainWindow: BrowserWindow | null = null
-  private logStreams = new Map<string, LogStream>()
+  private logStreams = new LogStreamRegistry({
+    onData: (event) => this.sendLogsData(event),
+    onExit: (event) => this.sendLogsExit(event)
+  })
   private detectionCache = new Map<ServerId, Detection>()
   private validationTrackers = new Map<ServerId, ValidationTracker>()
   private knownLogPaths = new Map<ServerId, Set<string>>()
@@ -121,11 +112,7 @@ export class NginxService {
   }
 
   private getConnection(serverId: ServerId) {
-    const connection = connectionManager.getConnection(serverId)
-    if (!connection) {
-      throw new ConnectionError('Server is not connected')
-    }
-    return connection
+    return getServerConnection(serverId)
   }
 
   private async exec(serverId: ServerId, command: string, timeoutMs = 20000) {
@@ -507,50 +494,21 @@ export class NginxService {
 
   async startLogs(serverId: ServerId, streamId: string, path: string): Promise<void> {
     const validPath = await this.assertKnownLogPath(serverId, path)
-    const key = logStreamKey(serverId, streamId)
-    if (this.logStreams.has(key)) {
-      throw new CommandError(`Log stream already exists: ${streamId}`)
-    }
 
     const command = await this.elevate(
       serverId,
       `tail -n ${LOG_TAIL_LINES} -F -- ${shellQuote(validPath)}`
     )
 
-    const connection = this.getConnection(serverId)
-    const client = await connection.getInteractiveClient()
-    const channel = await execStreamOnClient(client, command)
-
-    this.logStreams.set(key, { serverId, streamId, channel })
-
-    channel.on('data', (data: Buffer) => {
-      this.sendLogsData({ serverId, streamId, data: data.toString('base64') })
-    })
-
-    channel.stderr.on('data', (data: Buffer) => {
-      this.sendLogsData({ serverId, streamId, data: data.toString('base64') })
-    })
-
-    channel.on('close', (code?: number) => {
-      this.logStreams.delete(key)
-      this.sendLogsExit({ serverId, streamId, exitCode: code ?? 0 })
-    })
+    await this.logStreams.start(serverId, streamId, command)
   }
 
   stopLogs(serverId: ServerId, streamId: string): void {
-    const key = logStreamKey(serverId, streamId)
-    const stream = this.logStreams.get(key)
-    if (!stream) return
-    this.logStreams.delete(key)
-    stream.channel.close()
+    this.logStreams.stop(serverId, streamId)
   }
 
   stopAllLogsForServer(serverId: ServerId): void {
-    for (const [key, stream] of this.logStreams) {
-      if (stream.serverId !== serverId) continue
-      this.logStreams.delete(key)
-      stream.channel.close()
-    }
+    this.logStreams.stopAllForServer(serverId)
     this.detectionCache.delete(serverId)
     this.validationTrackers.delete(serverId)
     this.knownLogPaths.delete(serverId)
@@ -558,3 +516,4 @@ export class NginxService {
 }
 
 export const nginxService = new NginxService()
+connectionManager.registerTeardown((serverId) => nginxService.stopAllLogsForServer(serverId))

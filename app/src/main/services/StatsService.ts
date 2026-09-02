@@ -4,6 +4,7 @@ import type { ServerId } from '@shared/server'
 import { ConnectionError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
 import type { CommandRunner } from './CommandRunner'
+import { commandRunnerFor } from './ServiceBase'
 import {
   buildStatsSnapshot,
   LinuxStatsService,
@@ -179,3 +180,4 @@ export class StatsService {
 }
 
 export const statsService = new StatsService()
+connectionManager.registerTeardown((serverId) => statsService.clearServer(serverId))

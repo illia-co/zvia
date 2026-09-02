@@ -218,8 +218,38 @@ NGINX
   done
 }
 
+provision_nonnginx() {
+  local nonnginx_dir="${STACK_DIR}/nonnginx"
+  echo "==> Deploying non-nginx compose stack to ${nonnginx_dir}"
+  sudo mkdir -p "$nonnginx_dir"
+  sudo rm -rf "${nonnginx_dir:?}"/*
+  sudo cp -a "${SCRIPT_DIR}/fixtures/fullstack/nonnginx/." "${nonnginx_dir}/"
+
+  if sudo docker compose version >/dev/null 2>&1; then
+    sudo docker compose -f "${nonnginx_dir}/docker-compose.yml" down --remove-orphans 2>/dev/null || true
+    sudo docker compose -f "${nonnginx_dir}/docker-compose.yml" up -d --build
+  else
+    echo "docker compose not available" >&2
+    exit 1
+  fi
+
+  echo "==> Waiting for non-nginx API"
+  for i in $(seq 1 30); do
+    if curl -sf http://127.0.0.1:4001/health >/dev/null 2>&1; then
+      echo "Non-nginx API ready"
+      break
+    fi
+    if [[ "$i" -eq 30 ]]; then
+      echo "Warning: non-nginx API did not become healthy in time"
+      sudo docker compose -f "${nonnginx_dir}/docker-compose.yml" ps
+    fi
+    sleep 2
+  done
+}
+
 if [[ "$ZVIA_FULLSTACK" == "1" ]]; then
   provision_fullstack
+  provision_nonnginx
 fi
 
 sudo nginx -t
@@ -285,6 +315,7 @@ sudo ufw allow ${ZVIA_APP_PORT}/tcp comment 'Zvia test app'
 if [[ "$ZVIA_FULLSTACK" == "1" ]]; then
   sudo ufw allow 3000/tcp comment 'Zvia demo frontend'
   sudo ufw allow 3001/tcp comment 'Zvia demo API'
+  sudo ufw allow 4001/tcp comment 'Zvia non-nginx demo API'
 fi
 sudo ufw --force enable
 
@@ -302,6 +333,8 @@ if [[ "$ZVIA_FULLSTACK" == "1" ]]; then
   curl -sf http://127.0.0.1:3000/ | grep -o zvia-demo-shop
   curl -sk --resolve "${SHOP_DOMAIN}:443:127.0.0.1" "https://${SHOP_DOMAIN}/" | grep -o zvia-demo-shop
   curl -sk --resolve "${API_DOMAIN}:443:127.0.0.1" "https://${API_DOMAIN}/health" | head -1
+  curl -sf http://127.0.0.1:4001/health | head -1
+  sudo docker ps --format '{{.Names}}\t{{.Label "com.docker.compose.project"}}' | grep zvia-nonnginx || true
 fi
 
 {

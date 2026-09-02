@@ -2,6 +2,7 @@ import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'node:path'
 import { registerIpcHandlers, unregisterIpcHandlers } from './ipc/registry'
 import { profileStore } from './store/profiles'
+import { topologyHistoryStore } from './store/topologyHistory'
 import { connectionManager } from './ssh/ConnectionManager'
 import { hostKeyStore } from './ssh/hostKeys'
 import { statsService } from './services/StatsService'
@@ -14,10 +15,40 @@ import { fileService } from './services/FileService'
 import { processService } from './services/ProcessService'
 import { packageService } from './services/PackageService'
 import { topologyService } from './services/deployments'
-import { isScreenshotMode, setScreenshotMainWindow } from './screenshotMode'
+import { getScreenshotTool, isScreenshotMode, setScreenshotMainWindow } from './screenshotMode'
 import { captureScreenshotIfReady, configureScreenshotWindow } from './screenshotCapture'
 
 const isDev = !app.isPackaged
+
+interface WindowAware {
+  setMainWindow(window: BrowserWindow | null): void
+}
+
+const windowAwareServices: WindowAware[] = [
+  connectionManager,
+  terminalService,
+  fileService,
+  statsService,
+  logService,
+  dockerService,
+  nginxService,
+  sslService,
+  processService,
+  packageService,
+  topologyService
+]
+
+function setMainWindowOnServices(window: BrowserWindow | null): void {
+  for (const service of windowAwareServices) {
+    service.setMainWindow(window)
+  }
+}
+
+function configureDemoWindow(window: BrowserWindow): void {
+  window.webContents.once('did-finish-load', () => {
+    window.webContents.send('screenshot:configure', { tool: getScreenshotTool() })
+  })
+}
 
 function getContentSecurityPolicy(): string {
   const devPolicy = [
@@ -133,44 +164,38 @@ function createWindow(): BrowserWindow {
 app.whenReady().then(async () => {
   await profileStore.load()
   await hostKeyStore.load()
+  await topologyHistoryStore.load()
   registerIpcHandlers()
 
   const mainWindow = createWindow()
   configureScreenshotWindow(mainWindow)
   setScreenshotMainWindow(mainWindow)
-  connectionManager.setMainWindow(mainWindow)
-  terminalService.setMainWindow(mainWindow)
-  fileService.setMainWindow(mainWindow)
-  statsService.setMainWindow(mainWindow)
-  logService.setMainWindow(mainWindow)
-  dockerService.setMainWindow(mainWindow)
-  nginxService.setMainWindow(mainWindow)
-  sslService.setMainWindow(mainWindow)
-  processService.setMainWindow(mainWindow)
-  packageService.setMainWindow(mainWindow)
-  topologyService.setMainWindow(mainWindow)
+  setMainWindowOnServices(mainWindow)
 
   if (isScreenshotMode()) {
-    await captureScreenshotIfReady(mainWindow)
-    app.quit()
+    if (process.env.ZVIA_SCREENSHOT_OUTPUT) {
+      await captureScreenshotIfReady(mainWindow)
+      app.quit()
+      return
+    }
+
+    // Interactive demo: a normal, clickable window backed by demo stubs.
+    configureDemoWindow(mainWindow)
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        const window = createWindow()
+        setMainWindowOnServices(window)
+        configureDemoWindow(window)
+      }
+    })
     return
   }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       const window = createWindow()
-      connectionManager.setMainWindow(window)
-      terminalService.setMainWindow(window)
-      fileService.setMainWindow(window)
-      statsService.setMainWindow(window)
-      logService.setMainWindow(window)
-      dockerService.setMainWindow(window)
-      nginxService.setMainWindow(window)
-      sslService.setMainWindow(window)
-      processService.setMainWindow(window)
-      packageService.setMainWindow(window)
-      topologyService.setMainWindow(window)
-      terminalService.setMainWindow(window)
+      setMainWindowOnServices(window)
     }
   })
 })

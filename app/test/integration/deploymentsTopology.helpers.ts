@@ -9,6 +9,12 @@ export function deploymentByDomain(deployments: Deployment[], domain: string): D
   return deployments.find((deployment) => deployment.id === deploymentEntityId(domain))
 }
 
+export function deploymentByName(deployments: Deployment[], name: string): Deployment | undefined {
+  return deployments.find(
+    (deployment) => deployment.id === deploymentEntityId(name) || deployment.name === name
+  )
+}
+
 export function hasRelationship(
   relationships: Relationship[],
   fromId: string,

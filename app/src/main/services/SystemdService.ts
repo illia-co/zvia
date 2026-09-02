@@ -8,6 +8,7 @@ import { CommandError, ConnectionError, ValidationError } from '@shared/errors'
 import { isSystemdAction, getProtectedSystemdUnitActionBlock } from '@shared/systemd'
 import { assertSystemdUnit } from '@shared/validate'
 import { connectionManager } from '../ssh/ConnectionManager'
+import { getServerConnection } from './ServiceBase'
 import { privilegeService } from './PrivilegeService'
 import { topologyService } from './deployments'
 import {
@@ -41,11 +42,7 @@ export class SystemdService {
   private availabilityCache = new Map<string, { available: boolean; checkedAt: number }>()
 
   private getConnection(serverId: string) {
-    const connection = connectionManager.getConnection(serverId)
-    if (!connection) {
-      throw new ConnectionError('Server is not connected')
-    }
-    return connection
+    return getServerConnection(serverId)
   }
 
   async isAvailable(serverId: string): Promise<boolean> {

@@ -1,6 +1,6 @@
-# Deployments — Phase 2 clustering strategy
+# Deployments — Clustering strategy
 
-This document describes planned extensions to the Deployments topology model. None of these are implemented in the current release.
+This document describes the clustering model for the Deployments topology. Docker Compose grouping and non-nginx deployment discovery are **implemented** in the current release; the sections below remain the working reference for how the model behaves.
 
 ## Docker Compose grouping
 
@@ -32,8 +32,7 @@ This document describes planned extensions to the Deployments topology model. No
 
 Re-evaluate clustering after:
 
-- Compose project detection ships
-- Non-nginx deployment discovery proves reliable in integration tests
+- Non-nginx deployment discovery proves reliably against a wider range of real servers
 - Users request fleet-wide dependency views (out of scope until fleet mode exists)
 
 See also: [deployments.md](./deployments.md)

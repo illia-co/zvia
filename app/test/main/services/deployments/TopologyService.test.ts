@@ -17,12 +17,14 @@ function fixtureCollection(): TopologyCollectionResult {
   }
 }
 
+const noopRecordHistory = async () => {}
+
 describe('TopologyService', () => {
   it('reuses cached snapshot within TTL on getSnapshot', async () => {
     const collector = {
       collect: vi.fn(async () => fixtureCollection())
     }
-    const service = new TopologyService(collector)
+    const service = new TopologyService(collector, noopRecordHistory)
     const serverId = 'test-server'
 
     await service.getSnapshot(serverId)
@@ -35,7 +37,7 @@ describe('TopologyService', () => {
     const collector = {
       collect: vi.fn(async () => fixtureCollection())
     }
-    const service = new TopologyService(collector)
+    const service = new TopologyService(collector, noopRecordHistory)
     const serverId = 'test-server'
 
     await service.getSnapshot(serverId)

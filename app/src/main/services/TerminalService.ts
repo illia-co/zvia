@@ -151,3 +151,4 @@ export class TerminalService {
 }
 
 export const terminalService = new TerminalService()
+connectionManager.registerTeardown((serverId) => terminalService.closeAllForServer(serverId))

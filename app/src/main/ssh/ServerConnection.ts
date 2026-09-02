@@ -220,10 +220,6 @@ export class ServerConnection extends EventEmitter implements CommandRunner {
     return this.controlClient
   }
 
-  private ensureControlClient(): Client {
-    return this.getControlClient()
-  }
-
   async getInteractiveClient(): Promise<Client> {
     if (this.interactiveClient) {
       return this.interactiveClient
@@ -248,7 +244,7 @@ export class ServerConnection extends EventEmitter implements CommandRunner {
   }
 
   async exec(command: string, timeoutMs?: number): Promise<ExecResult> {
-    const client = this.ensureControlClient()
+    const client = this.getControlClient()
     return execOnClient(client, command, timeoutMs)
   }
 
@@ -256,7 +252,7 @@ export class ServerConnection extends EventEmitter implements CommandRunner {
     if (this.sftpClient) {
       return this.sftpClient
     }
-    const client = this.ensureControlClient()
+    const client = this.getControlClient()
     return new Promise((resolve, reject) => {
       client.sftp((error, sftp) => {
         if (error) {

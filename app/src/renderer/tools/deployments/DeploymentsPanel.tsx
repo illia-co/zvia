@@ -8,6 +8,9 @@ import { cn } from '@renderer/lib/utils'
 import { DeploymentDetailView } from './DeploymentDetailView'
 import { DeploymentsTable } from './DeploymentsTable'
 import { useDeployments } from './useDeployments'
+import { useSnapshots } from './useSnapshots'
+import { SnapshotsView } from './SnapshotsView'
+import { DiffDetailView, type DiffRequest } from './DiffDetailView'
 
 type FilterMode = 'all' | 'degraded'
 
@@ -18,15 +21,27 @@ export function DeploymentsPanel() {
 
   const [filter, setFilter] = useState<FilterMode>('all')
   const [selectedDeployment, setSelectedDeployment] = useState<Deployment | null>(null)
+  const [snapshotsDeploymentId, setSnapshotsDeploymentId] = useState<string | null>(null)
+  const [diffDeploymentId, setDiffDeploymentId] = useState<string | null>(null)
+  const [diffRequest, setDiffRequest] = useState<DiffRequest | null>(null)
 
   const deploymentsState = useDeployments({
     serverId,
     isConnected,
-    paused: selectedDeployment !== null
+    paused: selectedDeployment !== null || snapshotsDeploymentId !== null
+  })
+
+  const snapshotsState = useSnapshots({
+    serverId,
+    isConnected,
+    snapshot: deploymentsState.snapshot
   })
 
   useEffect(() => {
     setSelectedDeployment(null)
+    setSnapshotsDeploymentId(null)
+    setDiffDeploymentId(null)
+    setDiffRequest(null)
   }, [serverId])
 
   useEffect(() => {
@@ -67,6 +82,16 @@ export function DeploymentsPanel() {
         ) ?? selectedDeployment)
       : selectedDeployment
 
+  const snapshotsDeployment =
+    snapshotsDeploymentId && deploymentsState.snapshot
+      ? deploymentsState.snapshot.deployments.find((d) => d.id === snapshotsDeploymentId) ?? null
+      : null
+
+  const diffDeployment =
+    diffDeploymentId && deploymentsState.snapshot
+      ? deploymentsState.snapshot.deployments.find((d) => d.id === diffDeploymentId) ?? null
+      : null
+
   if (!isConnected) {
     return (
       <div className="flex h-full items-center justify-center p-8 text-center">
@@ -87,7 +112,43 @@ export function DeploymentsPanel() {
         snapshot={deploymentsState.snapshot}
         serverId={serverId}
         initialEntityId={intent?.entityId}
-        onBack={() => setSelectedDeployment(null)}
+        onBack={() => {
+          setSelectedDeployment(null)
+        }}
+      />
+    )
+  }
+
+  if (diffDeployment && diffRequest && deploymentsState.snapshot) {
+    return (
+      <DiffDetailView
+        snapshots={snapshotsState}
+        deployment={diffDeployment}
+        snapshot={deploymentsState.snapshot}
+        serverId={serverId}
+        request={diffRequest}
+        onBack={() => {
+          setDiffDeploymentId(null)
+          setDiffRequest(null)
+        }}
+      />
+    )
+  }
+
+  if (snapshotsDeploymentId && snapshotsDeployment && deploymentsState.snapshot) {
+    return (
+      <SnapshotsView
+        snapshots={snapshotsState}
+        deployment={snapshotsDeployment}
+        onBack={() => setSnapshotsDeploymentId(null)}
+        onCompareSnapshots={(fromId, toId) => {
+          setDiffDeploymentId(snapshotsDeploymentId)
+          setDiffRequest({ type: 'snapshots', fromId, toId })
+        }}
+        onCompareToCurrent={(snapshotId) => {
+          setDiffDeploymentId(snapshotsDeploymentId)
+          setDiffRequest({ type: 'live', baselineId: snapshotId })
+        }}
       />
     )
   }
@@ -163,8 +224,14 @@ export function DeploymentsPanel() {
           <DeploymentsTable
             deployments={visibleDeployments}
             insights={deploymentsState.snapshot.insights}
+            history={snapshotsState.history}
             loading={busy}
             onSelect={setSelectedDeployment}
+            onOpenSnapshots={setSnapshotsDeploymentId}
+            onOpenTagDiff={(deploymentId, snapshotId) => {
+              setDiffDeploymentId(deploymentId)
+              setDiffRequest({ type: 'live', baselineId: snapshotId })
+            }}
           />
         </div>
       )}

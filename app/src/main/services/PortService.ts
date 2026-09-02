@@ -11,6 +11,7 @@ import type {
 import { FIREWALL_NO_BACKEND_REASON } from '@shared/ports'
 import { CommandError, ConnectionError, PrivilegeRequiredError, ValidationError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
+import { getServerConnection } from './ServiceBase'
 import { profileStore } from '../store/profiles'
 import { privilegeService } from './PrivilegeService'
 import {
@@ -84,11 +85,7 @@ export class PortService {
   private firewallCache = new Map<ServerId, CachedFirewall>()
 
   private getConnection(serverId: ServerId) {
-    const connection = connectionManager.getConnection(serverId)
-    if (!connection) {
-      throw new ConnectionError('Server is not connected')
-    }
-    return connection
+    return getServerConnection(serverId)
   }
 
   private async exec(serverId: ServerId, command: string, timeoutMs = 20000) {
@@ -476,3 +473,4 @@ export class PortService {
 }
 
 export const portService = new PortService()
+connectionManager.registerTeardown((serverId) => portService.clearServer(serverId))

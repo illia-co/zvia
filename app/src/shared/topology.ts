@@ -12,7 +12,7 @@ export type EntityKind =
   | 'process'
   | 'systemd_unit'
   | 'docker_container'
-  /** @phase2 Docker Compose grouping — not yet surfaced in the UI. */
+  /** An autonomous docker compose project (com.docker.compose.project): the entrypoint for container-only deployments. */
   | 'docker_compose_service'
   | 'file_path'
   /** @phase2 Database entity kind — reserved for future discovery. */
@@ -33,7 +33,6 @@ export type RelationshipType =
   | 'managed_by'
   | 'published_by'
   | 'member_of'
-
 export type EvidenceKind =
   | 'directive'
   | 'command_output'
@@ -173,6 +172,10 @@ export function containerEntityId(id: string): string {
   return `container:${id}`
 }
 
+export function composeServiceEntityId(project: string): string {
+  return `compose:${project}`
+}
+
 export function sslCertEntityId(id: string): string {
   return `ssl:${id}`
 }
@@ -183,4 +186,35 @@ export function fileEntityId(path: string): string {
 
 export function deploymentEntityId(domain: string): string {
   return `deployment:${domain.toLowerCase()}`
+}
+
+export type TopologyChangeKind =
+  | 'entity_added'
+  | 'entity_removed'
+  | 'entity_modified'
+  | 'relationship_added'
+  | 'relationship_removed'
+
+export interface TopologyEntityState {
+  status: HealthStatus
+  sourceRef?: Record<string, string | number | boolean | null>
+}
+
+export interface TopologyChangeRelationship {
+  type: RelationshipType
+  from: string
+  to: string
+  confidence: Confidence
+}
+
+export interface TopologyChange {
+  kind: TopologyChangeKind
+  entityId: string
+  kindLabel?: EntityKind
+  label?: string
+  before?: TopologyEntityState
+  after?: TopologyEntityState
+  relationship?: TopologyChangeRelationship
+  /** IDs of deployments that contain this entity, resolved against the "after" snapshot. */
+  deploymentIds: string[]
 }

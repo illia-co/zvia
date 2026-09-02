@@ -5,11 +5,11 @@
 <h1 align="center">Zvia</h1>
 
 <p align="center">
-  A native SSH workspace for your Linux servers.
+  See how your applications are wired.
 </p>
 
 <p align="center">
-  Connect over SSH and manage VPS and bare-metal servers from one calm, server-scoped desktop app — stats, logs, Docker, Nginx, SSL, systemd, files, and a full terminal.
+  Zvia connects over SSH and automatically discovers each server's deployment topology — nginx → ports → containers → services — then manages stats, logs, Docker, SSL, systemd, files, and a full terminal from one calm, server-scoped desktop app. No agent to install.
 </p>
 
 <p align="center">
@@ -39,7 +39,7 @@
 <br />
 
 <p align="center">
-  <img src="landing/src/assets/screenshots/overview.png" width="880" alt="Zvia overview panel showing server identity, connection status, and system metrics" />
+  <img src="landing/src/assets/screenshots/deployments-topology.png" width="880" alt="Zvia deployment topology canvas showing nginx, ports, and container connections" />
 </p>
 
 <br />
@@ -59,9 +59,32 @@ Zvia replaces that sprawl with one native desktop workspace:
 
 <br />
 
+## Automatic deployment detection
+
+The **Deployments** tool is where Zvia starts. Instead of guessing what runs on a server, it scans the machine and reconstructs how each application is wired — automatically, on the server you selected, with no agent to install.
+
+<p align="center">
+  <img src="landing/src/assets/screenshots/deployments.png" width="880" alt="Zvia Deployments panel listing discovered application topologies on a production server" />
+</p>
+
+A single scan correlates **nginx → SSL → ports → containers → services** — plus processes and systemd — into per-domain topologies, then explains every connection with evidence:
+
+- **Server-scoped by design** — discovery runs only against the selected server; there are no fleet-wide views.
+- **Domain → backend paths** — each deployment is grouped by primary nginx `server_name` and mapped down to its port, systemd service, and container.
+- **Dependency mapping** — every relationship ships with its evidence: nginx directives, port bindings, process matches, and Docker output. Confirmed links are drawn solid; likely and unknown links are dashed and dotted, so you always know how confident Zvia is.
+- **Container & Compose clustering** — containers sharing a Docker Compose project are grouped into a single visual cluster (`docker_compose_service`) via `member_of` relationships, so even deployments without nginx are discovered.
+- **Health that follows the dependency path** — a deployment's status is the worst status along the confirmed path from entrypoint to backend, with per-component chips (SSL, Nginx, Backend, Service, Files, Container).
+- **Shared-backend insight** — multiple domains proxying to the same port surface as cross-deployment insights instead of being merged.
+- **Interactive topology** — a full-screen canvas with an inspector that shows structured entity details and the evidence behind each connection.
+
+Deployments doubles as an on-demand inventory of every application on the machine — what it is, what it depends on, and why we know.
+
+<br />
+
 ## Features
 
 <p>
+  <img src="https://img.shields.io/badge/Deployments-topology%20discovery-333?style=flat-square" alt="Deployments" />
   <img src="https://img.shields.io/badge/Overview-server%20identity-333?style=flat-square" alt="Overview" />
   <img src="https://img.shields.io/badge/Stats-live%20metrics-333?style=flat-square" alt="Stats" />
   <img src="https://img.shields.io/badge/Users-accounts%20%26%20keys-333?style=flat-square" alt="Users" />
@@ -79,10 +102,11 @@ Zvia replaces that sprawl with one native desktop workspace:
   <img src="https://img.shields.io/badge/Cron-schedules-333?style=flat-square" alt="Cron" />
 </p>
 
-**14 tools** across six groups — all scoped to the server you selected:
+**15 tools** across seven groups — all scoped to the server you selected:
 
 | Section | Tools |
 |---------|-------|
+| Applications | **Deployments** |
 | General | Overview |
 | System | Stats · Users · Processes · Packages · Logs |
 | Workspace | Terminal · Files |
@@ -100,7 +124,7 @@ Select server  →  Select tool  →  Work in the workspace
 
 1. **Add a server** — hostname, user, port, SSH key or agent.
 2. **Connect** — Zvia shows connection state clearly and verifies host keys.
-3. **Pick a tool** — Overview, Terminal, Docker, or any panel from the sidebar.
+3. **Discover** — Deployments opens automatically and scans the server, mapping each application from domain to backend.
 4. **Work** — split panels, stream logs, edit files, run commands — without leaving server context.
 
 <br />
@@ -108,6 +132,16 @@ Select server  →  Select tool  →  Work in the workspace
 ## Screenshots
 
 <table>
+  <tr>
+    <td width="50%">
+      <img src="landing/src/assets/screenshots/deployments-topology.png" alt="Deployments topology canvas" />
+      <br /><sub><b>Deployments</b> — automatic topology discovery from domain to backend</sub>
+    </td>
+    <td width="50%">
+      <img src="landing/src/assets/screenshots/deployments-inspector.png" alt="Deployments inspector" />
+      <br /><sub><b>Deployments inspector</b> — evidence-backed relationships and dependencies</sub>
+    </td>
+  </tr>
   <tr>
     <td width="50%">
       <img src="landing/src/assets/screenshots/docker.png" alt="Docker panel" />

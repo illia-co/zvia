@@ -5,6 +5,7 @@ import { useServerContext } from '@renderer/state/ServerContext'
 import { useServerStore } from '@renderer/state/serverStore'
 import { useThemeStore, type ThemePreference } from '@renderer/state/themeStore'
 import { useWorkspaceStore } from '@renderer/state/workspaceStore'
+import { useCommandPaletteStore } from '@renderer/state/commandPaletteStore'
 
 const THEME_LABELS: Record<ThemePreference, string> = {
   system: 'System',
@@ -13,8 +14,8 @@ const THEME_LABELS: Record<ThemePreference, string> = {
 }
 
 export function CommandPalette() {
-  const open = useWorkspaceStore((s) => s.commandPaletteOpen)
-  const setOpen = useWorkspaceStore((s) => s.setCommandPaletteOpen)
+  const open = useCommandPaletteStore((s) => s.open)
+  const setOpen = useCommandPaletteStore((s) => s.setOpen)
   const { serverId } = useServerContext()
   const openTool = useWorkspaceStore((s) => s.openTool)
   const connect = useServerStore((s) => s.connect)

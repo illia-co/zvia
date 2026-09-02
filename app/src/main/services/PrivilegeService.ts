@@ -40,3 +40,4 @@ export class PrivilegeService {
 }
 
 export const privilegeService = new PrivilegeService()
+connectionManager.registerTeardown((serverId) => privilegeService.clearCache(serverId))

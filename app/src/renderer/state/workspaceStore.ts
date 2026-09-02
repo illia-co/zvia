@@ -34,7 +34,6 @@ export interface PendingPanelClose {
 
 interface WorkspaceStoreState {
   workspaces: Record<ServerId, ServerWorkspace>
-  commandPaletteOpen: boolean
   pendingPanelClose: PendingPanelClose | null
 
   getWorkspace: (serverId: ServerId) => ServerWorkspace
@@ -52,7 +51,6 @@ interface WorkspaceStoreState {
   ) => void
   setSplitLayout: (serverId: ServerId, splitId: string, layout: Record<string, number>) => void
   reorderTabs: (serverId: ServerId, sourcePanelId: string, targetPanelId: string) => void
-  setCommandPaletteOpen: (open: boolean) => void
 }
 
 const EMPTY_WORKSPACE: ServerWorkspace = {
@@ -138,7 +136,6 @@ function replacePanelInLayout(
 
 export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
   workspaces: {},
-  commandPaletteOpen: false,
   pendingPanelClose: null,
 
   getWorkspace(serverId) {
@@ -339,9 +336,5 @@ export const useWorkspaceStore = create<WorkspaceStoreState>((set, get) => ({
         }
       }
     })
-  },
-
-  setCommandPaletteOpen(open) {
-    set({ commandPaletteOpen: open })
   }
 }))

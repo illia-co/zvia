@@ -3,6 +3,7 @@ import { domainEntityId, portEntityId } from '@shared/topology'
 import { buildTopologyFromOrbstack } from './buildTopologyFromOrbstack'
 import {
   deploymentByDomain,
+  deploymentByName,
   entityIdsForDeployment,
   hasRelationship,
   restoreFullstack
@@ -134,5 +135,60 @@ describe.skipIf(!INTEGRATION_ENABLED)('deployments topology (orbstack integratio
     expect(api?.componentStatus.backend).toBe('healthy')
     expect(shop?.componentStatus.container).toBe('healthy')
     expect(api?.componentStatus.container).toBe('healthy')
+  })
+
+  it('detects the no-nginx compose project as a deployment', async () => {
+    const snapshot = await buildTopologyFromOrbstack(session)
+    const deployment = deploymentByName(snapshot.deployments, 'zvia-nonnginx')
+
+    expect(deployment).toBeDefined()
+    expect(deployment?.name).toBe('zvia-nonnginx')
+    expect(deployment?.id).toBe(`deployment:zvia-nonnginx`)
+    expect(deployment?.entrypoints).toContainEqual({
+      kind: 'docker_compose_service',
+      id: 'compose:zvia-nonnginx'
+    })
+
+    const entityIds = deployment!.entityIds
+    expect(entityIds).toContain('compose:zvia-nonnginx')
+
+    const portId = entityIds.find((id) => id.includes(':4001'))
+    expect(portId).toBeDefined()
+
+    const containerInProject = entityIds.find((id) => {
+      const entity = snapshot.entities[id]
+      return entity?.kind === 'docker_container' && entity.sourceRef?.composeProject === 'zvia-nonnginx'
+    })
+    expect(containerInProject).toBeDefined()
+
+    expect(
+      hasRelationship(snapshot.relationships, portId!, containerInProject!, 'published_by')
+    ).toBe(true)
+  })
+
+  it('reports healthy no-nginx deployment with api + db containers', async () => {
+    const snapshot = await buildTopologyFromOrbstack(session)
+    const deployment = deploymentByName(snapshot.deployments, 'zvia-nonnginx')
+
+    expect(deployment?.health).toBe('healthy')
+    expect(deployment?.componentStatus.backend).toBe('healthy')
+    expect(deployment?.componentStatus.container).toBe('healthy')
+
+    const apiContainerId = deployment!.entityIds.find((id) => {
+      const entity = snapshot.entities[id]
+      return entity?.kind === 'docker_container' && entity.sourceRef?.composeService === 'api'
+    })
+    const pgContainerId = deployment!.entityIds.find((id) => {
+      const entity = snapshot.entities[id]
+      return entity?.kind === 'docker_container' && entity.sourceRef?.composeService === 'postgres'
+    })
+    expect(apiContainerId).toBeDefined()
+    expect(pgContainerId).toBeDefined()
+    expect(
+      hasRelationship(snapshot.relationships, apiContainerId!, 'compose:zvia-nonnginx', 'member_of')
+    ).toBe(true)
+    expect(
+      hasRelationship(snapshot.relationships, pgContainerId!, 'compose:zvia-nonnginx', 'member_of')
+    ).toBe(true)
   })
 })

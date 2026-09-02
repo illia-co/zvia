@@ -19,6 +19,11 @@ import type {
 } from '@shared/files'
 import { CommandError, ConnectionError, PermissionError, ZviaError, SFTPError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
+import { getServerConnection } from './ServiceBase'
+
+function shellQuote(value: string): string {
+  return JSON.stringify(value)
+}
 
 const S_IFMT = 0o170000
 const S_IFDIR = 0o040000
@@ -80,10 +85,6 @@ function mapEntry(parentPath: string, entry: FileEntryWithStats): RemoteFileEntr
   }
 }
 
-function shellQuote(value: string): string {
-  return JSON.stringify(value)
-}
-
 function sftpCallback<T>(
   operation: string,
   fn: (callback: (err: Error | null | undefined, result: T) => void) => void
@@ -114,11 +115,7 @@ export class FileService {
   }
 
   private getConnection(serverId: string) {
-    const connection = connectionManager.getConnection(serverId)
-    if (!connection) {
-      throw new ConnectionError('Server is not connected')
-    }
-    return connection
+    return getServerConnection(serverId)
   }
 
   private async getSftp(serverId: string): Promise<SFTPWrapper> {

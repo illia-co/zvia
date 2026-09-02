@@ -2,6 +2,7 @@ import type { ServerId } from '@shared/server'
 import type { UserAction, UserDetail, UserGroup, UsersListResponse } from '@shared/users'
 import { CommandError, ConnectionError, ValidationError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
+import { getServerConnection } from './ServiceBase'
 import { getLinuxOsContext } from './linuxOs'
 import { privilegeService } from './PrivilegeService'
 import {
@@ -32,11 +33,7 @@ export class UserService {
   private listCache = new Map<ServerId, { response: UsersListResponse; sections: ReturnType<typeof splitDiscoverySections>; expiresAt: number }>()
 
   private getConnection(serverId: ServerId) {
-    const connection = connectionManager.getConnection(serverId)
-    if (!connection) {
-      throw new ConnectionError('Server is not connected')
-    }
-    return connection
+    return getServerConnection(serverId)
   }
 
   async isAvailable(serverId: ServerId): Promise<boolean> {
@@ -394,3 +391,4 @@ export class UserService {
 }
 
 export const userService = new UserService()
+connectionManager.registerTeardown((serverId) => userService.clearServer(serverId))

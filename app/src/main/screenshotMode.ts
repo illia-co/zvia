@@ -17,8 +17,19 @@ import type { ServerProfile } from '@shared/server'
 import type { SslNginxLink, SslOverview } from '@shared/ssl'
 import type { ServerStatsSnapshot, SystemInfo } from '@shared/stats'
 import type { SystemdUnit } from '@shared/systemd'
-import type { TopologySnapshot } from '@shared/topology'
+import type {
+  Deployment,
+  Relationship,
+  TopologyEntity,
+  TopologySnapshot
+} from '@shared/topology'
 import type { UsersListResponse } from '@shared/users'
+import type {
+  DeploymentsDeploymentHistoryEntry,
+  DeploymentsHistorySummary
+} from '@shared/ipc'
+import { diffTopologyForDeployment } from './services/deployments/diff'
+import { summarizeChanges } from './services/deployments/summarize'
 
 export const SCREENSHOT_SERVER_ID = 'production'
 
@@ -42,7 +53,10 @@ const DEMO_CONTAINERS: DockerContainer[] = [
     uptime: '3 days',
     cpuPercent: '2.4%',
     memoryUsage: '128MiB / 2GiB',
-    memoryPercent: '6.25%'
+    memoryPercent: '6.25%',
+    labels:
+      'com.docker.compose.project=zvia-app,com.docker.compose.service=api,com.zvia.stack=demo',
+    networks: 'zvia-app-net'
   },
   {
     id: 'e5f6g7h8',
@@ -54,7 +68,10 @@ const DEMO_CONTAINERS: DockerContainer[] = [
     uptime: '3 days',
     cpuPercent: '0.8%',
     memoryUsage: '96MiB / 2GiB',
-    memoryPercent: '4.69%'
+    memoryPercent: '4.69%',
+    labels:
+      'com.docker.compose.project=zvia-app,com.docker.compose.service=db,com.zvia.stack=demo',
+    networks: 'zvia-app-net'
   },
   {
     id: 'i9j0k1l2',
@@ -66,7 +83,10 @@ const DEMO_CONTAINERS: DockerContainer[] = [
     uptime: '3 days',
     cpuPercent: '0.3%',
     memoryUsage: '12MiB / 2GiB',
-    memoryPercent: '0.59%'
+    memoryPercent: '0.59%',
+    labels:
+      'com.docker.compose.project=zvia-app,com.docker.compose.service=cache,com.zvia.stack=demo',
+    networks: 'zvia-app-net'
   }
 ]
 
@@ -644,118 +664,62 @@ const DEMO_WEB_SITE = 'nginx:/etc/nginx/sites-enabled/web:20'
 const DEMO_API_PORT = 'port:tcp:127.0.0.1:8080'
 const DEMO_WEB_PORT = 'port:tcp:127.0.0.1:3000'
 const DEMO_API_CONTAINER = 'container:a1b2c3d4'
+const DEMO_REDIS_PORT = 'port:tcp:127.0.0.1:6379'
+const DEMO_REDIS_CONTAINER = 'container:c9d0e1f2'
 
-const DEMO_TOPOLOGY_SNAPSHOT: TopologySnapshot = {
-  serverId: SCREENSHOT_SERVER_ID,
-  scannedAt: '2026-08-30T12:00:00.000Z',
-  scanDurationMs: 1240,
-  entities: {
-    [DEMO_API_DOMAIN]: {
-      id: DEMO_API_DOMAIN,
-      kind: 'domain',
-      label: 'api.production.example.com',
-      status: 'healthy'
-    },
-    [DEMO_WEB_DOMAIN]: {
-      id: DEMO_WEB_DOMAIN,
-      kind: 'domain',
-      label: 'production.example.com',
-      status: 'degraded'
-    },
-    [DEMO_API_SITE]: {
-      id: DEMO_API_SITE,
-      kind: 'nginx_site',
-      label: 'api.production.example.com',
-      status: 'healthy'
-    },
-    [DEMO_WEB_SITE]: {
-      id: DEMO_WEB_SITE,
-      kind: 'nginx_site',
-      label: 'production.example.com',
-      status: 'healthy'
-    },
-    [DEMO_API_PORT]: {
-      id: DEMO_API_PORT,
-      kind: 'port',
-      label: ':8080',
-      status: 'healthy'
-    },
-    [DEMO_WEB_PORT]: {
-      id: DEMO_WEB_PORT,
-      kind: 'port',
-      label: ':3000',
-      status: 'degraded'
-    },
-    [DEMO_API_CONTAINER]: {
-      id: DEMO_API_CONTAINER,
-      kind: 'docker_container',
-      label: 'zvia-api',
-      status: 'healthy'
-    }
-  },
-  relationships: [
-    {
-      id: 'rel-api-domain-site',
-      from: { kind: 'domain', id: DEMO_API_DOMAIN },
-      to: { kind: 'nginx_site', id: DEMO_API_SITE },
-      type: 'serves',
-      confidence: 'confirmed',
-      evidence: [
-        {
-          source: 'nginx-T',
-          kind: 'directive',
-          detail: 'server_name api.production.example.com',
-          observedAt: '2026-08-30T12:00:00.000Z'
-        }
-      ]
-    },
-    {
-      id: 'rel-api-site-port',
-      from: { kind: 'nginx_site', id: DEMO_API_SITE },
-      to: { kind: 'port', id: DEMO_API_PORT },
-      type: 'proxies_to',
-      confidence: 'confirmed',
-      label: 'proxy_pass',
-      evidence: [
-        {
-          source: 'nginx-T',
-          kind: 'directive',
-          detail: 'proxy_pass http://127.0.0.1:8080',
-          raw: 'proxy_pass http://127.0.0.1:8080;',
-          location: '/etc/nginx/sites-enabled/api, line 18',
-          observedAt: '2026-08-30T12:00:00.000Z'
-        }
-      ]
-    },
-    {
-      id: 'rel-api-port-container',
-      from: { kind: 'port', id: DEMO_API_PORT },
-      to: { kind: 'docker_container', id: DEMO_API_CONTAINER },
-      type: 'published_by',
-      confidence: 'confirmed',
-      evidence: [
-        {
-          source: 'docker-ps',
-          kind: 'command_output',
-          detail: '0.0.0.0:8080->8080/tcp',
-          observedAt: '2026-08-30T12:00:00.000Z'
-        }
-      ]
-    },
+const DEMO_PROD_DEPLOYMENT_ID = 'deployment:production.example.com'
+const DEMO_API_DEPLOYMENT_ID = 'deployment:api.production.example.com'
+
+type DemoHealthStatus = 'healthy' | 'degraded' | 'failed'
+
+interface DemoSnapshotOptions {
+  scannedAt: string
+  productionBackend: DemoHealthStatus
+  includeApi: boolean
+  apiContainerState?: 'running' | 'restarting'
+  includeRedis?: boolean
+}
+
+function demoSnapshot(options: DemoSnapshotOptions): TopologySnapshot {
+  const entities: Record<string, TopologyEntity> = {}
+  const relationships: Relationship[] = []
+  const deployments: Deployment[] = []
+
+  const prodDomainStatus = options.productionBackend === 'healthy' ? 'healthy' : 'degraded'
+  const prodNginxStatus = options.productionBackend === 'failed' ? 'degraded' : 'healthy'
+
+  entities[DEMO_WEB_DOMAIN] = {
+    id: DEMO_WEB_DOMAIN,
+    kind: 'domain',
+    label: 'production.example.com',
+    status: prodDomainStatus,
+    navigate: { tool: 'ssl', domain: 'production.example.com' }
+  }
+  entities[DEMO_WEB_SITE] = {
+    id: DEMO_WEB_SITE,
+    kind: 'nginx_site',
+    label: 'production.example.com',
+    status: prodNginxStatus,
+    sourceRef: { configPath: '/etc/nginx/sites-enabled/web', startLineNumber: 20 },
+    navigate: { tool: 'nginx', configPath: '/etc/nginx/sites-enabled/web' }
+  }
+  entities[DEMO_WEB_PORT] = {
+    id: DEMO_WEB_PORT,
+    kind: 'port',
+    label: ':3000',
+    status: options.productionBackend,
+    sourceRef: { protocol: 'tcp', address: '127.0.0.1', port: 3000 },
+    navigate: { tool: 'ports', port: 3000 }
+  }
+
+  relationships.push(
     {
       id: 'rel-web-domain-site',
       from: { kind: 'domain', id: DEMO_WEB_DOMAIN },
       to: { kind: 'nginx_site', id: DEMO_WEB_SITE },
       type: 'serves',
       confidence: 'confirmed',
-      evidence: [
-        {
-          source: 'nginx-T',
-          kind: 'directive',
-          detail: 'server_name production.example.com',
-          observedAt: '2026-08-30T12:00:00.000Z'
-        }
-      ]
+      evidence: []
     },
     {
       id: 'rel-web-site-port',
@@ -769,54 +733,225 @@ const DEMO_TOPOLOGY_SNAPSHOT: TopologySnapshot = {
           source: 'nginx-T',
           kind: 'directive',
           detail: 'proxy_pass http://127.0.0.1:3000',
-          observedAt: '2026-08-30T12:00:00.000Z'
+          raw: 'proxy_pass http://127.0.0.1:3000;',
+          location: '/etc/nginx/sites-enabled/web, line 18',
+          observedAt: options.scannedAt
         }
       ]
     }
-  ],
-  deployments: [
-    {
-      id: 'deployment:api.production.example.com',
+  )
+
+  deployments.push({
+    id: DEMO_PROD_DEPLOYMENT_ID,
+    name: 'production.example.com',
+    health: options.productionBackend,
+    entityIds: [DEMO_WEB_DOMAIN, DEMO_WEB_SITE, DEMO_WEB_PORT],
+    entrypoints: [{ kind: 'domain', id: DEMO_WEB_DOMAIN }],
+    stackSummary: 'Nginx → :3000 → Node → zvia-web.service',
+    componentStatus: {
+      ssl: 'healthy',
+      nginx: prodNginxStatus,
+      backend: options.productionBackend,
+      service: 'healthy'
+    }
+  })
+
+  if (options.includeApi) {
+    const apiContainerState = options.apiContainerState ?? 'running'
+    const apiContainerStatus: DemoHealthStatus =
+      apiContainerState === 'running' ? 'healthy' : 'degraded'
+
+    entities[DEMO_API_DOMAIN] = {
+      id: DEMO_API_DOMAIN,
+      kind: 'domain',
+      label: 'api.production.example.com',
+      status: 'healthy',
+      navigate: { tool: 'ssl', domain: 'api.production.example.com' }
+    }
+    entities[DEMO_API_SITE] = {
+      id: DEMO_API_SITE,
+      kind: 'nginx_site',
+      label: 'api.production.example.com',
+      status: 'healthy',
+      sourceRef: { configPath: '/etc/nginx/sites-enabled/api', startLineNumber: 10 },
+      navigate: { tool: 'nginx', configPath: '/etc/nginx/sites-enabled/api' }
+    }
+    entities[DEMO_API_PORT] = {
+      id: DEMO_API_PORT,
+      kind: 'port',
+      label: ':8080',
+      status: 'healthy',
+      sourceRef: { protocol: 'tcp', address: '127.0.0.1', port: 8080 },
+      navigate: { tool: 'ports', port: 8080 }
+    }
+    entities[DEMO_API_CONTAINER] = {
+      id: DEMO_API_CONTAINER,
+      kind: 'docker_container',
+      label: 'zvia-api',
+      status: apiContainerStatus,
+      sourceRef: { state: apiContainerState },
+      navigate: { tool: 'docker', containerId: 'a1b2c3d4' }
+    }
+
+    relationships.push(
+      {
+        id: 'rel-api-domain-site',
+        from: { kind: 'domain', id: DEMO_API_DOMAIN },
+        to: { kind: 'nginx_site', id: DEMO_API_SITE },
+        type: 'serves',
+        confidence: 'confirmed',
+        evidence: []
+      },
+      {
+        id: 'rel-api-site-port',
+        from: { kind: 'nginx_site', id: DEMO_API_SITE },
+        to: { kind: 'port', id: DEMO_API_PORT },
+        type: 'proxies_to',
+        confidence: 'confirmed',
+        label: 'proxy_pass',
+        evidence: [
+          {
+            source: 'nginx-T',
+            kind: 'directive',
+            detail: 'proxy_pass http://127.0.0.1:8080',
+            raw: 'proxy_pass http://127.0.0.1:8080;',
+            location: '/etc/nginx/sites-enabled/api, line 18',
+            observedAt: options.scannedAt
+          }
+        ]
+      },
+      {
+        id: 'rel-api-port-container',
+        from: { kind: 'port', id: DEMO_API_PORT },
+        to: { kind: 'docker_container', id: DEMO_API_CONTAINER },
+        type: 'published_by',
+        confidence: 'confirmed',
+        evidence: []
+      }
+    )
+
+    const apiEntityIds = [DEMO_API_DOMAIN, DEMO_API_SITE, DEMO_API_PORT, DEMO_API_CONTAINER]
+    if (options.includeRedis) {
+      entities[DEMO_REDIS_PORT] = {
+        id: DEMO_REDIS_PORT,
+        kind: 'port',
+        label: ':6379',
+        status: 'healthy',
+        sourceRef: { protocol: 'tcp', address: '127.0.0.1', port: 6379 },
+        navigate: { tool: 'ports', port: 6379 }
+      }
+      entities[DEMO_REDIS_CONTAINER] = {
+        id: DEMO_REDIS_CONTAINER,
+        kind: 'docker_container',
+        label: 'redis',
+        status: 'healthy',
+        sourceRef: { state: 'running' },
+        navigate: { tool: 'docker', containerId: 'c9d0e1f2' }
+      }
+      relationships.push({
+        id: 'rel-redis-port-container',
+        from: { kind: 'port', id: DEMO_REDIS_PORT },
+        to: { kind: 'docker_container', id: DEMO_REDIS_CONTAINER },
+        type: 'published_by',
+        confidence: 'confirmed',
+        evidence: []
+      })
+      apiEntityIds.push(DEMO_REDIS_PORT, DEMO_REDIS_CONTAINER)
+    }
+
+    deployments.push({
+      id: DEMO_API_DEPLOYMENT_ID,
       name: 'api.production.example.com',
-      health: 'healthy',
-      entityIds: [DEMO_API_DOMAIN, DEMO_API_SITE, DEMO_API_PORT, DEMO_API_CONTAINER],
+      health: apiContainerStatus,
+      entityIds: apiEntityIds,
       entrypoints: [{ kind: 'domain', id: DEMO_API_DOMAIN }],
       stackSummary: 'Nginx → :8080 → Docker → zvia-api',
-      componentStatus: { ssl: 'healthy', nginx: 'healthy', backend: 'healthy', container: 'healthy' }
-    },
-    {
-      id: 'deployment:production.example.com',
-      name: 'production.example.com',
-      health: 'degraded',
-      entityIds: [DEMO_WEB_DOMAIN, DEMO_WEB_SITE, DEMO_WEB_PORT],
-      entrypoints: [{ kind: 'domain', id: DEMO_WEB_DOMAIN }],
-      stackSummary: 'Nginx → :3000 → Node → zvia-web.service',
-      componentStatus: { ssl: 'healthy', nginx: 'healthy', backend: 'degraded', service: 'healthy' }
-    }
-  ],
-  insights: [
-    {
-      id: 'insight-shared-backend-1',
-      type: 'shared_backend',
-      deploymentIds: [
-        'deployment:api.production.example.com',
-        'deployment:admin.production.example.com'
-      ],
-      label: '2 domains → same backend :3000',
-      confidence: 'confirmed',
-      evidence: [
-        {
-          source: 'nginx-T',
-          kind: 'directive',
-          detail: 'proxy_pass http://127.0.0.1:3000',
-          raw: 'proxy_pass http://127.0.0.1:3000;',
-          location: '/etc/nginx/sites-enabled/admin, line 12',
-          observedAt: '2026-08-30T12:00:00.000Z'
-        }
-      ]
-    }
-  ],
-  warnings: []
+      componentStatus: { ssl: 'healthy', nginx: 'healthy', backend: 'healthy', container: apiContainerStatus }
+    })
+  }
+
+  return {
+    serverId: SCREENSHOT_SERVER_ID,
+    scannedAt: options.scannedAt,
+    scanDurationMs: 1240,
+    entities,
+    relationships,
+    deployments,
+    insights: [],
+    warnings: []
+  }
+}
+
+interface DemoHistoryEntry {
+  snapshot: TopologySnapshot
+  deploymentTags: Record<string, string[]>
+}
+
+/**
+ * Ordered oldest → newest. A staged outage + recovery + a new regression, with
+ * tags sprinkled so every compare path (snapshot↔snapshot, snapshot→current)
+ * has something to show.
+ */
+const demoHistory: DemoHistoryEntry[] = [
+  {
+    snapshot: demoSnapshot({ scannedAt: '2026-08-24T10:00:00.000Z', productionBackend: 'healthy', includeApi: false }),
+    deploymentTags: {}
+  },
+  {
+    snapshot: demoSnapshot({ scannedAt: '2026-08-25T10:00:00.000Z', productionBackend: 'healthy', includeApi: true }),
+    deploymentTags: { [DEMO_PROD_DEPLOYMENT_ID]: ['stable'], [DEMO_API_DEPLOYMENT_ID]: ['v1'] }
+  },
+  {
+    snapshot: demoSnapshot({ scannedAt: '2026-08-26T10:00:00.000Z', productionBackend: 'degraded', includeApi: true }),
+    deploymentTags: {}
+  },
+  {
+    snapshot: demoSnapshot({ scannedAt: '2026-08-27T10:00:00.000Z', productionBackend: 'failed', includeApi: true }),
+    deploymentTags: {}
+  },
+  {
+    snapshot: demoSnapshot({ scannedAt: '2026-08-28T10:00:00.000Z', productionBackend: 'healthy', includeApi: true, includeRedis: true }),
+    deploymentTags: { [DEMO_PROD_DEPLOYMENT_ID]: ['post-fix'], [DEMO_API_DEPLOYMENT_ID]: ['v2'] }
+  },
+  {
+    snapshot: demoSnapshot({ scannedAt: '2026-08-29T12:00:00.000Z', productionBackend: 'healthy', includeApi: true, includeRedis: true, apiContainerState: 'restarting' }),
+    deploymentTags: {}
+  }
+]
+
+const DEMO_SNAPSHOT_LIVE = demoHistory[demoHistory.length - 1].snapshot
+
+function demoHistoryList(): DeploymentsHistorySummary[] {
+  return [...demoHistory].reverse().map((entry) => ({
+    id: entry.snapshot.scannedAt,
+    scannedAt: entry.snapshot.scannedAt,
+    deploymentTags: entry.deploymentTags
+  }))
+}
+
+function demoDeploymentHistory(deploymentId: string): DeploymentsDeploymentHistoryEntry[] {
+  const entries: DeploymentsDeploymentHistoryEntry[] = []
+  for (let index = 0; index < demoHistory.length; index += 1) {
+    const snapshot = demoHistory[index].snapshot
+    const tags = demoHistory[index].deploymentTags[deploymentId] ?? []
+    const changes =
+      index === 0
+        ? []
+        : diffTopologyForDeployment(demoHistory[index - 1].snapshot, snapshot, deploymentId)
+    if (changes.length === 0 && tags.length === 0) continue
+    entries.push({
+      id: snapshot.scannedAt,
+      scannedAt: snapshot.scannedAt,
+      tags,
+      changeCount: changes.length,
+      summary: summarizeChanges(changes)
+    })
+  }
+  return entries.reverse()
+}
+
+function demoSnapshotById(id: string): TopologySnapshot | undefined {
+  return demoHistory.find((entry) => entry.snapshot.scannedAt === id)?.snapshot
 }
 
 const DEMO_CRON: CronListResponse = {
@@ -1016,8 +1151,70 @@ const SCREENSHOT_STUBS: Partial<Record<IpcChannel, ScreenshotStub>> = {
     return { path: request.path, entries: [] }
   },
   'ports:list': async () => DEMO_PORTS,
-  'deployments:scan': async () => DEMO_TOPOLOGY_SNAPSHOT,
-  'deployments:getSnapshot': async () => DEMO_TOPOLOGY_SNAPSHOT,
+  'deployments:scan': async () => DEMO_SNAPSHOT_LIVE,
+  'deployments:getSnapshot': async () => DEMO_SNAPSHOT_LIVE,
+  'deployments:historyList': async () => demoHistoryList(),
+  'deployments:deploymentHistory': async (payload) =>
+    demoDeploymentHistory((payload as { deploymentId: string }).deploymentId),
+  'deployments:diff': async (payload) => {
+    const request = payload as { baselineId: string | null; deploymentId: string }
+    const baseline = request.baselineId ? demoSnapshotById(request.baselineId) : undefined
+    if (!baseline) {
+      return { changes: [], baselineId: request.baselineId, baselineScannedAt: null }
+    }
+    return {
+      changes: diffTopologyForDeployment(baseline, DEMO_SNAPSHOT_LIVE, request.deploymentId),
+      baselineId: baseline.scannedAt,
+      baselineScannedAt: baseline.scannedAt
+    }
+  },
+  'deployments:snapshotDiff': async (payload) => {
+    const request = payload as { fromSnapshotId: string; toSnapshotId: string; deploymentId: string }
+    const from = demoSnapshotById(request.fromSnapshotId)
+    const to = demoSnapshotById(request.toSnapshotId)
+    if (!from || !to) {
+      return {
+        changes: [],
+        fromId: request.fromSnapshotId,
+        fromScannedAt: from?.scannedAt ?? '',
+        toId: request.toSnapshotId,
+        toScannedAt: to?.scannedAt ?? ''
+      }
+    }
+    return {
+      changes: diffTopologyForDeployment(from, to, request.deploymentId),
+      fromId: from.scannedAt,
+      fromScannedAt: from.scannedAt,
+      toId: to.scannedAt,
+      toScannedAt: to.scannedAt
+    }
+  },
+  'deployments:tag': async (payload) => {
+    const request = payload as {
+      snapshotId: string
+      deploymentId: string
+      tag: string
+      remove?: boolean
+    }
+    const entry = demoHistory.find((item) => item.snapshot.scannedAt === request.snapshotId)
+    if (!entry) return undefined
+    const tags = entry.deploymentTags[request.deploymentId] ?? []
+    entry.deploymentTags[request.deploymentId] = request.remove
+      ? tags.filter((tag) => tag !== request.tag)
+      : tags.includes(request.tag)
+        ? tags
+        : [...tags, request.tag]
+    return undefined
+  },
+  'deployments:tagCurrent': async (payload) => {
+    const request = payload as { deploymentId: string; tag: string }
+    const entry = demoHistory[demoHistory.length - 1]
+    const tags = entry.deploymentTags[request.deploymentId] ?? []
+    if (!tags.includes(request.tag)) {
+      entry.deploymentTags[request.deploymentId] = [...tags, request.tag]
+    }
+    return undefined
+  },
   'cron:list': async () => DEMO_CRON,
   'terminal:open': async () => undefined,
   'terminal:write': async () => undefined,

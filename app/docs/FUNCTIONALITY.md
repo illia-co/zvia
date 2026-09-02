@@ -27,6 +27,8 @@ Selecting a server changes the complete application context. When connected, **D
 
 See [tools/deployments.md](./tools/deployments.md).
 
+Includes change tracking: pin a known-good baseline, then compare against the current topology to see what changed since it worked. See the "Change tracking" section in the deployments tool doc for details.
+
 ---
 
 # Overview

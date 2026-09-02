@@ -13,7 +13,7 @@ export interface DownloadLinks {
   downloadLinux: string
 }
 
-const DEFAULT_TAG = import.meta.env.VITE_RELEASE_TAG || 'v0.1.1-beta'
+const DEFAULT_TAG = import.meta.env.VITE_RELEASE_TAG || 'v0.1.2-beta'
 
 export function buildDownloadLinks(tag: string): DownloadLinks {
   const base = `${GITHUB_REPO}/releases`

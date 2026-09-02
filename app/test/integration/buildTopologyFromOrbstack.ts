@@ -27,6 +27,8 @@ interface DockerPsRow {
   Image: string
   Ports: string
   RunningFor?: string
+  Labels?: string
+  Networks?: string
 }
 
 function parseJsonLines<T>(stdout: string): T[] {
@@ -115,7 +117,9 @@ async function collectContainers(session: OrbstackSession): Promise<DockerContai
     uptime: row.RunningFor || '—',
     cpuPercent: '—',
     memoryUsage: '—',
-    memoryPercent: '—'
+    memoryPercent: '—',
+    labels: row.Labels ?? '',
+    networks: row.Networks ?? ''
   }))
 }
 

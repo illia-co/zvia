@@ -1,332 +1,56 @@
 # Zvia — Coding Agent Instructions
 
-## Repository
+Desktop SSH workspace for remote Linux servers (Electron + React + TypeScript). npm workspaces monorepo: `app/` (Electron app), `landing/` (marketing site), `shared/` (design tokens).
 
-This is an npm workspaces monorepo:
+## Commands
 
-- **`app/`** — Electron application (`@zvia/app`). All application code lives under `app/src/`.
-- **`landing/`** — Static marketing site (`@zvia/landing`). No Electron dependencies; deploys independently.
-- **`shared/`** — Design tokens and brand assets (`@zvia/shared`). Not IPC code.
+Run from repo root. There is **no linter or formatter configured** — verification is exactly what CI does, in this order: `typecheck → test → build → build:landing`.
 
-The IPC contracts and validators remain in **`app/src/shared/`** — do not confuse with root `shared/`.
+| Command | What |
+|---------|------|
+| `npm run dev` | Electron app dev (`-w @zvia/app`) |
+| `npm run dev:demo` | Interactive demo app on seeded topology/snapshot stubs (no SSH) |
+| `npm run dev:landing` | Landing site dev |
+| `npm run typecheck` | `tsc --noEmit` on both `app/tsconfig.node.json` and `app/tsconfig.web.json` |
+| `npm test` | Vitest unit tests in `app/test/**` (node env; integration tests auto-skip) |
+| `npm run build` / `build:landing` | electron-vite build / landing build |
 
-Root scripts: `npm run dev` (app), `npm run dev:landing` (site), `npm run build`, `npm test`.
+- Single test: `npm run test -w @zvia/app -- test/shared/cron.test.ts`
+- Integration tests need OrbStack: provision once with `npm run orbstack:provision -w @zvia/app`, then `npm run test:integration -w @zvia/app`. Gated by `ZVIA_ORB_INTEGRATION=1` (`describe.skipIf`); see `app/scripts/orbstack/README.md`.
+- Installers: `npm run dist:mac|dist:win|dist:linux -w @zvia/app` (config `app/electron-builder.yml`).
 
----
+## Layout and aliases
 
-## Documentation
+- `app/src/main` — SSH layer (`ssh/`, one `ConnectionManager`), services (`services/`), IPC handlers (`ipc/registry.ts`), persistence (`store/`).
+- `app/src/renderer` — React UI. One folder per tool in `tools/`, Zustand stores in `state/`.
+- `app/src/shared` — **IPC contracts and validators** (alias `@shared`). Not to be confused with root `shared/` = design tokens (`@zvia/shared`). This mix-up is the easiest mistake here.
+- `app/test` — mirrors src: `main/`, `shared/`, `renderer/`, `integration/`.
+- Other aliases: `@renderer`, `@main` (vitest config only).
 
-Agent and contributor docs are organized by package:
+## IPC wiring (how almost every feature travels)
 
-| Location | Contents |
-|----------|----------|
-| [docs/README.md](docs/README.md) | Documentation index |
-| [app/docs/](app/docs/) | Architecture, functionality, roadmap, tool specs |
-| [landing/docs/](landing/docs/) | Product vision |
-| [shared/docs/](shared/docs/) | Design language and UI rules |
+    renderer → window.zvia → preload allowlist → main/ipc/registry.ts → Service → SSH
 
-User-facing docs: `landing/src/docs/content.ts` → `/documentation` on the landing site.
+- Renderer only talks to main through the `window.zvia` bridge in `app/src/preload/index.ts`; the channel/event allowlists there derive from `app/src/shared/ipcChannels.ts` (single source of truth).
+- Contracts live in `app/src/shared/ipc.ts`; every request payload is validated by a function in `app/src/shared/validate.ts`, called in `registry.ts`. Unvalidated renderer input must never reach a service.
+- Shell command strings belong in `app/src/main/services/*`; never in React components. Prefer SFTP over shell for file ops, and structured output (`--format json`) over parsing human-readable output.
+- Adding an IPC operation = add the channel to `app/src/shared/ipcChannels.ts` (registry unregistration and the preload allowlist consume this list), the req/res contract in `app/src/shared/ipc.ts`, a validator in `app/src/shared/validate.ts`, a handler in `registry.ts`, then the renderer call.
 
----
+## Product rules (review-enforced)
 
-## Product
+1. **Everything is server-scoped.** Every server operation takes a `serverId`; every view operates on the selected server. No fleet-wide views (all containers/logs/services across servers) unless a fleet mode is explicitly designed. The app ships 15 tools; per-tool specs in `app/docs/tools/`. Do not build without product intent: Kubernetes, DB admin UIs, cloud provisioning, deployment pipelines, monitoring/alerting.
+2. **No agent on the server.** Only SSH/SFTP/PTY + standard Linux commands + Docker CLI against stock Ubuntu servers.
+3. **Renderer never sees SSH credentials or private keys.** Secrets are encrypted in main with Electron `safeStorage` (`app/src/main/store/secrets.ts`). The terminal is the intentional exception to command validation: it is a fully interactive SSH shell.
+4. Design: monochrome, minimal, native macOS feel; not a SaaS dashboard. Binding rules are in `shared/docs/UI.md` and `shared/docs/DESIGN.md` — follow them rather than inventing new visual patterns.
 
-Zvia is a native-feeling desktop application for managing remote Linux servers over SSH. macOS is the primary target; Windows and Linux builds are supported.
+## Docs to update when behavior changes
 
-The product should feel like:
+- Tool behavior/architecture → `app/docs/` (per-tool: `app/docs/tools/<tool>.md`)
+- User-facing guides → `landing/src/docs/content.ts` (served at `/documentation`)
+- Commands/structure/rules here → this file
 
-- OrbStack
-- Finder
-- VS Code
-- Notion
-- Apple system utilities
+## Environment and release quirks
 
-It is NOT a traditional web-based DevOps dashboard.
-
-The core interaction model is:
-
-    Select Server
-        ↓
-    Select Tool
-        ↓
-    Work in the Workspace
-
-Everything in the application is scoped to the currently selected server.
-
----
-
-# Critical Product Rule
-
-## Everything is server-scoped
-
-This is one of the most important architectural and UX rules.
-
-If the user selects:
-
-    Production
-
-then every view must operate on Production.
-
-Examples:
-
-- Overview → Production
-- Stats → Production
-- Logs → Production
-- Terminal → Production
-- Files → Production
-- Docker → Production
-
-There must NOT be global views such as:
-
-- "All Docker containers"
-- "All images across servers"
-- "All logs"
-- "All services"
-
-unless a future feature explicitly introduces a fleet-management mode.
-
-The application should always make the current server obvious.
-
-Example:
-
-    PRODUCTION
-    ubuntu@production.example.com
-    ● Connected
-
----
-
-# Current tools
-
-The application ships **15 server-scoped tools**:
-
-| Section | Tools |
-|---------|-------|
-| Applications | Deployments |
-| General | Overview |
-| System | Stats, Users, Processes, Packages, Logs |
-| Workspace | Terminal, Files |
-| Containers | Docker |
-| Network | Ports, Nginx, SSL |
-| Daemons | Services, Cron |
-
-Per-tool specs: [app/docs/tools/](app/docs/tools/).
-
-Do not add fleet-wide views (all servers, all containers, all logs) unless explicitly designing a fleet mode.
-
-Do not implement without product intent:
-
-- Kubernetes
-- database administration UIs
-- cloud provisioning
-- deployment pipelines
-- monitoring alert systems
-
----
-
-# Technology
-
-Preferred stack:
-
-- Electron
-- TypeScript
-- React
-- Vite
-- xterm.js
-- SSH2
-- SFTP over SSH
-- Zustand or equivalent lightweight state management
-- Tailwind only if it can be configured to produce the intended design language
-
-Avoid unnecessary dependencies.
-
-Prefer well-maintained, focused libraries.
-
----
-
-# Architecture Principle
-
-The application is fundamentally an SSH client with a rich UI.
-
-The server should NOT require a custom Zvia agent for the MVP.
-
-Communication should happen through:
-
-- SSH
-- SSH PTY
-- SFTP
-- standard Linux commands
-- Docker CLI / Docker socket through SSH
-
-The remote server should remain a normal Ubuntu/Linux server.
-
----
-
-# Security
-
-Never expose raw SSH credentials to the renderer process.
-
-Electron architecture must separate:
-
-    Renderer
-        ↓
-    IPC
-        ↓
-    Main process
-        ↓
-    SSH connection
-        ↓
-    Remote server
-
-The renderer must never receive private SSH keys.
-
-Use the operating system credential store/keychain where appropriate.
-
-Never execute arbitrary commands directly from renderer IPC without validation.
-
-The terminal is an intentional exception: it must provide a fully interactive SSH shell.
-
----
-
-# UX Principles
-
-The UI should feel:
-
-- native
-- calm
-- minimal
-- monochrome
-- technical
-- precise
-- responsive
-- keyboard-friendly
-
-Avoid:
-
-- generic SaaS dashboards
-- excessive cards
-- colorful charts
-- gradients
-- glassmorphism
-- excessive rounded rectangles
-- huge typography
-- unnecessary icons
-- visual noise
-
-Use:
-
-- typography
-- whitespace
-- subtle separators
-- floating rounded workspace panels
-- monochrome surfaces
-- SF Symbols-style iconography
-- compact technical information
-
----
-
-# Workspace Model
-
-The application has three primary areas:
-
-    Servers
-    Server Navigation
-    Workspace
-
-Conceptually:
-
-    WHERE → WHAT → WORK
-
-Left sidebar:
-
-    Servers
-
-Second sidebar:
-
-    Tools for selected server
-
-Main area:
-
-    Workspace
-
-Workspace panels can be opened, closed, resized and split.
-
-The application should feel similar to VS Code's workspace model, but visually closer to Notion and native macOS applications.
-
----
-
-# Coding Style
-
-Prefer:
-
-- small composable components
-- explicit types
-- predictable state
-- clear separation between UI and server communication
-- testable services
-- error handling
-- graceful connection failures
-
-Avoid:
-
-- giant components
-- global mutable state
-- hidden side effects
-- business logic inside React components
-- coupling UI directly to SSH implementation
-
----
-
-# Server Connection
-
-A server should be represented as a persistent connection profile.
-
-Example:
-
-    {
-      id: "production",
-      name: "Production",
-      hostname: "203.0.113.10",
-      username: "ubuntu",
-      port: 22,
-      auth: "ssh-agent"
-    }
-
-The application should support connection states:
-
-    disconnected
-    connecting
-    connected
-    reconnecting
-    error
-
-The UI must clearly communicate connection state.
-
----
-
-# Important
-
-Do not optimize for feature count.
-
-Optimize for:
-
-1. Reliability
-2. Native feeling
-3. Excellent terminal
-4. Excellent file manager
-5. Excellent workspace
-6. Server-scoped mental model
-
-Zvia should feel like a serious desktop application, not a web dashboard wrapped in Electron.
-
----
-
-# Platform Strategy
-
-Zvia is **macOS-first** but **cross-platform by design**.
-
-- Ship and test primarily on macOS.
-- Do not use macOS-only APIs in non-UI code (`app/src/main`, `app/src/shared`, services).
-- UI may use platform-appropriate conventions (e.g. ⌘ shortcuts on macOS, Ctrl on Windows/Linux).
-- Credential encryption uses Electron `safeStorage` (macOS Keychain, Windows DPAPI, Linux libsecret) — never platform-specific secret stores directly.
-- Distribution targets are configured in `app/electron-builder.yml` for macOS (dmg/zip), Windows (nsis/portable), and Linux (AppImage/deb). Windows and Linux builds are expected to compile; macOS is the polished target.
-- The main process clears `ELECTRON_RUN_AS_NODE` on startup because some IDE terminals set it and break Electron 44+.
+- `ELECTRON_RUN_AS_NODE=1` (set by some IDE terminals) breaks Electron 44+. The `dev`/`preview` scripts strip it (`env -u`) **and** `app/src/main/index.ts` deletes it before importing the app. Preserve both.
+- macOS-first but must compile on Windows/Linux; no macOS-only APIs outside UI code. CI uses Node 24.
+- Release: push a `v*` tag → CI builds mac/Windows/Linux installers and publishes a GitHub release. Landing deploys to GitHub Pages on push to main (base path `/zvia/`, `VITE_BASE_PATH`).

@@ -1,19 +1,10 @@
 import type { ServerId } from '@shared/server'
-import { connectionManager } from '../../ssh/ConnectionManager'
-import type { CommandRunner } from '../CommandRunner'
+import { commandRunnerFor } from '../ServiceBase'
 import { detectPackageManager } from './detectPackageManager'
 import type { PackageManager } from './PackageManager'
 
-function createRunner(serverId: ServerId): CommandRunner {
-  return {
-    exec(command, timeoutMs) {
-      return connectionManager.exec(serverId, command, timeoutMs)
-    }
-  }
-}
-
 export async function getPackageManager(serverId: ServerId): Promise<PackageManager | null> {
-  return detectPackageManager(serverId, createRunner(serverId))
+  return detectPackageManager(serverId, commandRunnerFor(serverId))
 }
 
 export type { PackageManager } from './PackageManager'

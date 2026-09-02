@@ -38,136 +38,12 @@ import type {
 } from '@shared/ipc'
 import type { LogsEntriesEvent, LogsStatusEvent } from '@shared/logs'
 import type { FileTransferCompleteEvent, FileTransferProgressEvent } from '@shared/files'
+import { IPC_CHANNELS, IPC_EVENTS } from '@shared/ipcChannels'
 import appPackage from '../../package.json'
 
-const allowedChannels: IpcChannel[] = [
-  'profiles:list',
-  'profiles:get',
-  'profiles:create',
-  'profiles:update',
-  'profiles:remove',
-  'connection:connect',
-  'connection:disconnect',
-  'connection:test',
-  'connection:getState',
-  'connection:hostKeyResponse',
-  'terminal:open',
-  'terminal:write',
-  'terminal:resize',
-  'terminal:close',
-  'logs:start',
-  'logs:stop',
-  'logs:setFilters',
-  'stats:getInfo',
-  'stats:subscribe',
-  'stats:unsubscribe',
-  'services:isAvailable',
-  'services:list',
-  'services:getUnit',
-  'services:getUnitFile',
-  'services:getUnitLogs',
-  'services:action',
-  'cron:list',
-  'cron:getSource',
-  'cron:createJob',
-  'cron:updateJob',
-  'cron:deleteJob',
-  'users:isAvailable',
-  'users:list',
-  'users:get',
-  'users:groups',
-  'users:action',
-  'processes:list',
-  'processes:get',
-  'processes:subscribe',
-  'processes:unsubscribe',
-  'processes:signal',
-  'packages:isAvailable',
-  'packages:overview',
-  'packages:list',
-  'packages:search',
-  'packages:info',
-  'packages:updates',
-  'packages:operationStart',
-  'packages:operationCancel',
-  'deployments:scan',
-  'deployments:getSnapshot',
-  'deployments:lookup',
-  'files:list',
-  'files:read',
-  'files:write',
-  'files:mkdir',
-  'files:rename',
-  'files:delete',
-  'files:upload',
-  'files:download',
-  'files:copy',
-  'files:cancelTransfer',
-  'docker:isAvailable',
-  'docker:listContainers',
-  'docker:listImages',
-  'docker:listVolumes',
-  'docker:listNetworks',
-  'docker:startContainer',
-  'docker:stopContainer',
-  'docker:restartContainer',
-  'docker:removeContainer',
-  'docker:inspectContainer',
-  'docker:removeImage',
-  'docker:removeVolume',
-  'docker:logsStart',
-  'docker:logsStop',
-  'ports:list',
-  'ports:setFirewallRule',
-  'ports:deleteFirewallRule',
-  'nginx:status',
-  'nginx:configTree',
-  'nginx:readConfig',
-  'nginx:writeConfig',
-  'nginx:validate',
-  'nginx:action',
-  'nginx:logPaths',
-  'nginx:logsStart',
-  'nginx:logsStop',
-  'ssl:overview',
-  'ssl:certificate',
-  'ssl:nginxSites',
-  'ssl:installCertbot',
-  'ssl:enableHttpsStart',
-  'ssl:enableHttpsCancel',
-  'ssl:renew',
-  'ssl:testRenewal',
-  'ssl:enableAutoRenewal',
-  'ssl:verifyHttps',
-  'ssl:renewalLog',
-  'window:toggleMaximize',
-  'window:isFullscreen'
-]
+const allowedChannels: readonly IpcChannel[] = IPC_CHANNELS
 
-const allowedEvents: (keyof IpcEventMap)[] = [
-  'connection:stateChanged',
-  'connection:hostKeyPrompt',
-  'terminal:data',
-  'terminal:exit',
-  'logs:entries',
-  'logs:status',
-  'stats:update',
-  'processes:update',
-  'packages:operationStep',
-  'packages:operationOutput',
-  'packages:operationDone',
-  'files:transferProgress',
-  'files:transferComplete',
-  'docker:logsData',
-  'docker:logsExit',
-  'nginx:logsData',
-  'nginx:logsExit',
-  'ssl:workflowStep',
-  'ssl:workflowOutput',
-  'ssl:workflowDone',
-  'window:fullscreenChanged',
-  'deployments:scanProgress'
-]
+const allowedEvents: readonly (keyof IpcEventMap)[] = IPC_EVENTS
 
 function decodeBase64(data: string): Uint8Array {
   const binary = atob(data)
@@ -657,6 +533,24 @@ const deploymentsApi: DeploymentsApi = {
   },
   lookup(request) {
     return invokeIpc('deployments:lookup', request)
+  },
+  historyList(request) {
+    return invokeIpc('deployments:historyList', request)
+  },
+  tag(request) {
+    return invokeIpc('deployments:tag', request)
+  },
+  tagCurrent(request) {
+    return invokeIpc('deployments:tagCurrent', request)
+  },
+  diff(request) {
+    return invokeIpc('deployments:diff', request)
+  },
+  snapshotDiff(request) {
+    return invokeIpc('deployments:snapshotDiff', request)
+  },
+  deploymentHistory(request) {
+    return invokeIpc('deployments:deploymentHistory', request)
   },
   onScanProgress(listener) {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: DeploymentsScanProgressEvent) => {

@@ -3,6 +3,7 @@ import { KEYBOARD_ZERO_TOOL, TOOLS } from '@renderer/lib/tools'
 import { useServerContext } from '@renderer/state/ServerContext'
 import { useWorkspaceStore } from '@renderer/state/workspaceStore'
 import { useThemeStore } from '@renderer/state/themeStore'
+import { useCommandPaletteStore } from '@renderer/state/commandPaletteStore'
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
@@ -17,8 +18,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 export function useShellKeyboard(): void {
   const { serverId } = useServerContext()
-  const commandPaletteOpen = useWorkspaceStore((s) => s.commandPaletteOpen)
-  const setCommandPaletteOpen = useWorkspaceStore((s) => s.setCommandPaletteOpen)
+  const toggleCommandPalette = useCommandPaletteStore((s) => s.toggle)
   const openTool = useWorkspaceStore((s) => s.openTool)
   const requestClosePanel = useWorkspaceStore((s) => s.requestClosePanel)
   const cyclePreference = useThemeStore((s) => s.cyclePreference)
@@ -31,7 +31,7 @@ export function useShellKeyboard(): void {
 
       if (mod && event.key.toLowerCase() === 'k') {
         event.preventDefault()
-        setCommandPaletteOpen(!commandPaletteOpen)
+        toggleCommandPalette()
         return
       }
 
@@ -72,10 +72,9 @@ export function useShellKeyboard(): void {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [
     requestClosePanel,
-    commandPaletteOpen,
     cyclePreference,
     openTool,
     serverId,
-    setCommandPaletteOpen
+    toggleCommandPalette
   ])
 }

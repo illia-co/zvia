@@ -201,7 +201,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Compare the version shown in the app (or the release tag on GitHub, e.g. v0.1.1-beta) with the latest release on GitHub. If they match, you are up to date.'
+          'Compare the version shown in the app (or the release tag on GitHub, e.g. v0.1.2-beta) with the latest release on GitHub. If they match, you are up to date.'
       }
     ]
   },
@@ -388,6 +388,15 @@ export const DOC_SECTIONS: DocSection[] = [
           'Dotted edges — unknown confidence',
           'Entrypoint nodes (domains) use a stronger border emphasis'
         ]
+      },
+      {
+        type: 'subheading',
+        content: 'Snapshots & change tracking'
+      },
+      {
+        type: 'paragraph',
+        content:
+          'Each scan records a snapshot of the topology. Tag a snapshot (e.g. "stable") to mark a known-good state. Every deployment row shows its latest tag — click the tag to jump straight to a diff against the live state for that deployment only, or open Show snapshots for the full per-deployment history with change summaries. Diffs are always scoped to a single deployment: comparing one application never surfaces changes that only affected another.'
       },
       {
         type: 'subheading',

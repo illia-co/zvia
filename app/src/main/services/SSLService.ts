@@ -20,6 +20,7 @@ import type {
 } from '@shared/ipc'
 import { CommandError, ConnectionError, ValidationError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
+import { getServerConnection, shellQuote } from './ServiceBase'
 import { execStreamOnClient } from '../ssh/exec'
 import { privilegeService } from './PrivilegeService'
 import { nginxService } from './NginxService'
@@ -75,10 +76,6 @@ function sectionBetween(stdout: string, start: string, end?: string): string {
   if (!end) return stdout.slice(from)
   const endIndex = stdout.indexOf(end, from)
   return endIndex === -1 ? stdout.slice(from) : stdout.slice(from, endIndex)
-}
-
-function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`
 }
 
 function workflowStreamKey(serverId: ServerId, streamId: string): string {
@@ -137,11 +134,7 @@ export class SSLService {
   }
 
   private getConnection(serverId: ServerId) {
-    const connection = connectionManager.getConnection(serverId)
-    if (!connection) {
-      throw new ConnectionError('Server is not connected')
-    }
-    return connection
+    return getServerConnection(serverId)
   }
 
   private async exec(serverId: ServerId, command: string, timeoutMs = 20000) {
@@ -881,3 +874,4 @@ export class SSLService {
 }
 
 export const sslService = new SSLService()
+connectionManager.registerTeardown((serverId) => sslService.stopAllForServer(serverId))

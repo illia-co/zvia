@@ -65,9 +65,16 @@ import {
   validatePackagesSearchRequest,
   validatePackagesInfoRequest,
   validatePackagesOperationStartRequest,
-  validatePackagesOperationCancelRequest
+  validatePackagesOperationCancelRequest,
+  validateDeploymentsLookupRequest,
+  validateDeploymentsTagRequest,
+  validateDeploymentsDiffRequest,
+  validateDeploymentsSnapshotDiffRequest,
+  validateDeploymentsDeploymentHistoryRequest,
+  validateDeploymentsTagCurrentRequest
 } from '@shared/validate'
 import type { IpcChannel } from '@shared/ipc'
+import { IPC_CHANNELS } from '@shared/ipcChannels'
 import { profileStore } from '../store/profiles'
 import { connectionManager } from '../ssh/ConnectionManager'
 import { terminalService } from '../services/TerminalService'
@@ -83,7 +90,7 @@ import { cronService } from '../services/CronService'
 import { userService } from '../services/UserService'
 import { processService } from '../services/ProcessService'
 import { packageService } from '../services/PackageService'
-import { topologyService } from '../services/deployments'
+import { topologyService, topologyHistoryService } from '../services/deployments'
 import { getScreenshotStub } from '../screenshotMode'
 
 function registerHandler<C extends IpcChannel>(
@@ -124,6 +131,7 @@ export function registerIpcHandlers(): void {
   registerHandler('profiles:remove', async (payload) => {
     const request = validateProfileRemoveRequest(payload)
     await profileStore.remove(request.id)
+    await topologyHistoryService.removeServer(request.id)
   })
 
   registerHandler('connection:connect', async (payload) => {
@@ -383,35 +391,85 @@ export function registerIpcHandlers(): void {
   })
 
   registerHandler('deployments:lookup', async (payload) => {
-    const request = payload as import('@shared/ipc').DeploymentsLookupRequest
-    if (!request.serverId) {
-      throw new ValidationError('serverId is required')
-    }
+    const request = validateDeploymentsLookupRequest(payload)
     switch (request.kind) {
       case 'port':
-        if (request.port === undefined) throw new ValidationError('port is required')
         return topologyService.lookup(request.serverId, { kind: 'port', port: request.port })
       case 'container':
-        if (!request.containerId) throw new ValidationError('containerId is required')
         return topologyService.lookup(request.serverId, {
           kind: 'container',
           containerId: request.containerId
         })
       case 'domain':
-        if (!request.domain) throw new ValidationError('domain is required')
         return topologyService.lookup(request.serverId, { kind: 'domain', domain: request.domain })
       case 'nginxSite':
-        if (!request.configPath || request.startLineNumber === undefined) {
-          throw new ValidationError('configPath and startLineNumber are required')
-        }
         return topologyService.lookup(request.serverId, {
           kind: 'nginxSite',
           configPath: request.configPath,
           startLineNumber: request.startLineNumber
         })
-      default:
-        throw new ValidationError('Invalid lookup kind')
     }
+  })
+
+  registerHandler('deployments:historyList', async (payload) => {
+    const request = validateServerScoped(payload)
+    return topologyHistoryService.list(request.serverId)
+  })
+
+  registerHandler('deployments:tag', async (payload) => {
+    const request = validateDeploymentsTagRequest(payload)
+    if (request.remove) {
+      await topologyHistoryService.removeDeploymentTag(
+        request.serverId,
+        request.snapshotId,
+        request.deploymentId,
+        request.tag
+      )
+    } else {
+      await topologyHistoryService.addDeploymentTag(
+        request.serverId,
+        request.snapshotId,
+        request.deploymentId,
+        request.tag
+      )
+    }
+  })
+
+  registerHandler('deployments:tagCurrent', async (payload) => {
+    const request = validateDeploymentsTagCurrentRequest(payload)
+    const current = await topologyService.getSnapshot(request.serverId)
+    await topologyHistoryService.tagCurrent(
+      request.serverId,
+      current,
+      request.deploymentId,
+      request.tag
+    )
+  })
+
+  registerHandler('deployments:diff', async (payload) => {
+    const request = validateDeploymentsDiffRequest(payload)
+    const current = await topologyService.getSnapshot(request.serverId)
+    return topologyHistoryService.diff(
+      request.serverId,
+      current,
+      request.baselineId,
+      request.deploymentId
+    )
+  })
+
+  registerHandler('deployments:snapshotDiff', async (payload) => {
+    const request = validateDeploymentsSnapshotDiffRequest(payload)
+    return topologyHistoryService.snapshotDiff(
+      request.serverId,
+      request.fromSnapshotId,
+      request.toSnapshotId,
+      request.deploymentId
+    )
+  })
+
+  registerHandler('deployments:deploymentHistory', async (payload) => {
+    const request = validateDeploymentsDeploymentHistoryRequest(payload)
+    return topologyHistoryService.deploymentHistory(request.serverId, request.deploymentId)
   })
 
   registerHandler('files:list', async (payload) => {
@@ -679,110 +737,7 @@ export function registerIpcHandlers(): void {
 }
 
 export function unregisterIpcHandlers(): void {
-  const channels: IpcChannel[] = [
-    'profiles:list',
-    'profiles:get',
-    'profiles:create',
-    'profiles:update',
-    'profiles:remove',
-    'connection:connect',
-    'connection:disconnect',
-    'connection:test',
-    'connection:getState',
-    'connection:hostKeyResponse',
-    'terminal:open',
-    'terminal:write',
-    'terminal:resize',
-    'terminal:close',
-    'logs:start',
-    'logs:stop',
-    'logs:setFilters',
-    'stats:getInfo',
-    'stats:subscribe',
-    'stats:unsubscribe',
-    'services:isAvailable',
-    'services:list',
-    'services:getUnit',
-    'services:getUnitFile',
-    'services:getUnitLogs',
-    'services:action',
-    'cron:list',
-    'cron:getSource',
-    'cron:createJob',
-    'cron:updateJob',
-    'cron:deleteJob',
-    'users:isAvailable',
-    'users:list',
-    'users:get',
-    'users:groups',
-    'users:action',
-    'processes:list',
-    'processes:get',
-    'processes:subscribe',
-    'processes:unsubscribe',
-    'processes:signal',
-    'packages:isAvailable',
-    'packages:overview',
-    'packages:list',
-    'packages:search',
-    'packages:info',
-    'packages:updates',
-    'packages:operationStart',
-    'packages:operationCancel',
-    'files:list',
-    'files:read',
-    'files:write',
-    'files:mkdir',
-    'files:rename',
-    'files:delete',
-    'files:upload',
-    'files:download',
-    'files:copy',
-    'files:cancelTransfer',
-    'docker:isAvailable',
-    'docker:listContainers',
-    'docker:listImages',
-    'docker:listVolumes',
-    'docker:listNetworks',
-    'docker:startContainer',
-    'docker:stopContainer',
-    'docker:restartContainer',
-    'docker:removeContainer',
-    'docker:inspectContainer',
-    'docker:removeImage',
-    'docker:removeVolume',
-    'docker:logsStart',
-    'docker:logsStop',
-    'ports:list',
-    'ports:setFirewallRule',
-    'ports:deleteFirewallRule',
-    'nginx:status',
-    'nginx:configTree',
-    'nginx:readConfig',
-    'nginx:writeConfig',
-    'nginx:validate',
-    'nginx:action',
-    'nginx:logPaths',
-    'nginx:logsStart',
-    'nginx:logsStop',
-    'ssl:overview',
-    'ssl:certificate',
-    'ssl:nginxSites',
-    'ssl:installCertbot',
-    'ssl:enableHttpsStart',
-    'ssl:enableHttpsCancel',
-    'ssl:renew',
-    'ssl:testRenewal',
-    'ssl:enableAutoRenewal',
-    'ssl:verifyHttps',
-    'ssl:renewalLog',
-    'deployments:scan',
-    'deployments:getSnapshot',
-    'deployments:lookup',
-    'window:toggleMaximize',
-    'window:isFullscreen'
-  ]
-  for (const channel of channels) {
+  for (const channel of IPC_CHANNELS) {
     ipcMain.removeHandler(channel)
   }
 }

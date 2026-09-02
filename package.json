@@ -1,6 +1,6 @@
 {
   "name": "zvia",
-  "version": "0.1.1-beta",
+  "version": "0.1.2-beta",
   "private": true,
   "workspaces": [
     "app",
@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "dev": "npm run dev -w @zvia/app",
+    "dev:demo": "npm run dev:demo -w @zvia/app",
     "build": "npm run build -w @zvia/app",
     "typecheck": "npm run typecheck -w @zvia/app",
     "test": "npm run test -w @zvia/app",

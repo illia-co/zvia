@@ -5,23 +5,13 @@ import { ConnectionError, ZviaError } from '@shared/errors'
 import { ServerConnection } from './ServerConnection'
 import { runTestConnection } from './testConnection'
 import { profileStore } from '../store/profiles'
-import { terminalService } from '../services/TerminalService'
-import { statsService } from '../services/StatsService'
-import { logService } from '../services/LogService'
-import { dockerService } from '../services/DockerService'
-import { nginxService } from '../services/NginxService'
-import { sslService } from '../services/SSLService'
-import { portService } from '../services/PortService'
-import { privilegeService } from '../services/PrivilegeService'
-import { userService } from '../services/UserService'
-import { processService } from '../services/ProcessService'
-import { packageService } from '../services/PackageService'
-import { topologyService } from '../services/deployments'
-import { clearCache as clearLinuxOsCache } from '../services/linuxOs'
+
+type TeardownHook = (serverId: string) => void | Promise<void>
 
 export class ConnectionManager {
   private connections = new Map<string, ServerConnection>()
   private mainWindow: BrowserWindow | null = null
+  private teardownHooks: TeardownHook[] = []
   private pendingTestHostKey: {
     serverId: string
     resolve: (accepted: boolean) => void
@@ -32,6 +22,14 @@ export class ConnectionManager {
     this.mainWindow = window
   }
 
+  registerTeardown(hook: TeardownHook): void {
+    this.teardownHooks.push(hook)
+  }
+
+  private async runTeardown(serverId: string): Promise<void> {
+    await Promise.allSettled(this.teardownHooks.map((hook) => hook(serverId)))
+  }
+
   private getOrCreate(profile: ServerProfile): ServerConnection {
     const existing = this.connections.get(profile.id)
     if (existing) {
@@ -40,19 +38,7 @@ export class ConnectionManager {
     }
     const connection = new ServerConnection(profile, this.mainWindow)
     connection.on('connectionLost', () => {
-      terminalService.closeAllForServer(profile.id)
-      logService.stopAllForServer(profile.id)
-      statsService.clearServer(profile.id)
-      dockerService.stopAllLogsForServer(profile.id)
-      nginxService.stopAllLogsForServer(profile.id)
-      sslService.stopAllForServer(profile.id)
-      portService.clearServer(profile.id)
-      userService.clearServer(profile.id)
-      processService.clearServer(profile.id)
-      packageService.clearServer(profile.id)
-      topologyService.clearServer(profile.id)
-      clearLinuxOsCache(profile.id)
-      privilegeService.clearCache(profile.id)
+      void this.runTeardown(profile.id)
     })
     this.connections.set(profile.id, connection)
     return connection
@@ -96,19 +82,7 @@ export class ConnectionManager {
   async disconnect(serverId: string): Promise<void> {
     const connection = this.connections.get(serverId)
     if (!connection) return
-    terminalService.closeAllForServer(serverId)
-    logService.stopAllForServer(serverId)
-    statsService.clearServer(serverId)
-    dockerService.stopAllLogsForServer(serverId)
-    nginxService.stopAllLogsForServer(serverId)
-    sslService.stopAllForServer(serverId)
-    portService.clearServer(serverId)
-    userService.clearServer(serverId)
-    processService.clearServer(serverId)
-    packageService.clearServer(serverId)
-    topologyService.clearServer(serverId)
-    clearLinuxOsCache(serverId)
-    privilegeService.clearCache(serverId)
+    await this.runTeardown(serverId)
     await connection.disconnect()
     this.connections.delete(serverId)
   }

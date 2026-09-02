@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zvia — Changes View Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #09090b;
+      --bg-secondary: #18181b;
+      --bg-tertiary: #1f1f23;
+      --divider: #27272a;
+      --text: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-tertiary: #52525b;
+      --status-healthy: #22c55e;
+      --status-warning: #f59e0b;
+      --status-error: #ef4444;
+      --status-error-15: rgba(239, 68, 68, 0.15);
+      --status-warning-15: rgba(245, 158, 11, 0.15);
+      --status-healthy-15: rgba(34, 197, 94, 0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 520px;
+      height: 100vh;
+      margin: 0 auto;
+      border-left: 1px solid var(--divider);
+      border-right: 1px solid var(--divider);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--divider);
+    }
+    .header-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-tertiary);
+    }
+    .baseline-select {
+      margin-top: 2px;
+      width: 224px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--divider);
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+
+    /* Newer-than-baseline warning */
+    .more-recent {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--divider);
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    /* Deployment card */
+    .deployment-card {
+      border-bottom: 1px solid var(--divider);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .deployment-card:hover {
+      background: var(--bg-tertiary);
+    }
+    .deployment-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+    }
+    .health-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .health-dot.healthy { background: var(--status-healthy); }
+    .health-dot.degraded { background: var(--status-warning); }
+    .health-dot.failed { background: var(--status-error); }
+    .deployment-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .change-count-badge {
+      margin-left: auto;
+      flex-shrink: 0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--bg-tertiary);
+      font-size: 9px;
+      color: var(--text-secondary);
+    }
+
+    /* Layer section */
+    .layer-section {
+      border-bottom: 1px solid var(--divider);
+    }
+    .layer-section:last-child {
+      border-bottom: none;
+    }
+    .layer-label {
+      padding: 4px 20px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-tertiary);
+    }
+
+    /* Change row */
+    .change-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 20px;
+      border-bottom: 1px solid var(--divider);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+    .change-row:last-child {
+      border-bottom: none;
+    }
+    .change-badge {
+      display: inline-flex;
+      width: 64px;
+      justify-content: center;
+      border-radius: 3px;
+      padding: 2px 6px;
+      font-size: 9px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      flex-shrink: 0;
+    }
+    .change-badge.removed {
+      background: var(--status-error-15);
+      color: var(--status-error);
+    }
+    .change-badge.modified {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+    }
+    .change-badge.added {
+      background: var(--status-healthy-15);
+      color: var(--status-healthy);
+    }
+    .change-badge.linked, .change-badge.unlinked {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+    }
+    .change-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text);
+    }
+    .change-kind {
+      flex-shrink: 0;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--text-tertiary);
+    }
+    .change-status {
+      margin-left: auto;
+      flex-shrink: 0;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .status-chip {
+      display: inline-block;
+      padding: 1px 4px;
+      border-radius: 2px;
+      font-size: 10px;
+    }
+    .status-chip.healthy { background: var(--status-healthy-15); color: var(--status-healthy); }
+    .status-chip.degraded { background: var(--status-warning-15); color: var(--status-warning); }
+    .status-chip.failed { background: var(--status-error-15); color: var(--status-error); }
+    .status-dot {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      margin-right: 3px;
+    }
+
+    /* Other changes */
+    .other-section-header {
+      padding: 6px 20px;
+      border-bottom: 1px solid var(--divider);
+      background: var(--bg-secondary);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-tertiary);
+    }
+    .other-warning {
+      padding: 4px 20px 4px 70px;
+      font-size: 10px;
+      color: var(--status-warning);
+    }
+
+    /* Scrollable area */
+    .scroll-area {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    /* Pin button */
+    .pin-btn {
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--divider);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 11px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .pin-btn:hover { background: var(--bg-secondary); color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <div class="header-label">Baseline</div>
+        <select class="baseline-select">
+          <option>08/30/2026, 11:45:00 AM · pinned</option>
+          <option>08/30/2026, 10:00:00 AM</option>
+          <option>08/29/2026, 9:30:00 PM</option>
+        </select>
+      </div>
+      <button class="pin-btn">Pin current</button>
+    </div>
+
+    <div class="more-recent">
+      A snapshot newer than the baseline exists — consider re-pinning.
+    </div>
+
+    <div class="scroll-area">
+      <!-- FAILED deployment card -->
+      <div class="deployment-card">
+        <div class="deployment-header">
+          <span class="health-dot failed"></span>
+          <span class="deployment-name">shop.zvia-test.local</span>
+          <span class="change-count-badge">3 changes</span>
+        </div>
+
+        <div class="layer-section">
+          <div class="layer-label">Backend</div>
+          <div class="change-row">
+            <span class="change-badge modified">Changed</span>
+            <span class="change-label">:3001</span>
+            <span class="change-kind">Port</span>
+            <span class="change-status">
+              <span class="status-dot" style="background:var(--status-healthy)"></span>
+              healthy → <span class="status-chip failed">failed</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="layer-section">
+          <div class="layer-label">Container</div>
+          <div class="change-row">
+            <span class="change-badge removed">Removed</span>
+            <span class="change-label">a]f3e2b1c (shop-app)</span>
+            <span class="change-kind">Container</span>
+            <span class="change-status">
+              <span class="status-dot" style="background:var(--status-healthy)"></span>
+              healthy → <span class="status-chip failed">failed</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="layer-section">
+          <div class="layer-label">Container</div>
+          <div class="change-row">
+            <span class="change-badge unlinked">Unlinked</span>
+            <span class="change-label">→ :3001</span>
+            <span class="change-kind">Relationship</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEGRADED deployment card -->
+      <div class="deployment-card">
+        <div class="deployment-header">
+          <span class="health-dot degraded"></span>
+          <span class="deployment-name">api.zvia-test.local</span>
+          <span class="change-count-badge">2 changes</span>
+        </div>
+
+        <div class="layer-section">
+          <div class="layer-label">SSL</div>
+          <div class="change-row">
+            <span class="change-badge modified">Changed</span>
+            <span class="change-label">/etc/letsencrypt/api.crt</span>
+            <span class="change-kind">SSL</span>
+            <span class="change-status">
+              <span class="status-dot" style="background:var(--status-healthy)"></span>
+              healthy → <span class="status-chip degraded">degraded</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="layer-section">
+          <div class="layer-label">Service</div>
+          <div class="change-row">
+            <span class="change-badge modified">Changed</span>
+            <span class="change-label">api-backend.service</span>
+            <span class="change-kind">Service</span>
+            <span class="change-status">
+              <span class="status-dot" style="background:var(--status-healthy)"></span>
+              healthy → <span class="status-chip degraded">degraded</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- HEALTHY deployment card -->
+      <div class="deployment-card">
+        <div class="deployment-header">
+          <span class="health-dot healthy"></span>
+          <span class="deployment-name">blog.zvia-test.local</span>
+          <span class="change-count-badge">1 change</span>
+        </div>
+
+        <div class="layer-section">
+          <div class="layer-label">Nginx</div>
+          <div class="change-row">
+            <span class="change-badge modified">Changed</span>
+            <span class="change-label">/etc/nginx/sites-enabled/blog.conf:12</span>
+            <span class="change-kind">Nginx</span>
+            <span class="change-status">
+              <span class="status-dot" style="background:var(--status-healthy)"></span>
+              healthy → <span class="status-chip healthy">healthy</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other changes -->
+      <div>
+        <div class="other-section-header">Other changes</div>
+        <ul>
+          <li class="change-row">
+            <span class="change-badge added">Added</span>
+            <span class="change-label">node</span>
+            <span class="change-kind">Process</span>
+          </li>
+          <li class="change-row">
+            <span class="change-badge linked">Linked</span>
+            <span class="change-label">→ :8080</span>
+            <span class="change-kind">Relationship</span>
+          </li>
+        </ul>
+        <div class="other-warning">Not part of a known deployment</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

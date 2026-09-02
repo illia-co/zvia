@@ -53,13 +53,12 @@ function hasActiveListener(portEntity: TopologyEntity, listeners: PortListener[]
   )
 }
 
-function syncDomainEntityHealth(
+function syncEntrypointEntityHealth(
   deployments: Deployment[],
   entities: Record<string, TopologyEntity>
 ): void {
   for (const deployment of deployments) {
     for (const entrypoint of deployment.entrypoints) {
-      if (entrypoint.kind !== 'domain') continue
       const entity = entities[entrypoint.id]
       if (!entity) continue
       entity.status = deployment.health
@@ -127,6 +126,74 @@ export function applyEntityHealth(
   }
 }
 
+function publishedPortForContainer(
+  containerId: string,
+  relationships: Relationship[]
+): string | null {
+  for (const rel of relationships) {
+    if (rel.type === 'published_by' && rel.to.id === containerId && rel.from.kind === 'port') {
+      return rel.from.id
+    }
+  }
+  return null
+}
+
+function containerBackendPort(
+  deployment: Deployment,
+  relationships: Relationship[],
+  entities: Record<string, TopologyEntity>
+): string | null {
+  const entry = deployment.entrypoints[0]
+  if (!entry) return null
+
+  if (entry.kind === 'port') return entry.id
+
+  if (entry.kind === 'docker_container') {
+    return publishedPortForContainer(entry.id, relationships)
+  }
+
+  if (entry.kind === 'docker_compose_service') {
+    for (const rel of relationships) {
+      if (rel.type !== 'member_of' || rel.to.id !== entry.id) continue
+      const port = publishedPortForContainer(rel.from.id, relationships)
+      if (port) return port
+    }
+  }
+
+  return null
+}
+
+function containerBackendEntities(
+  deployment: Deployment,
+  relationships: Relationship[],
+  entities: Record<string, TopologyEntity>
+): { backendPortId: string; containerId: string | null } | null {
+  const backendPortId = containerBackendPort(deployment, relationships, entities)
+  if (!backendPortId) return null
+  const dockerRel = relationships.find(
+    (rel) => rel.type === 'published_by' && rel.from.id === backendPortId
+  )
+  return { backendPortId, containerId: dockerRel?.to.id ?? null }
+}
+
+function composeSiblingLabels(
+  deployment: Deployment,
+  relationships: Relationship[],
+  entities: Record<string, TopologyEntity>,
+  skipContainerId: string | null
+): string[] {
+  const entry = deployment.entrypoints[0]
+  if (!entry || entry.kind !== 'docker_compose_service') return []
+  const labels: string[] = []
+  for (const rel of relationships) {
+    if (rel.type !== 'member_of' || rel.to.id !== entry.id) continue
+    if (rel.from.id === skipContainerId) continue
+    const sibling = entities[rel.from.id]
+    if (sibling) labels.push(sibling.label)
+  }
+  return labels
+}
+
 export function buildStackSummary(
   deployment: Deployment,
   entities: Record<string, TopologyEntity>,
@@ -158,6 +225,21 @@ export function buildStackSummary(
       )
       if (portToProcess) {
         parts.push(runtimeLabel(entities[portToProcess.to.id]))
+      }
+    }
+  } else if (!siteId) {
+    const backend = containerBackendEntities(deployment, deploymentRels, entities)
+    if (backend) {
+      parts.push(entities[backend.backendPortId]?.label ?? ':backend')
+      if (backend.containerId) {
+        parts.push(entities[backend.containerId]?.label ?? 'Docker')
+        const siblings = composeSiblingLabels(
+          deployment,
+          deploymentRels,
+          entities,
+          backend.containerId
+        )
+        parts.push(...siblings)
       }
     }
   }
@@ -275,6 +357,14 @@ export function computeDeploymentHealth(
         componentStatus.service = entityStatus(entities, unitRel.to.id)
       }
     }
+  } else if (!siteId) {
+    const backend = containerBackendEntities(deployment, deploymentRels, entities)
+    if (backend) {
+      componentStatus.backend = entityStatus(entities, backend.backendPortId)
+      if (backend.containerId) {
+        componentStatus.container = entityStatus(entities, backend.containerId)
+      }
+    }
   }
 
   const staticRel = deploymentRels.find(
@@ -300,6 +390,6 @@ export function enrichDeployments(
     const { health, componentStatus } = computeDeploymentHealth(deployment, entities, relationships)
     return { ...deployment, stackSummary, health, componentStatus }
   })
-  syncDomainEntityHealth(enriched, entities)
+  syncEntrypointEntityHealth(enriched, entities)
   return enriched
 }

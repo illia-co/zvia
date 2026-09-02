@@ -9,6 +9,8 @@ import type {
 import type { DockerLogsDataEvent, DockerLogsExitEvent } from '@shared/ipc'
 import { CommandError, ConnectionError, DockerUnavailableError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
+import { getServerConnection } from './ServiceBase'
+import { LogStreamRegistry } from './LogStreamRegistry'
 import { execStreamOnClient } from '../ssh/exec'
 import { topologyService } from './deployments'
 
@@ -20,6 +22,8 @@ interface DockerPsRow {
   State: string
   Ports: string
   RunningFor: string
+  Labels: string
+  Networks: string
 }
 
 interface DockerStatsRow {
@@ -50,16 +54,6 @@ interface DockerNetworkRow {
   Driver: string
   Scope: string
   Containers: string
-}
-
-interface LogStream {
-  serverId: string
-  streamId: string
-  channel: ClientChannel
-}
-
-function logStreamKey(serverId: string, streamId: string): string {
-  return `${serverId}:${streamId}`
 }
 
 function parseJsonLines<T>(stdout: string): T[] {
@@ -97,7 +91,10 @@ function assertDockerName(value: string, label: string): string {
 
 export class DockerService {
   private mainWindow: BrowserWindow | null = null
-  private logStreams = new Map<string, LogStream>()
+  private logStreams = new LogStreamRegistry({
+    onData: (event) => this.sendLogsData(event),
+    onExit: (event) => this.sendLogsExit(event)
+  })
   private availabilityCache = new Map<string, { available: boolean; checkedAt: number }>()
 
   setMainWindow(window: BrowserWindow | null): void {
@@ -117,11 +114,7 @@ export class DockerService {
   }
 
   private getConnection(serverId: string) {
-    const connection = connectionManager.getConnection(serverId)
-    if (!connection) {
-      throw new ConnectionError('Server is not connected')
-    }
-    return connection
+    return getServerConnection(serverId)
   }
 
   private async runDocker(serverId: string, args: string, timeoutMs = 30000): Promise<string> {
@@ -206,7 +199,9 @@ export class DockerService {
         uptime: row.RunningFor || '—',
         cpuPercent: stats?.CPUPerc?.trim() || '—',
         memoryUsage: stats?.MemUsage?.trim() || '—',
-        memoryPercent: stats?.MemPerc?.trim() || '—'
+        memoryPercent: stats?.MemPerc?.trim() || '—',
+        labels: row.Labels ?? '',
+        networks: row.Networks ?? ''
       }
     })
   }
@@ -308,10 +303,6 @@ export class DockerService {
   ): Promise<void> {
     await this.ensureAvailable(serverId)
     const id = assertDockerId(containerId, 'containerId')
-    const key = logStreamKey(serverId, streamId)
-    if (this.logStreams.has(key)) {
-      throw new CommandError(`Log stream already exists: ${streamId}`)
-    }
 
     const timestamps = options?.timestamps ? '--timestamps ' : ''
     const tail =
@@ -320,53 +311,15 @@ export class DockerService {
         : ''
     const command = `docker logs -f ${timestamps}${tail}${id}`
 
-    const connection = this.getConnection(serverId)
-    const client = await connection.getInteractiveClient()
-    const channel = await execStreamOnClient(client, command)
-
-    const stream: LogStream = { serverId, streamId, channel }
-    this.logStreams.set(key, stream)
-
-    channel.on('data', (data: Buffer) => {
-      this.sendLogsData({
-        serverId,
-        streamId,
-        data: data.toString('base64')
-      })
-    })
-
-    channel.stderr.on('data', (data: Buffer) => {
-      this.sendLogsData({
-        serverId,
-        streamId,
-        data: data.toString('base64')
-      })
-    })
-
-    channel.on('close', (code?: number) => {
-      this.logStreams.delete(key)
-      this.sendLogsExit({
-        serverId,
-        streamId,
-        exitCode: code ?? 0
-      })
-    })
+    await this.logStreams.start(serverId, streamId, command)
   }
 
   stopLogs(serverId: string, streamId: string): void {
-    const key = logStreamKey(serverId, streamId)
-    const stream = this.logStreams.get(key)
-    if (!stream) return
-    this.logStreams.delete(key)
-    stream.channel.close()
+    this.logStreams.stop(serverId, streamId)
   }
 
   stopAllLogsForServer(serverId: string): void {
-    for (const [key, stream] of this.logStreams) {
-      if (stream.serverId !== serverId) continue
-      this.logStreams.delete(key)
-      stream.channel.close()
-    }
+    this.logStreams.stopAllForServer(serverId)
   }
 
   buildExecCommand(containerId: string): string {
@@ -376,3 +329,4 @@ export class DockerService {
 }
 
 export const dockerService = new DockerService()
+connectionManager.registerTeardown((serverId) => dockerService.stopAllLogsForServer(serverId))

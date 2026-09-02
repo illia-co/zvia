@@ -1,5 +1,8 @@
+import { useMemo } from 'react'
 import type { Deployment, DeploymentComponentStatus, HealthStatus, TopologyInsight } from '@shared/topology'
+import type { DeploymentsHistorySummary } from '@shared/ipc'
 import { cn } from '@renderer/lib/utils'
+import { Button } from '@renderer/components/ui/button'
 import {
   componentChipClass,
   deploymentHealthDotClass,
@@ -12,8 +15,11 @@ import {
 interface DeploymentsTableProps {
   deployments: Deployment[]
   insights: TopologyInsight[]
+  history: DeploymentsHistorySummary[]
   loading: boolean
   onSelect: (deployment: Deployment) => void
+  onOpenSnapshots: (deploymentId: string) => void
+  onOpenTagDiff: (deploymentId: string, snapshotId: string) => void
 }
 
 const CHIP_BASE =
@@ -114,21 +120,31 @@ function ComponentChip({ label, status }: { label: string; status: HealthStatus 
 interface DeploymentRowProps {
   deployment: Deployment
   insights: TopologyInsight[]
+  latestTag: { name: string; snapshotId: string } | null
   onSelect: (deployment: Deployment) => void
+  onOpenSnapshots: (deploymentId: string) => void
+  onOpenTagDiff: (deploymentId: string, snapshotId: string) => void
 }
 
-function DeploymentRow({ deployment, insights, onSelect }: DeploymentRowProps) {
+function DeploymentRow({
+  deployment,
+  insights,
+  latestTag,
+  onSelect,
+  onOpenSnapshots,
+  onOpenTagDiff
+}: DeploymentRowProps) {
   const relatedInsights = insights.filter((insight) =>
     insight.deploymentIds.includes(deployment.id)
   )
   const components = listDeploymentComponents(deployment.componentStatus)
 
   return (
-    <tr
-      className="group cursor-pointer border-t border-divider hover:bg-bg-secondary"
-      onClick={() => onSelect(deployment)}
-    >
-      <td className="px-5 py-2">
+    <tr className="group border-t border-divider hover:bg-bg-secondary">
+      <td
+        className="cursor-pointer px-5 py-2"
+        onClick={() => onSelect(deployment)}
+      >
         <div className="flex min-w-0 items-center gap-2">
           <span
             className={cn(
@@ -148,13 +164,19 @@ function DeploymentRow({ deployment, insights, onSelect }: DeploymentRowProps) {
           </p>
         )}
       </td>
-      <td className="px-5 py-2">
+      <td
+        className="cursor-pointer px-5 py-2"
+        onClick={() => onSelect(deployment)}
+      >
         <DeploymentStatusCell
           health={deployment.health}
           componentStatus={deployment.componentStatus}
         />
       </td>
-      <td className="px-5 py-2">
+      <td
+        className="cursor-pointer px-5 py-2"
+        onClick={() => onSelect(deployment)}
+      >
         {components.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {components.map((component) => (
@@ -165,6 +187,38 @@ function DeploymentRow({ deployment, insights, onSelect }: DeploymentRowProps) {
           <span className="text-text-tertiary">—</span>
         )}
       </td>
+      <td className="px-5 py-2">
+        <div className="flex items-center overflow-hidden">
+          {latestTag ? (
+            <button
+              type="button"
+              className="inline-flex max-w-full items-center gap-1 rounded-sm bg-status-healthy/15 px-1.5 py-0.5 text-xs text-status-healthy hover:bg-status-healthy/25"
+              title="Compare this tag against the current state"
+              onClick={(e) => {
+                e.stopPropagation()
+                onOpenTagDiff(deployment.id, latestTag.snapshotId)
+              }}
+            >
+              <span className="size-1 shrink-0 rounded-full bg-status-healthy" />
+              <span className="truncate">{latestTag.name}</span>
+            </button>
+          ) : (
+            <span className="text-[10px] text-text-tertiary">—</span>
+          )}
+        </div>
+      </td>
+      <td className="px-5 py-2">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={(e) => {
+            e.stopPropagation()
+            onOpenSnapshots(deployment.id)
+          }}
+        >
+          Show snapshots
+        </Button>
+      </td>
     </tr>
   )
 }
@@ -172,13 +226,28 @@ function DeploymentRow({ deployment, insights, onSelect }: DeploymentRowProps) {
 export function DeploymentsTable({
   deployments,
   insights,
+  history,
   loading,
-  onSelect
+  onSelect,
+  onOpenSnapshots,
+  onOpenTagDiff
 }: DeploymentsTableProps) {
+  const latestTagByDeployment = useMemo(() => {
+    const map = new Map<string, { name: string; snapshotId: string }>()
+    for (const entry of history) {
+      for (const [depId, tags] of Object.entries(entry.deploymentTags)) {
+        if (tags.length > 0 && !map.has(depId)) {
+          map.set(depId, { name: tags[tags.length - 1], snapshotId: entry.id })
+        }
+      }
+    }
+    return map
+  }, [history])
+
   if (loading && deployments.length === 0) {
     return (
       <p className="p-6 text-center text-xs text-text-secondary">
-        Discovering nginx, ports, services, and containers…
+        Discovering nginx, docker, ports, services, and containers…
       </p>
     )
   }
@@ -195,9 +264,11 @@ export function DeploymentsTable({
     <table className="w-full text-left text-xs">
       <thead className="sticky top-0 bg-bg-secondary text-[10px] uppercase tracking-wider text-text-tertiary">
         <tr>
-          <th className="px-5 py-2 font-medium">Domain</th>
+          <th className="px-5 py-2 font-medium">Application</th>
           <th className="px-5 py-2 font-medium">Status</th>
           <th className="px-5 py-2 font-medium">Components</th>
+          <th className="px-5 py-2 font-medium">Tag</th>
+          <th className="px-5 py-2 font-medium">Snapshots</th>
         </tr>
       </thead>
       <tbody>
@@ -206,7 +277,10 @@ export function DeploymentsTable({
             key={deployment.id}
             deployment={deployment}
             insights={insights}
+            latestTag={latestTagByDeployment.get(deployment.id) ?? null}
             onSelect={onSelect}
+            onOpenSnapshots={onOpenSnapshots}
+            onOpenTagDiff={onOpenTagDiff}
           />
         ))}
       </tbody>

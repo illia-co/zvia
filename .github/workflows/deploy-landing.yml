@@ -39,7 +39,7 @@ jobs:
         env:
           VITE_BASE_PATH: /zvia/
           VITE_SITE_URL: https://illia-co.github.io/zvia
-          VITE_RELEASE_TAG: v0.1.1-beta
+          VITE_RELEASE_TAG: v0.1.2-beta
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

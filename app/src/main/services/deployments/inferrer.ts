@@ -1,5 +1,5 @@
 import type { DockerContainer } from '@shared/docker'
-import { parsePublishedHostPorts } from '@shared/docker'
+import { parsePublishedHostPorts, parseContainerLabels, COMPOSE_PROJECT_LABEL } from '@shared/docker'
 import type { PortListener } from '@shared/ports'
 import type {
   Evidence,
@@ -15,7 +15,8 @@ import {
   sslCertEntityId,
   unitEntityId,
   containerEntityId,
-  fileEntityId
+  fileEntityId,
+  composeServiceEntityId
 } from '@shared/topology'
 import type { SslCertificate } from '@shared/ssl'
 import { primaryProxyTarget, primaryStaticRoot } from './parsers'
@@ -371,6 +372,31 @@ pushRelationship(relationships, {
   for (const container of containers) {
     const containerId = containerEntityId(container.id)
     if (!entities[containerId]) continue
+
+    const composeProject = container.labels
+      ? parseContainerLabels(container.labels)[COMPOSE_PROJECT_LABEL]
+      : undefined
+    if (composeProject) {
+      const composeId = composeServiceEntityId(composeProject)
+      if (entities[composeId]) {
+        pushRelationship(relationships, {
+          from: { kind: 'docker_container', id: containerId },
+          to: { kind: 'docker_compose_service', id: composeId },
+          type: 'member_of',
+          confidence: 'confirmed',
+          evidence: [
+            {
+              source: 'docker-ps',
+              kind: 'command_output',
+              detail: `Container ${container.name} is part of compose project ${composeProject}`,
+              raw: container.labels,
+              observedAt
+            }
+          ],
+          label: 'compose_project'
+        })
+      }
+    }
 
     for (const hostPort of parsePublishedHostPorts(container.ports)) {
       const portId = findPortEntityForHostPort(hostPort, entities)

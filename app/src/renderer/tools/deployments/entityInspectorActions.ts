@@ -7,17 +7,22 @@ export interface InspectorAction {
   intent: ToolIntent
 }
 
+const TOOL_LABELS: Record<string, string> = {
+  nginx: 'Open config',
+  ssl: 'Open SSL',
+  ports: 'Open port',
+  processes: 'Open process',
+  services: 'Open service',
+  docker: 'Open container',
+  files: 'Open in Files',
+  deployments: 'Open in Deployments'
+}
+
 export function inspectorActions(entity: TopologyEntity): InspectorAction[] {
   if (entity.navigate) {
     const intent = navigateHintToIntent(entity.navigate)
     if (intent) {
-      const label =
-        entity.navigate.tool === 'files'
-          ? 'Open in Files'
-          : entity.navigate.tool === 'deployments'
-            ? 'Open in Deployments'
-            : 'Open in tool'
-      return [{ label, intent }]
+      return [{ label: TOOL_LABELS[entity.navigate.tool] ?? 'Open in tool', intent }]
     }
   }
 

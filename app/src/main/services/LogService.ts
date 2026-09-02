@@ -26,6 +26,7 @@ function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`
 }
 
+
 export function buildJournalctlCommand(query: LogsQuery): string {
   const parts = ['journalctl']
 
@@ -290,7 +291,7 @@ export class LogService {
     const command = buildJournalctlCommand(session.query)
     let stderr = ''
 
-    const client = await connection.getControlClient()
+    const client = await connection.getInteractiveClient()
     const stream = await new Promise<ClientChannel>((resolve, reject) => {
       client.exec(command, (error, channel) => {
         if (error) {
@@ -363,3 +364,4 @@ export class LogService {
 export { PRIORITY_NAMES, DEFAULT_LOGS_QUERY }
 
 export const logService = new LogService()
+connectionManager.registerTeardown((serverId) => logService.stopAllForServer(serverId))

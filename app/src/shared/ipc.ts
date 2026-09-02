@@ -8,11 +8,6 @@ export interface ExecResult {
   exitCode: number
 }
 
-export interface ExecRequest extends ServerScoped {
-  command: string
-  timeoutMs?: number
-}
-
 export interface ConnectRequest extends ServerScoped {}
 
 export interface DisconnectRequest extends ServerScoped {}
@@ -369,108 +364,8 @@ export interface PackagesOperationDoneEvent extends ServerScoped {
   output?: string
 }
 
-export type IpcChannel =
-  | 'profiles:list'
-  | 'profiles:get'
-  | 'profiles:create'
-  | 'profiles:update'
-  | 'profiles:remove'
-  | 'connection:connect'
-  | 'connection:disconnect'
-  | 'connection:test'
-  | 'connection:getState'
-  | 'connection:hostKeyResponse'
-  | 'terminal:open'
-  | 'terminal:write'
-  | 'terminal:resize'
-  | 'terminal:close'
-  | 'docker:isAvailable'
-  | 'docker:listContainers'
-  | 'docker:listImages'
-  | 'docker:listVolumes'
-  | 'docker:listNetworks'
-  | 'docker:startContainer'
-  | 'docker:stopContainer'
-  | 'docker:restartContainer'
-  | 'docker:removeContainer'
-  | 'docker:inspectContainer'
-  | 'docker:removeImage'
-  | 'docker:removeVolume'
-  | 'docker:logsStart'
-  | 'docker:logsStop'
-  | 'ports:list'
-  | 'ports:setFirewallRule'
-  | 'ports:deleteFirewallRule'
-  | 'nginx:status'
-  | 'nginx:configTree'
-  | 'nginx:readConfig'
-  | 'nginx:writeConfig'
-  | 'nginx:validate'
-  | 'nginx:action'
-  | 'nginx:logPaths'
-  | 'nginx:logsStart'
-  | 'nginx:logsStop'
-  | 'ssl:overview'
-  | 'ssl:certificate'
-  | 'ssl:nginxSites'
-  | 'ssl:installCertbot'
-  | 'ssl:enableHttpsStart'
-  | 'ssl:enableHttpsCancel'
-  | 'ssl:renew'
-  | 'ssl:testRenewal'
-  | 'ssl:enableAutoRenewal'
-  | 'ssl:verifyHttps'
-  | 'ssl:renewalLog'
-  | 'files:list'
-  | 'files:read'
-  | 'files:write'
-  | 'files:mkdir'
-  | 'files:rename'
-  | 'files:delete'
-  | 'files:upload'
-  | 'files:download'
-  | 'files:copy'
-  | 'files:cancelTransfer'
-  | 'logs:start'
-  | 'logs:stop'
-  | 'logs:setFilters'
-  | 'stats:getInfo'
-  | 'stats:subscribe'
-  | 'stats:unsubscribe'
-  | 'services:isAvailable'
-  | 'services:list'
-  | 'services:getUnit'
-  | 'services:getUnitFile'
-  | 'services:getUnitLogs'
-  | 'services:action'
-  | 'cron:list'
-  | 'cron:getSource'
-  | 'cron:createJob'
-  | 'cron:updateJob'
-  | 'cron:deleteJob'
-  | 'users:isAvailable'
-  | 'users:list'
-  | 'users:get'
-  | 'users:groups'
-  | 'users:action'
-  | 'processes:list'
-  | 'processes:get'
-  | 'processes:subscribe'
-  | 'processes:unsubscribe'
-  | 'processes:signal'
-  | 'packages:isAvailable'
-  | 'packages:overview'
-  | 'packages:list'
-  | 'packages:search'
-  | 'packages:info'
-  | 'packages:updates'
-  | 'packages:operationStart'
-  | 'packages:operationCancel'
-  | 'deployments:scan'
-  | 'deployments:getSnapshot'
-  | 'deployments:lookup'
-  | 'window:toggleMaximize'
-  | 'window:isFullscreen'
+export type { IpcChannel } from './ipcChannels'
+import type { IpcChannel } from './ipcChannels'
 
 export type IpcRequestMap = {
   'profiles:list': void
@@ -572,6 +467,12 @@ export type IpcRequestMap = {
   'deployments:scan': ServerScoped
   'deployments:getSnapshot': ServerScoped
   'deployments:lookup': DeploymentsLookupRequest
+  'deployments:historyList': ServerScoped
+  'deployments:tag': DeploymentsTagRequest
+  'deployments:tagCurrent': DeploymentsTagCurrentRequest
+  'deployments:diff': DeploymentsDiffRequest
+  'deployments:snapshotDiff': DeploymentsSnapshotDiffRequest
+  'deployments:deploymentHistory': DeploymentsDeploymentHistoryRequest
   'window:toggleMaximize': void
   'window:isFullscreen': void
 }
@@ -676,6 +577,12 @@ export type IpcResponseMap = {
   'deployments:scan': import('./topology').TopologySnapshot
   'deployments:getSnapshot': import('./topology').TopologySnapshot
   'deployments:lookup': DeploymentsLookupResult | null
+  'deployments:historyList': DeploymentsHistorySummary[]
+  'deployments:tag': void
+  'deployments:tagCurrent': void
+  'deployments:diff': DeploymentsDiffResult
+  'deployments:snapshotDiff': DeploymentsSnapshotDiffResult
+  'deployments:deploymentHistory': DeploymentsDeploymentHistoryEntry[]
   'window:toggleMaximize': void
   'window:isFullscreen': boolean
 }
@@ -856,18 +763,74 @@ export interface SslApi {
   onWorkflowDone(listener: (event: SslWorkflowDoneEvent) => void): () => void
 }
 
-export interface DeploymentsLookupRequest extends ServerScoped {
-  kind: 'port' | 'container' | 'domain' | 'nginxSite'
-  port?: number
-  containerId?: string
-  domain?: string
-  configPath?: string
-  startLineNumber?: number
-}
+export type DeploymentsLookupRequest = ServerScoped &
+  (
+    | { kind: 'port'; port: number }
+    | { kind: 'container'; containerId: string }
+    | { kind: 'domain'; domain: string }
+    | { kind: 'nginxSite'; configPath: string; startLineNumber: number }
+  )
 
 export interface DeploymentsLookupResult {
   deploymentId: string
   entityId: string
+}
+
+export type DeploymentsTagRequest = ServerScoped & {
+  snapshotId: string
+  deploymentId: string
+  tag: string
+  remove?: boolean
+}
+
+export type DeploymentsTagCurrentRequest = ServerScoped & {
+  deploymentId: string
+  tag: string
+}
+
+export type DeploymentsDiffRequest = ServerScoped & {
+  baselineId: string | null
+  /** Scope the diff to a single deployment's entities; cross-deployment changes are never returned. */
+  deploymentId: string
+}
+
+export type DeploymentsSnapshotDiffRequest = ServerScoped & {
+  fromSnapshotId: string
+  toSnapshotId: string
+  /** Scope the diff to a single deployment's entities; cross-deployment changes are never returned. */
+  deploymentId: string
+}
+
+export type DeploymentsDeploymentHistoryRequest = ServerScoped & {
+  deploymentId: string
+}
+
+export interface DeploymentsDeploymentHistoryEntry {
+  id: string
+  scannedAt: string
+  tags: string[]
+  changeCount: number
+  summary: string
+}
+
+export interface DeploymentsHistorySummary {
+  id: string
+  scannedAt: string
+  deploymentTags: Record<string, string[]>
+}
+
+export interface DeploymentsDiffResult {
+  changes: import('./topology').TopologyChange[]
+  baselineId: string | null
+  baselineScannedAt: string | null
+}
+
+export interface DeploymentsSnapshotDiffResult {
+  changes: import('./topology').TopologyChange[]
+  fromId: string
+  fromScannedAt: string
+  toId: string
+  toScannedAt: string
 }
 
 export interface DeploymentsScanProgressEvent extends ServerScoped {
@@ -880,6 +843,12 @@ export interface DeploymentsApi {
   scan(request: ServerScoped): Promise<import('./topology').TopologySnapshot>
   getSnapshot(request: ServerScoped): Promise<import('./topology').TopologySnapshot>
   lookup(request: DeploymentsLookupRequest): Promise<DeploymentsLookupResult | null>
+  historyList(request: ServerScoped): Promise<DeploymentsHistorySummary[]>
+  tag(request: DeploymentsTagRequest): Promise<void>
+  tagCurrent(request: DeploymentsTagCurrentRequest): Promise<void>
+  diff(request: DeploymentsDiffRequest): Promise<DeploymentsDiffResult>
+  snapshotDiff(request: DeploymentsSnapshotDiffRequest): Promise<DeploymentsSnapshotDiffResult>
+  deploymentHistory(request: DeploymentsDeploymentHistoryRequest): Promise<DeploymentsDeploymentHistoryEntry[]>
   onScanProgress(listener: (event: DeploymentsScanProgressEvent) => void): () => void
 }
 

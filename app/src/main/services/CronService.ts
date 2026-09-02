@@ -9,6 +9,7 @@ import type {
 import { describeCron, parseCronLine, parseCrontab, validateCronExpression } from '@shared/cron'
 import { CommandError, ConnectionError, PrivilegeRequiredError, SFTPError, ValidationError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
+import { getServerConnection } from './ServiceBase'
 import { privilegeService } from './PrivilegeService'
 
 const USER_CRONTAB_PATH = 'crontab:user'
@@ -200,11 +201,7 @@ function lineNumberFromJobId(jobId: string, target: CronTarget): number {
 
 export class CronService {
   private getConnection(serverId: string) {
-    const connection = connectionManager.getConnection(serverId)
-    if (!connection) {
-      throw new ConnectionError('Server is not connected')
-    }
-    return connection
+    return getServerConnection(serverId)
   }
 
   async list(serverId: string): Promise<CronListResponse> {

@@ -1,0 +1,8 @@
+{
+  "name": "zvia-nonnginx-api",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}

@@ -13,7 +13,9 @@ export function configureScreenshotWindow(window: BrowserWindow): void {
 
   window.setSize(CAPTURE_WIDTH, CAPTURE_HEIGHT)
   window.setContentSize(CAPTURE_WIDTH, CAPTURE_HEIGHT)
-  window.hide()
+  if (process.env.ZVIA_SCREENSHOT_OUTPUT) {
+    window.hide()
+  }
 }
 
 export async function captureScreenshotIfReady(window: BrowserWindow): Promise<void> {

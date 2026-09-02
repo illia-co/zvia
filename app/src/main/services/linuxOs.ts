@@ -1,5 +1,6 @@
 import type { ServerId } from '@shared/server'
 import { connectionManager } from '../ssh/ConnectionManager'
+import { commandRunnerFor } from './ServiceBase'
 import type { CommandRunner } from './CommandRunner'
 
 export interface LinuxOsInfo {
@@ -69,21 +70,13 @@ export function parseUidMin(content: string): number {
   return 1000
 }
 
-function createRunner(serverId: ServerId): CommandRunner {
-  return {
-    exec(command, timeoutMs) {
-      return connectionManager.exec(serverId, command, timeoutMs)
-    }
-  }
-}
-
 export async function getLinuxOsContext(serverId: ServerId): Promise<LinuxOsContext> {
   const cached = cache.get(serverId)
   if (cached && cached.expiresAt > Date.now()) {
     return cached.context
   }
 
-  const runner = createRunner(serverId)
+  const runner = commandRunnerFor(serverId)
   const result = await runner.exec(
     [
       `cat /etc/os-release 2>/dev/null || true`,
@@ -106,3 +99,5 @@ export async function getLinuxOsContext(serverId: ServerId): Promise<LinuxOsCont
 export function clearCache(serverId: ServerId): void {
   cache.delete(serverId)
 }
+
+connectionManager.registerTeardown((serverId) => clearCache(serverId))
