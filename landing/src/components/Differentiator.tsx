@@ -42,6 +42,10 @@ function CollectorChips({ sources }: { sources: string[] }) {
   )
 }
 
+function BentoRow({ children }: { children: ReactNode }) {
+  return <div className="bento-row">{children}</div>
+}
+
 function Figure({
   title,
   src,
@@ -87,107 +91,122 @@ export function Differentiator() {
 
         <Reveal className="mt-12">
           <div className="bento-grid">
-            <div className="bento-tile bento-span-2">
-              <div>
-                <Eyebrow>Discover</Eyebrow>
-                <h3 className="m-0 text-lg font-medium text-text">
-                  What&apos;s running — and how is it wired?
-                </h3>
-                <p className="m-0 mt-3 text-sm leading-relaxed text-text-secondary">
-                  One scan correlates nginx, SSL, ports, processes, systemd, and Docker
-                  into a per-domain topology.
-                </p>
+            <BentoRow>
+              <div className="bento-tile bento-span-2">
+                <div className="bento-tile-copy">
+                  <Eyebrow>Discover</Eyebrow>
+                  <h3 className="m-0 text-lg font-medium text-text">
+                    What&apos;s running — and how is it wired?
+                  </h3>
+                  <p className="m-0 mt-3 text-sm leading-relaxed text-text-secondary">
+                    One scan correlates nginx, SSL, ports, processes, systemd, and Docker
+                    into a per-domain topology.
+                  </p>
+                </div>
+                <div className="bento-tile-footer">
+                  <CollectorChips
+                    sources={['nginx', 'SSL', 'ports', 'processes', 'systemd', 'Docker']}
+                  />
+                  <BentoDetailList
+                    items={[
+                      'One row per domain — shared backends surfaced, never merged',
+                      'Solid, dashed, and dotted edges reflect evidence confidence'
+                    ]}
+                  />
+                </div>
               </div>
-              <CollectorChips
-                sources={['nginx', 'SSL', 'ports', 'processes', 'systemd', 'Docker']}
+
+              <Figure
+                span={4}
+                title="production — topology"
+                src={SCREENSHOTS.topology}
+                alt="Zvia deployment topology canvas tracing an application from domain through nginx and a port to its backend"
+                caption="The path from domain to backend, drawn out."
               />
-              <BentoDetailList
-                items={[
-                  'One row per domain — shared backends surfaced, never merged',
-                  'Solid, dashed, and dotted edges reflect evidence confidence'
-                ]}
+            </BentoRow>
+
+            <BentoRow>
+              <div className="bento-tile bento-span-2">
+                <div className="bento-tile-copy">
+                  <Eyebrow>Compare</Eyebrow>
+                  <h3 className="m-0 text-lg font-medium text-text">
+                    Tag the healthy state. Diff any two points.
+                  </h3>
+                  <p className="m-0 mt-3 text-sm leading-relaxed text-text-secondary">
+                    Pin a snapshot as known-good, then diff any two points in time — always
+                    scoped to a single deployment.
+                  </p>
+                </div>
+                <div className="bento-tile-footer">
+                  <BentoDetailList
+                    items={[
+                      <>
+                        Tag <span className="font-mono text-text">stable</span>, deploy, then diff.
+                      </>,
+                      'Drill to the exact before/after of one change.',
+                      'Scoped to one deployment — changes on other apps never leak in.'
+                    ]}
+                  />
+                </div>
+              </div>
+
+              <Figure
+                span={2}
+                title="production — snapshots"
+                src={SCREENSHOTS.snapshots}
+                alt="Zvia snapshot history for a deployment, showing tagged known-good states with per-snapshot change summaries"
+                caption="Tagged snapshots with change summaries."
               />
-            </div>
 
-            <Figure
-              span={4}
-              title="production — topology"
-              src={SCREENSHOTS.topology}
-              alt="Zvia deployment topology canvas tracing an application from domain through nginx and a port to its backend"
-              caption="The path from domain to backend, drawn out."
-            />
-
-            <div className="bento-tile bento-span-2">
-              <div>
-                <Eyebrow>Compare</Eyebrow>
-                <h3 className="m-0 text-lg font-medium text-text">
-                  Tag the healthy state. Diff any two points.
-                </h3>
-                <p className="m-0 mt-3 text-sm leading-relaxed text-text-secondary">
-                  Pin a snapshot as known-good, then diff any two points in time — always
-                  scoped to a single deployment.
-                </p>
-              </div>
-              <BentoDetailList
-                items={[
-                  <>
-                    Tag <span className="font-mono text-text">stable</span>, deploy, then diff.
-                  </>,
-                  'Drill to the exact before/after of one change.',
-                  'Scoped to one deployment — changes on other apps never leak in.'
-                ]}
+              <Figure
+                span={2}
+                title="production — diff"
+                src={SCREENSHOTS.diff}
+                alt="Zvia deployment diff highlighting the exact before and after of a single change"
+                caption="The exact before/after of a single change."
               />
-            </div>
+            </BentoRow>
 
-            <Figure
-              span={2}
-              title="production — snapshots"
-              src={SCREENSHOTS.snapshots}
-              alt="Zvia snapshot history for a deployment, showing tagged known-good states with per-snapshot change summaries"
-              caption="Tagged snapshots with change summaries."
-            />
+            <BentoRow>
+              <Figure
+                span={4}
+                title="production — inspector"
+                src={SCREENSHOTS.inspector}
+                alt="Zvia deployment inspector showing the evidence behind a single connection"
+                caption="Click any edge for the Why? inspector."
+              />
 
-            <Figure
-              span={2}
-              title="production — diff"
-              src={SCREENSHOTS.diff}
-              alt="Zvia deployment diff highlighting the exact before and after of a single change"
-              caption="The exact before/after of a single change."
-            />
-
-            <Figure
-              span={4}
-              title="production — inspector"
-              src={SCREENSHOTS.inspector}
-              alt="Zvia deployment inspector showing the evidence behind a single connection"
-              caption="Click any edge for the Why? inspector."
-            />
-
-            <div className="bento-tile bento-span-2">
-              <div>
-                <Eyebrow>Evidence</Eyebrow>
-                <h3 className="m-0 text-lg font-medium text-text">
-                  Why does Zvia think these are connected?
-                </h3>
-                <p className="m-0 mt-3 text-sm leading-relaxed text-text-secondary">
-                  Every edge is evidence-backed. Click a connection to see the nginx
-                  directive, port binding, or process match behind it.
-                </p>
+              <div className="bento-tile bento-span-2">
+                <div className="bento-tile-copy">
+                  <Eyebrow>Evidence</Eyebrow>
+                  <h3 className="m-0 text-lg font-medium text-text">
+                    Why does Zvia think these are connected?
+                  </h3>
+                  <p className="m-0 mt-3 text-sm leading-relaxed text-text-secondary">
+                    Every edge is evidence-backed. Click a connection to see the nginx
+                    directive, port binding, or process match behind it.
+                  </p>
+                </div>
+                <div className="bento-tile-footer">
+                  <div className="bento-code-snippet" aria-label="Example nginx evidence">
+                    <span className="bento-code-snippet-label">nginx directive</span>
+                    <code>proxy_pass http://127.0.0.1:3000;</code>
+                  </div>
+                  <ul className="confidence-legend">
+                    {CONFIDENCE.map((entry) => (
+                      <li key={entry.style} className="confidence-legend-row">
+                        <span
+                          className={`confidence-edge confidence-edge--${entry.style}`}
+                          aria-hidden
+                        />
+                        <span className="font-mono text-sm text-text">{entry.label}</span>
+                        <span className="text-sm text-text-tertiary">{entry.hint}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <div className="bento-code-snippet" aria-label="Example nginx evidence">
-                <span className="bento-code-snippet-label">nginx directive</span>
-                <code>proxy_pass http://127.0.0.1:3000;</code>
-              </div>
-              <ul className="confidence-legend">
-                {CONFIDENCE.map((entry) => (
-                  <li key={entry.style} className="confidence-legend-row">
-                    <span className={`confidence-edge confidence-edge--${entry.style}`} aria-hidden />
-                    <span className="font-mono text-sm text-text">{entry.label}</span>
-                    <span className="text-sm text-text-tertiary">{entry.hint}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            </BentoRow>
           </div>
         </Reveal>
 
