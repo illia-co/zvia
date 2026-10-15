@@ -4,6 +4,7 @@ import type { ZviaErrorPayload } from '@shared/errors'
 import type {
   ConnectionState,
   HostKeyPrompt,
+  PassphrasePrompt,
   ServerId,
   ServerProfile
 } from '@shared/server'
@@ -15,6 +16,7 @@ interface ServerStoreState {
   connectionStates: Record<ServerId, ConnectionState>
   connectionErrors: Record<ServerId, ZviaErrorPayload | undefined>
   hostKeyPrompt: HostKeyPrompt | null
+  passphrasePrompt: PassphrasePrompt | null
   isLoadingProfiles: boolean
   actionError: ZviaErrorPayload | null
 
@@ -27,7 +29,10 @@ interface ServerStoreState {
   testConnection: (request: ConnectionTestRequest) => Promise<void>
   removeProfile: (serverId: ServerId) => Promise<void>
   respondToHostKey: (decision: 'accept' | 'reject') => Promise<void>
+  respondToPassphrase: (passphrase: string) => Promise<void>
+  cancelPassphrase: () => Promise<void>
   clearActionError: () => void
+  dismissConnectionError: (serverId: ServerId) => void
   initialize: () => () => void
 }
 
@@ -54,6 +59,7 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
   connectionStates: {},
   connectionErrors: {},
   hostKeyPrompt: null,
+  passphrasePrompt: null,
   isLoadingProfiles: false,
   actionError: null,
 
@@ -193,18 +199,56 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
     }
   },
 
+  async respondToPassphrase(passphrase) {
+    const prompt = get().passphrasePrompt
+    if (!prompt) return
+    set({ actionError: null })
+    try {
+      await window.zvia.invoke('connection:passphraseResponse', {
+        serverId: prompt.serverId,
+        passphrase
+      })
+      set({ passphrasePrompt: null })
+    } catch (error) {
+      set({ actionError: parseZviaError(error) })
+    }
+  },
+
+  async cancelPassphrase() {
+    const prompt = get().passphrasePrompt
+    if (!prompt) return
+    try {
+      await window.zvia.invoke('connection:passphraseResponse', {
+        serverId: prompt.serverId,
+        cancel: true
+      })
+    } catch (error) {
+      set({ actionError: parseZviaError(error) })
+    } finally {
+      set({ passphrasePrompt: null })
+    }
+  },
+
   clearActionError() {
     set({ actionError: null })
+  },
+
+  dismissConnectionError(serverId) {
+    set((state) => {
+      const { [serverId]: _removed, ...connectionErrors } = state.connectionErrors
+      return { connectionErrors, actionError: null }
+    })
   },
 
   initialize() {
     void get().loadProfiles()
 
     const unsubscribeState = window.zvia.on('connection:stateChanged', (event) => {
-      set((state) => ({
-        connectionStates: { ...state.connectionStates, [event.serverId]: event.state },
-        connectionErrors: event.error
-          ? {
+      set((state) => {
+        if (event.error) {
+          return {
+            connectionStates: { ...state.connectionStates, [event.serverId]: event.state },
+            connectionErrors: {
               ...state.connectionErrors,
               [event.serverId]: {
                 code: 'CONNECTION_ERROR',
@@ -215,17 +259,29 @@ export const useServerStore = create<ServerStoreState>((set, get) => ({
                 details: event.error
               }
             }
-          : state.connectionErrors
-      }))
+          }
+        }
+        // Terminal states without an error payload must not keep a stale banner.
+        const { [event.serverId]: _removed, ...connectionErrors } = state.connectionErrors
+        return {
+          connectionStates: { ...state.connectionStates, [event.serverId]: event.state },
+          connectionErrors
+        }
+      })
     })
 
     const unsubscribeHostKey = window.zvia.on('connection:hostKeyPrompt', (prompt) => {
       set({ hostKeyPrompt: prompt })
     })
 
+    const unsubscribePassphrase = window.zvia.on('connection:passphrasePrompt', (prompt) => {
+      set({ passphrasePrompt: prompt, actionError: null })
+    })
+
     return () => {
       unsubscribeState()
       unsubscribeHostKey()
+      unsubscribePassphrase()
     }
   }
 }))

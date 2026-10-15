@@ -5,6 +5,7 @@ export type ZviaErrorCode =
   | 'SFTP_ERROR'
   | 'COMMAND_ERROR'
   | 'DOCKER_UNAVAILABLE_ERROR'
+  | 'GIT_UNAVAILABLE_ERROR'
   | 'VALIDATION_ERROR'
   | 'NOT_FOUND'
   | 'INTERNAL_ERROR'
@@ -49,6 +50,25 @@ export class AuthenticationError extends ZviaError {
   }
 }
 
+/**
+ * Thrown inside the main process when a private key is encrypted but no
+ * passphrase is available in memory. Caught by the connection layer, which
+ * prompts the user for a one-time passphrase. Never serialized over IPC and
+ * never persisted — the supplied passphrase is used for a single connect
+ * attempt (plus an in-memory session retry) and then dropped.
+ */
+export class PassphraseRequiredError extends AuthenticationError {
+  readonly keyLabel: string
+  readonly hostname: string
+
+  constructor(keyLabel: string, hostname: string) {
+    super(`Passphrase required for ${keyLabel}`)
+    this.name = 'PassphraseRequiredError'
+    this.keyLabel = keyLabel
+    this.hostname = hostname
+  }
+}
+
 export class PermissionError extends ZviaError {
   constructor(message: string, details?: string) {
     super('PERMISSION_ERROR', message, details)
@@ -84,6 +104,13 @@ export class DockerUnavailableError extends ZviaError {
   constructor(message: string, details?: string) {
     super('DOCKER_UNAVAILABLE_ERROR', message, details)
     this.name = 'DockerUnavailableError'
+  }
+}
+
+export class GitUnavailableError extends ZviaError {
+  constructor(message: string, details?: string) {
+    super('GIT_UNAVAILABLE_ERROR', message, details)
+    this.name = 'GitUnavailableError'
   }
 }
 

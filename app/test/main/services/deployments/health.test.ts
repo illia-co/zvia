@@ -334,6 +334,52 @@ describe('topologyHealth', () => {
     expect(entities[portId].status).toBe('failed')
   })
 
+  it('keeps backend port when ss hides the PID and listens on IPv6 any', () => {
+    const domainId = domainEntityId('app.example.com')
+    const siteId = nginxSiteEntityId('/etc/nginx/sites-enabled/app', 10)
+    const portId = portEntityId('tcp', '127.0.0.1', 8000)
+
+    const entities: Record<string, TopologyEntity> = {
+      [domainId]: { id: domainId, kind: 'domain', label: 'app.example.com', status: 'healthy' },
+      [siteId]: { id: siteId, kind: 'nginx_site', label: 'app.example.com', status: 'healthy' },
+      [portId]: {
+        id: portId,
+        kind: 'port',
+        label: ':8000',
+        status: 'unknown',
+        sourceRef: { protocol: 'tcp', address: '127.0.0.1', port: 8000 }
+      }
+    }
+
+    const relationships: Relationship[] = [
+      {
+        id: 'r1',
+        from: { kind: 'nginx_site', id: siteId },
+        to: { kind: 'port', id: portId },
+        type: 'proxies_to',
+        confidence: 'likely',
+        evidence: []
+      }
+    ]
+
+    // ponytail: unprivileged ss shows the [::] socket without a PID — backend is up, not failed
+    applyEntityHealth(entities, relationships, [
+      {
+        protocol: 'tcp',
+        address: '::',
+        port: 8000,
+        pid: null,
+        process: '',
+        exposure: 'bound-all',
+        unit: null,
+        containerId: null,
+        containerName: null,
+        firewall: 'unknown'
+      }
+    ])
+    expect(entities[portId].status).toBe('unknown')
+  })
+
   it('syncs domain entity health from deployment health', () => {
     const domainId = domainEntityId('app.example.com')
     const siteId = nginxSiteEntityId('/etc/nginx/sites-enabled/app', 10)

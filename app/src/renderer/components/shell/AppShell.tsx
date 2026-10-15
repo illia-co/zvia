@@ -13,6 +13,7 @@ import { Workspace } from '@renderer/components/workspace/Workspace'
 import { CommandPalette } from '@renderer/components/workspace/CommandPalette'
 import { ConfirmCloseDialog } from '@renderer/components/workspace/ConfirmCloseDialog'
 import { HostKeyDialog } from '@renderer/components/servers/HostKeyDialog'
+import { PassphraseDialog } from '@renderer/components/servers/PassphraseDialog'
 import { AddServerDialog } from '@renderer/components/servers/AddServerDialog'
 import { ServerProfileDialog } from '@renderer/components/servers/ServerProfileDialog'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
@@ -27,6 +28,7 @@ export function AppShell() {
   const initialize = useServerStore((s) => s.initialize)
   const actionError = useServerStore((s) => s.actionError)
   const clearActionError = useServerStore((s) => s.clearActionError)
+  const dismissConnectionError = useServerStore((s) => s.dismissConnectionError)
   const selectedServerId = useServerStore((s) => s.selectedServerId)
   const connectionErrors = useServerStore((s) => s.connectionErrors)
   const connectionError = selectedServerId ? connectionErrors[selectedServerId] : undefined
@@ -65,7 +67,19 @@ export function AppShell() {
               <div className="border-b border-divider px-4 py-2">
                 <ErrorSurface
                   error={connectionError ?? actionError!}
-                  onDismiss={clearActionError}
+                  onDismiss={
+                    connectionError && selectedServerId
+                      ? () => {
+                          // Dismiss hides the banner and stops any pending
+                          // auto-reconnect timers in main for this server.
+                          dismissConnectionError(selectedServerId)
+                          void useServerStore
+                            .getState()
+                            .disconnect(selectedServerId)
+                            .catch(() => undefined)
+                        }
+                      : clearActionError
+                  }
                   onRetry={
                     selectedServerId
                       ? () => void useServerStore.getState().connect(selectedServerId)
@@ -87,6 +101,7 @@ export function AppShell() {
         </div>
       </div>
       <HostKeyDialog />
+      <PassphraseDialog />
       <AddServerDialog open={addServerOpen} onOpenChange={setAddServerOpen} />
       <ServerProfileDialog
         mode="edit"

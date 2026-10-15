@@ -8,6 +8,7 @@ import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { parseZviaError } from '@renderer/lib/errors'
 import { cn } from '@renderer/lib/utils'
 import { useNavigationStore } from '@renderer/state/navigationStore'
+import { useCapabilities } from '@renderer/state/permissionsStore'
 import { startupLabel, unitStateDotClass } from './ServicesTable'
 
 const LOG_LINES = 200
@@ -47,6 +48,9 @@ export function ServiceDetailView({
   refreshToken
 }: ServiceDetailViewProps) {
   const openWithIntent = useNavigationStore((state) => state.openWithIntent)
+  const caps = useCapabilities(serverId)
+  const unitAllowed = caps.can('services.control_unit', unit)
+  const unitReason = caps.reason('services.control_unit', unit) ?? undefined
   const [detail, setDetail] = useState<SystemdUnitDetail | null>(null)
   const [detailError, setDetailError] = useState<ZviaErrorPayload | null>(null)
   const [logs, setLogs] = useState<string[]>([])
@@ -139,13 +143,19 @@ export function ServiceDetailView({
         <div className="mt-3 flex flex-wrap gap-1">
           {isRunning ? (
             <>
-              <Button size="sm" disabled={actionLoading} onClick={() => onAction(unit, 'restart')}>
+              <Button
+                size="sm"
+                disabled={actionLoading || !unitAllowed}
+                title={unitReason}
+                onClick={() => onAction(unit, 'restart')}
+              >
                 Restart
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
-                disabled={actionLoading}
+                disabled={actionLoading || !unitAllowed}
+                title={unitReason}
                 onClick={() => onAction(unit, 'reload')}
               >
                 Reload
@@ -153,15 +163,20 @@ export function ServiceDetailView({
               <Button
                 size="sm"
                 variant="ghost"
-                disabled={actionLoading || stopBlocked !== null}
-                title={stopBlocked ?? undefined}
+                disabled={actionLoading || stopBlocked !== null || !unitAllowed}
+                title={stopBlocked ?? unitReason}
                 onClick={() => onAction(unit, 'stop')}
               >
                 Stop
               </Button>
             </>
           ) : (
-            <Button size="sm" disabled={actionLoading} onClick={() => onAction(unit, 'start')}>
+            <Button
+              size="sm"
+              disabled={actionLoading || !unitAllowed}
+              title={unitReason}
+              onClick={() => onAction(unit, 'start')}
+            >
               Start
             </Button>
           )}
@@ -169,8 +184,8 @@ export function ServiceDetailView({
             <Button
               size="sm"
               variant="ghost"
-              disabled={actionLoading || disableBlocked !== null}
-              title={disableBlocked ?? undefined}
+              disabled={actionLoading || disableBlocked !== null || !unitAllowed}
+              title={disableBlocked ?? unitReason}
               onClick={() => onAction(unit, 'disable')}
             >
               Disable
@@ -179,7 +194,8 @@ export function ServiceDetailView({
             <Button
               size="sm"
               variant="ghost"
-              disabled={actionLoading}
+              disabled={actionLoading || !unitAllowed}
+              title={unitReason}
               onClick={() => onAction(unit, 'enable')}
             >
               Enable

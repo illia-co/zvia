@@ -127,8 +127,7 @@ export function parseProxyPassTarget(directive: ParsedDirective): NginxProxyTarg
   }
 }
 
-function parseUpstreamMember(
-  line: string,
+function parseUpstreamMember(  line: string,
   configPath: string,
   lineNumber: number
 ): NginxUpstreamMember | null {
@@ -144,6 +143,14 @@ function parseUpstreamMember(
     port,
     directive
   }
+}
+
+function countChar(value: string, char: string): number {
+  let count = 0
+  for (const c of value) {
+    if (c === char) count += 1
+  }
+  return count
 }
 
 /**
@@ -203,12 +210,18 @@ export function parseNginxTopology(nginxDashTOutput: string): NginxTopology {
       continue
     }
 
-    if (/^upstream\s+/.test(line)) {
+    // Certbot and admins append trailing comments (`} # managed by Certbot`).
+    // Strip them so brace tracking sees the real block structure. A `#` inside
+    // a quoted string would be cut too — acceptable for topology extraction.
+    const code = line.split('#')[0]?.trim() ?? ''
+    if (!code) continue
+
+    if (/^upstream\s+/.test(code)) {
       flushServer()
       flushUpstream()
-      const nameMatch = /^upstream\s+([^\s{]+)/.exec(line)
+      const nameMatch = /^upstream\s+([^\s{]+)/.exec(code)
       inUpstream = true
-      braceDepth = line.includes('{') ? 1 : 0
+      braceDepth = countChar(code, '{')
       currentUpstream = {
         name: nameMatch?.[1] ?? 'unknown',
         configPath: currentConfigPath,
@@ -217,11 +230,11 @@ export function parseNginxTopology(nginxDashTOutput: string): NginxTopology {
       continue
     }
 
-    if (/^server\s*\{/.test(line)) {
+    if (/^server\s*\{/.test(code)) {
       flushServer()
       flushUpstream()
       inServer = true
-      braceDepth = line.includes('{') ? 1 : 0
+      braceDepth = countChar(code, '{')
       currentServer = {
         configPath: currentConfigPath,
         startLineNumber: lineNumber,
@@ -236,11 +249,11 @@ export function parseNginxTopology(nginxDashTOutput: string): NginxTopology {
       continue
     }
 
-    if (/^location\s+/.test(line) && inServer && currentServer) {
+    if (/^location\s+/.test(code) && inServer && currentServer) {
       flushLocation()
-      const matchPart = /^location\s+([^{]+)/.exec(line)
+      const matchPart = /^location\s+([^{]+)/.exec(code)
       inLocation = true
-      locationBraceDepth = line.includes('{') ? 1 : 0
+      locationBraceDepth = countChar(code, '{')
       currentLocation = {
         match: matchPart?.[1]?.trim() ?? '/',
         proxyPass: null,
@@ -250,22 +263,23 @@ export function parseNginxTopology(nginxDashTOutput: string): NginxTopology {
       continue
     }
 
-    if (line.includes('{')) {
-      if (inLocation) locationBraceDepth += 1
-      else if (inServer || inUpstream) braceDepth += 1
-    }
-
-    if (line === '}' || line.endsWith('}')) {
+    // Generic brace counting handles nested `if` blocks and braces sharing a
+    // line. Closes overflow from a location into its server/upstream block.
+    const opens = countChar(code, '{')
+    const closes = countChar(code, '}')
+    if (opens > 0 || closes > 0) {
       if (inLocation) {
-        locationBraceDepth -= 1
-        if (locationBraceDepth <= 0) flushLocation()
-      } else if (inUpstream) {
-        braceDepth -= 1
-        if (braceDepth <= 0) flushUpstream()
-      } else if (inServer) {
-        braceDepth -= 1
-        if (braceDepth <= 0) flushServer()
+        locationBraceDepth += opens - closes
+        if (locationBraceDepth <= 0) {
+          const overflow = -locationBraceDepth
+          flushLocation()
+          if (inServer || inUpstream) braceDepth -= overflow
+        }
+      } else if (inServer || inUpstream) {
+        braceDepth += opens - closes
       }
+      if (inUpstream && braceDepth <= 0) flushUpstream()
+      else if (inServer && braceDepth <= 0) flushServer()
       continue
     }
 

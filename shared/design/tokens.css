@@ -11,6 +11,12 @@
   --color-status-warning: #c8853a;
   --color-status-error: #c25450;
   --color-overlay: rgba(0, 0, 0, 0.4);
+  --color-graph-1: #4a9d5f;
+  --color-graph-2: #c8853a;
+  --color-graph-3: #5b8dc9;
+  --color-graph-4: #9a7bc9;
+  --color-graph-5: #4aa39d;
+  --color-graph-6: #c25450;
 
   --radius-sm: 8px;
   --radius-panel: 10px;
@@ -49,6 +55,12 @@
   --color-status-warning: #c8853a;
   --color-status-error: #c25450;
   --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-graph-1: #5cb574;
+  --color-graph-2: #d89a4e;
+  --color-graph-3: #7aa9db;
+  --color-graph-4: #b094dd;
+  --color-graph-5: #5cb8b0;
+  --color-graph-6: #d06e6a;
   --shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.3);
   --color-scrollbar-thumb: rgba(245, 245, 245, 0.14);
   --color-scrollbar-thumb-hover: rgba(245, 245, 245, 0.24);

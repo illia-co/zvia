@@ -1,5 +1,5 @@
 import type { DockerContainer } from '@shared/docker'
-import { parsePublishedHostPorts, parseContainerLabels, COMPOSE_PROJECT_LABEL } from '@shared/docker'
+import { parsePublishedHostPorts, parseContainerLabels, COMPOSE_PROJECT_LABEL, COMPOSE_SERVICE_LABEL } from '@shared/docker'
 import type { PortListener } from '@shared/ports'
 import type {
   Evidence,
@@ -27,6 +27,61 @@ export interface InferrerInput {
   listeners: PortListener[]
   containers: DockerContainer[]
   entities: Record<string, TopologyEntity>
+}
+
+function parseContainerTargetPorts(ports: string): number[] {
+  const found: number[] = []
+  const seen = new Set<number>()
+  for (const match of ports.matchAll(/->(\d+)\/tcp/g)) {
+    const port = Number.parseInt(match[1], 10)
+    if (!Number.isInteger(port) || port < 1 || port > 65535 || seen.has(port)) continue
+    seen.add(port)
+    found.push(port)
+  }
+  return found
+}
+
+function containerNameHints(container: DockerContainer): string[] {
+  const hints = new Set<string>()
+  const name = container.name.toLowerCase()
+  if (name) {
+    hints.add(name)
+    // Compose names like `project-service-1` also match bare service name.
+    const parts = name.split('-')
+    if (parts.length >= 3) hints.add(parts.slice(1, -1).join('-'))
+    if (parts.length >= 2) hints.add(parts.slice(1).join('-'))
+  }
+  const labels = parseContainerLabels(container.labels)
+  const service = labels[COMPOSE_SERVICE_LABEL]?.toLowerCase()
+  if (service) hints.add(service)
+  return [...hints]
+}
+
+function findContainersForProxyTarget(
+  containers: DockerContainer[],
+  host: string | null,
+  port: number | null
+): DockerContainer[] {
+  const normalizedHost = host?.toLowerCase() ?? null
+  const isLocalHost =
+    !normalizedHost ||
+    normalizedHost === '127.0.0.1' ||
+    normalizedHost === 'localhost' ||
+    normalizedHost === '0.0.0.0'
+  return containers.filter((container) => {
+    if (container.state !== 'running') return false
+    const hostPorts = parsePublishedHostPorts(container.ports)
+    const targetPorts = parseContainerTargetPorts(container.ports)
+    const portMatches =
+      port === null || hostPorts.includes(port) || targetPorts.includes(port)
+    if (!portMatches) return false
+    if (isLocalHost) return true
+    // Docker-network service names (compose service, container name) resolve
+    // inside the docker network, not via host listeners.
+    return containerNameHints(container).some(
+      (hint) => hint === normalizedHost || normalizedHost?.endsWith(`.${hint}`)
+    )
+  })
 }
 
 function createRelationshipId(rel: Omit<Relationship, 'id'>): string {
@@ -71,9 +126,20 @@ function findListenersForPort(
   return listeners.filter((listener) => {
     if (listener.port !== port) return false
     if (!host || host === '127.0.0.1' || host === 'localhost') {
-      return listener.address === '127.0.0.1' || listener.address === '::1' || listener.address === '0.0.0.0' || listener.address === '*'
+      return (
+        listener.address === '127.0.0.1' ||
+        listener.address === '::1' ||
+        listener.address === '::' ||
+        listener.address === '0.0.0.0' ||
+        listener.address === '*'
+      )
     }
-    return listener.address === host || listener.address === '0.0.0.0' || listener.address === '*'
+    return (
+      listener.address === host ||
+      listener.address === '0.0.0.0' ||
+      listener.address === '::' ||
+      listener.address === '*'
+    )
   })
 }
 
@@ -112,7 +178,13 @@ function findPortEntityForHostPort(
   for (const entity of Object.values(entities)) {
     if (entity.kind !== 'port' || entity.sourceRef?.port !== hostPort) continue
     const addr = entity.sourceRef.address
-    if (addr === '127.0.0.1' || addr === '::1' || addr === '0.0.0.0' || addr === '*') {
+    if (
+      addr === '127.0.0.1' ||
+      addr === '::1' ||
+      addr === '::' ||
+      addr === '0.0.0.0' ||
+      addr === '*'
+    ) {
       return entity.id
     }
   }
@@ -145,12 +217,33 @@ function ensureUnixSocketEntity(
 
 function findSslCertForBlock(block: NginxServerBlock, certificates: SslCertificate[]): SslCertificate | null {
   if (!block.sslCertificate) return null
-  return (
-    certificates.find(
-      (cert) =>
-        cert.certificatePath === block.sslCertificate ||
+  const blockDir = /^\/etc\/letsencrypt\/live\/([^/]+)\//.exec(block.sslCertificate)?.[1]
+  const byPath =
+    certificates.find((cert) => {
+      if (cert.certificatePath === block.sslCertificate) return true
+      // cert.pem / fullchain.pem / chain.pem in the same live dir are the same cert.
+      const certDir = /^\/etc\/letsencrypt\/live\/([^/]+)\//.exec(cert.certificatePath)?.[1]
+      if (blockDir && certDir && blockDir === certDir) {
+        const base = (p: string): string => p.slice(p.lastIndexOf('/') + 1)
+        const pems = new Set(['cert.pem', 'fullchain.pem', 'chain.pem'])
+        if (pems.has(base(cert.certificatePath)) && pems.has(base(block.sslCertificate as string))) {
+          return true
+        }
+      }
+      return (
         cert.certificatePath.replace(/\/fullchain\.pem$/, '') ===
-          block.sslCertificate?.replace(/\/fullchain\.pem$/, '')
+        block.sslCertificate?.replace(/\/fullchain\.pem$/, '')
+      )
+    }) ?? null
+  if (byPath) return byPath
+  // Copied certs (nginx serves a copy outside /etc/letsencrypt): link a TLS
+  // block to the cert covering one of its server names.
+  // ponytail: path match stays first; domain overlap is fallback only.
+  if (!block.listensHttps || block.serverNames.length === 0) return null
+  const names = new Set(block.serverNames.map((name) => name.toLowerCase()))
+  return (
+    certificates.find((cert) =>
+      cert.domains.some((domain) => names.has(domain.toLowerCase()))
     ) ?? null
   )
 }
@@ -292,6 +385,56 @@ pushRelationship(relationships, {
           ],
           label: 'proxy_pass'
         })
+        // Docker-network targets (compose service names, container-internal
+        // ports) have no host listener. Link the site straight to matching
+        // containers so the domain deployment claims them and the graph is
+        // full when the app runs under Docker behind host nginx.
+        for (const container of findContainersForProxyTarget(containers, proxy.host, proxy.port)) {
+          const containerId = containerEntityId(container.id)
+          if (!entities[containerId]) continue
+          const already = relationships.some(
+            (rel) => rel.from.id === siteId && rel.to.id === containerId && rel.type === 'proxies_to'
+          )
+          if (already) continue
+          pushRelationship(relationships, {
+            from: { kind: 'nginx_site', id: siteId },
+            to: { kind: 'docker_container', id: containerId },
+            type: 'proxies_to',
+            confidence: matching.length > 0 ? 'confirmed' : 'likely',
+            evidence: [
+              evidenceFromDirective(
+                'nginx-T',
+                proxy.directive,
+                `proxy_pass target matches container ${container.name}`,
+                observedAt
+              )
+            ],
+            label: 'proxy_pass'
+          })
+        }
+      } else if (proxy.upstreamName || proxy.host) {
+        // Named upstream / docker-service host without a port (e.g.
+        // `proxy_pass http://app;`). Resolve by container/service name so the
+        // graph still joins host nginx to its Docker backend.
+        for (const container of findContainersForProxyTarget(containers, proxy.host ?? proxy.upstreamName, null)) {
+          const containerId = containerEntityId(container.id)
+          if (!entities[containerId]) continue
+          pushRelationship(relationships, {
+            from: { kind: 'nginx_site', id: siteId },
+            to: { kind: 'docker_container', id: containerId },
+            type: 'proxies_to',
+            confidence: 'likely',
+            evidence: [
+              evidenceFromDirective(
+                'nginx-T',
+                proxy.directive,
+                `proxy_pass target matches container ${container.name}`,
+                observedAt
+              )
+            ],
+            label: 'proxy_pass'
+          })
+        }
       }
     }
 

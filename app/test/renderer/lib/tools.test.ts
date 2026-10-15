@@ -18,4 +18,16 @@ describe('tools registry', () => {
     expect(KEYBOARD_ZERO_TOOL).toBe('docker')
     expect(TOOLS.findIndex((tool) => tool.id === KEYBOARD_ZERO_TOOL)).toBe(9)
   })
+
+  it('registers Git in its own Source Control section', () => {
+    expect(TOOLS.find((tool) => tool.id === 'git')).toMatchObject({
+      label: 'Git',
+      section: 'Source Control'
+    })
+  })
+
+  it('registers Settings last without shifting keyboard shortcuts', () => {
+    expect(TOOLS[TOOLS.length - 1]).toMatchObject({ id: 'settings', section: 'Settings' })
+    expect(TOOLS.findIndex((tool) => tool.id === KEYBOARD_ZERO_TOOL)).toBe(9)
+  })
 })

@@ -2,6 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import type { NginxAction, NginxStatus, NginxValidation } from '@shared/nginx'
 import type { ServerId } from '@shared/server'
 import { describeToolError } from '@renderer/lib/toolErrors'
+import { denialMessage, isAllowed, usePermissionsStore } from '@renderer/state/permissionsStore'
+
+const CAPABILITY_FOR_ACTION: Record<NginxAction, string> = {
+  reload: 'nginx.reload',
+  restart: 'nginx.restart',
+  stop: 'nginx.start_stop',
+  start: 'nginx.start_stop'
+}
 
 interface UseNginxOptions {
   serverId: ServerId
@@ -56,6 +64,13 @@ export function useNginx({ serverId, isConnected }: UseNginxOptions): UseNginxRe
 
   const runAction = useCallback(
     async (action: NginxAction) => {
+      const capabilityId = CAPABILITY_FOR_ACTION[action]
+      const guard = usePermissionsStore.getState().byServer[serverId]
+      if (!isAllowed(guard, capabilityId)) {
+        setError(denialMessage(guard, capabilityId))
+        setElevation(null)
+        return
+      }
       setActionLoading(true)
       setError(null)
       setElevation(null)
@@ -74,6 +89,12 @@ export function useNginx({ serverId, isConnected }: UseNginxOptions): UseNginxRe
   )
 
   const validate = useCallback(async () => {
+    const guard = usePermissionsStore.getState().byServer[serverId]
+    if (!isAllowed(guard, 'nginx.test_config')) {
+      setError(denialMessage(guard, 'nginx.test_config'))
+      setElevation(null)
+      return null
+    }
     setActionLoading(true)
     setError(null)
     setElevation(null)

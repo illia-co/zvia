@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { EditorState, Prec } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers } from '@codemirror/view'
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  indentWithTab
+} from '@codemirror/commands'
+import { indentUnit } from '@codemirror/language'
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search'
 import { javascript } from '@codemirror/lang-javascript'
 import { json } from '@codemirror/lang-json'
@@ -21,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import { Input } from '@renderer/components/ui/input'
 import { cn } from '@renderer/lib/utils'
 import {
   CRITICAL_PATH_CONFIRMATION_PHRASE,
@@ -68,6 +75,14 @@ interface FileEditorProps {
   onClose: () => void
   /** Overrides filename-based detection for files whose type the caller knows. */
   language?: EditorLanguage
+  /**
+   * Skips the critical-path DELETE confirmation (e.g. the nginx tool shows its
+   * own "Are you sure?" save dialog instead). Defaults to false.
+   */
+  disableCriticalConfirm?: boolean
+  /** Externally disables Save (e.g. permission guard); shown as tooltip. */
+  saveDisabled?: boolean
+  saveDisabledReason?: string
 }
 
 /** nginx site configs are conventionally extensionless, so fall back to the path. */
@@ -111,6 +126,16 @@ function languageExtension(filename: string, path: string, language?: EditorLang
   }
 }
 
+/** Indent unit per file type: 4 spaces for whitespace-sensitive configs. */
+function indentForFile(filename: string, path: string, language?: EditorLanguage): string {
+  if (language === 'nginx') return '    '
+  const dot = filename.lastIndexOf('.')
+  const ext = dot === -1 ? '' : filename.slice(dot).toLowerCase()
+  if (ext === '.py' || ext === '.sh' || ext === '.bash' || ext === '.conf') return '    '
+  if (looksLikeNginxConfig(path)) return '    '
+  return '  '
+}
+
 export function FileEditor({
   path,
   name,
@@ -119,7 +144,10 @@ export function FileEditor({
   onChange,
   onSave,
   onClose,
-  language
+  language,
+  disableCriticalConfirm = false,
+  saveDisabled = false,
+  saveDisabledReason
 }: FileEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
@@ -130,7 +158,7 @@ export function FileEditor({
   onChangeRef.current = onChange
 
   const requestSave = () => {
-    if (isCriticalSystemPath(path)) {
+    if (!disableCriticalConfirm && isCriticalSystemPath(path)) {
       setSaveConfirmText('')
       setConfirmSaveOpen(true)
       return
@@ -169,7 +197,9 @@ export function FileEditor({
           history(),
           highlightSelectionMatches(),
           languageExtension(name, path, language),
-          keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
+          indentUnit.of(indentForFile(name, path, language)),
+          EditorView.lineWrapping,
+          keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap, ...searchKeymap]),
           updateListener,
           Prec.high(editorTheme)
         ]
@@ -200,7 +230,13 @@ export function FileEditor({
         <span className={editorChipClassName}>Remote file</span>
         <span className="min-w-0 flex-1 truncate text-xs text-text">{name}</span>
         {dirty && <span className={editorChipClassName}>Unsaved</span>}
-        <Button size="sm" variant="ghost" onClick={requestSave} disabled={!dirty}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={requestSave}
+          disabled={!dirty || saveDisabled}
+          title={saveDisabledReason}
+        >
           Save
         </Button>
         <Button size="sm" variant="ghost" onClick={requestClose}>
@@ -224,11 +260,11 @@ export function FileEditor({
               Type <span className="font-mono">{CRITICAL_PATH_CONFIRMATION_PHRASE}</span> to
               confirm.
             </p>
-            <input
+            <Input
               autoFocus
               value={saveConfirmText}
               onChange={(event) => setSaveConfirmText(event.target.value)}
-              className="w-full rounded-panel border border-divider bg-bg px-3 py-2 font-mono text-sm text-text outline-none focus:border-text-tertiary"
+              className="w-full font-mono text-sm"
               placeholder={CRITICAL_PATH_CONFIRMATION_PHRASE}
             />
           </div>

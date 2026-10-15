@@ -110,6 +110,84 @@ describe('topologyInferrer', () => {
     expect(proxyRel?.evidence.some((item) => item.raw?.includes('proxy_pass'))).toBe(true)
   })
 
+  it('confirms loopback proxy targets against IPv6-any listeners', () => {
+    const configPath = '/etc/nginx/sites-enabled/app'
+    const topology = {
+      serverBlocks: [
+        {
+          configPath,
+          startLineNumber: 10,
+          serverNames: ['app.example.com'],
+          ports: [],
+          listensHttps: false,
+          sslCertificate: null,
+          sslCertificateKey: null,
+          listenDirectives: [],
+          locations: [
+            {
+              match: '/',
+              proxyPass: {
+                scheme: 'http',
+                host: '127.0.0.1',
+                port: 8000,
+                upstreamName: null,
+                unixSocket: null,
+                directive: {
+                  directive: 'proxy_pass',
+                  value: 'http://127.0.0.1:8000',
+                  configPath,
+                  lineNumber: 4,
+                  rawText: 'proxy_pass http://127.0.0.1:8000;'
+                }
+              },
+              root: null,
+              alias: null
+            }
+          ]
+        }
+      ],
+      upstreams: []
+    }
+
+    // ponytail: dual-stack gunicorn shows up in ss as [::]:8000 — still the same loopback backend
+    const listeners = [
+      {
+        protocol: 'tcp',
+        address: '::',
+        port: 8000,
+        pid: null,
+        process: '',
+        exposure: 'bound-all',
+        unit: null,
+        containerId: null,
+        containerName: null,
+        firewall: 'unknown'
+      }
+    ]
+    const entities: Record<string, TopologyEntity> = {
+      [domainEntityId('app.example.com')]: {
+        id: domainEntityId('app.example.com'),
+        kind: 'domain',
+        label: 'app.example.com',
+        status: 'healthy'
+      },
+      [nginxSiteEntityId(configPath, 10)]: {
+        id: nginxSiteEntityId(configPath, 10),
+        kind: 'nginx_site',
+        label: 'app.example.com',
+        status: 'healthy'
+      }
+    }
+
+    const relationships = inferRelationships(
+      { topology, certificates: [], listeners, containers: [], entities },
+      observedAt
+    )
+
+    const proxyRel = relationships.find((rel) => rel.type === 'proxies_to')
+    expect(proxyRel?.confidence).toBe('confirmed')
+  })
+
   it('marks conflicting listeners on the same port', () => {
     const configPath = '/etc/nginx/sites-enabled/app'
     const topology = {

@@ -1,5 +1,6 @@
 import type { PackageSearchResult } from '@shared/packages'
 import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
 
 interface SearchTabProps {
   results: PackageSearchResult[]
@@ -21,12 +22,12 @@ export function SearchTab({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="border-b border-divider px-3 py-2">
-        <input
+        <Input
           type="search"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Search packages…"
-          className="w-full bg-transparent text-xs text-text outline-none placeholder:text-text-tertiary"
+          className="w-full border-transparent bg-transparent px-0"
         />
       </div>
 

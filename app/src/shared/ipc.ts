@@ -26,6 +26,11 @@ export interface HostKeyResponseRequest extends ServerScoped {
   decision: 'accept' | 'reject'
 }
 
+export interface PassphraseResponseRequest extends ServerScoped {
+  passphrase?: string
+  cancel?: boolean
+}
+
 export interface ProfileCreateRequest {
   name: string
   hostname: string
@@ -140,6 +145,48 @@ export interface DockerLogsDataEvent extends ServerScoped {
 export interface DockerLogsExitEvent extends ServerScoped {
   streamId: DockerStreamId
   exitCode: number
+}
+
+export interface GitRepoRequest extends ServerScoped {
+  path: string
+}
+
+export interface GitPullRequest extends ServerScoped {
+  path: string
+  strategy?: import('./git').GitPullStrategy
+}
+
+export interface GitPushRequest extends ServerScoped {
+  path: string
+  force?: boolean
+}
+
+export interface GitCheckoutRequest extends ServerScoped {
+  path: string
+  branch: string
+}
+
+export interface GitCreateBranchRequest extends ServerScoped {
+  path: string
+  branch: string
+  startPoint?: string
+}
+
+export interface GitStashRequest extends ServerScoped {
+  path: string
+  action: import('./git').GitStashAction
+  message?: string
+  index?: number
+}
+
+export interface PermissionsSetChoicesRequest extends ServerScoped {
+  enabled: string[]
+  units?: string[]
+}
+
+export interface PermissionChoices {
+  enabled: string[]
+  units: string[]
 }
 
 export interface PortsFirewallRuleRequest extends ServerScoped {
@@ -378,6 +425,7 @@ export type IpcRequestMap = {
   'connection:test': ConnectionTestRequest
   'connection:getState': ServerScoped
   'connection:hostKeyResponse': HostKeyResponseRequest
+  'connection:passphraseResponse': PassphraseResponseRequest
   'terminal:open': TerminalOpenRequest
   'terminal:write': TerminalWriteRequest
   'terminal:resize': TerminalResizeRequest
@@ -396,6 +444,20 @@ export type IpcRequestMap = {
   'docker:removeVolume': DockerRemoveVolumeRequest
   'docker:logsStart': DockerLogsStartRequest
   'docker:logsStop': DockerLogsStopRequest
+  'git:isAvailable': ServerScoped
+  'git:listRepos': ServerScoped
+  'git:addRepo': GitRepoRequest
+  'git:removeRepo': GitRepoRequest
+  'git:summary': GitRepoRequest
+  'git:fetch': GitRepoRequest
+  'git:pull': GitPullRequest
+  'git:push': GitPushRequest
+  'git:checkout': GitCheckoutRequest
+  'git:createBranch': GitCreateBranchRequest
+  'git:stash': GitStashRequest
+  'privilege:probe': ServerScoped
+  'permissions:getChoices': ServerScoped
+  'permissions:setChoices': PermissionsSetChoicesRequest
   'ports:list': ServerScoped
   'ports:setFirewallRule': PortsFirewallRuleRequest
   'ports:deleteFirewallRule': PortsDeleteFirewallRuleRequest
@@ -488,6 +550,7 @@ export type IpcResponseMap = {
   'connection:test': void
   'connection:getState': import('./server').ConnectionState
   'connection:hostKeyResponse': void
+  'connection:passphraseResponse': void
   'terminal:open': void
   'terminal:write': void
   'terminal:resize': void
@@ -506,6 +569,20 @@ export type IpcResponseMap = {
   'docker:removeVolume': void
   'docker:logsStart': void
   'docker:logsStop': void
+  'git:isAvailable': boolean
+  'git:listRepos': import('./git').GitRepo[]
+  'git:addRepo': import('./git').GitRepo
+  'git:removeRepo': void
+  'git:summary': import('./git').GitSummary
+  'git:fetch': void
+  'git:pull': void
+  'git:push': void
+  'git:checkout': void
+  'git:createBranch': void
+  'git:stash': void
+  'privilege:probe': import('./permissions').PrivilegeProbeResult
+  'permissions:getChoices': PermissionChoices
+  'permissions:setChoices': PermissionChoices
   'ports:list': import('./ports').PortsSnapshot
   'ports:setFirewallRule': void
   'ports:deleteFirewallRule': void
@@ -590,6 +667,7 @@ export type IpcResponseMap = {
 export type IpcEventMap = {
   'connection:stateChanged': import('./server').ConnectionStateEvent
   'connection:hostKeyPrompt': import('./server').HostKeyPrompt
+  'connection:passphrasePrompt': import('./server').PassphrasePrompt
   'terminal:data': TerminalDataEvent
   'terminal:exit': TerminalExitEvent
   'docker:logsData': DockerLogsDataEvent
@@ -722,6 +800,29 @@ export interface DockerApi {
   stopLogs(request: DockerLogsStopRequest): Promise<void>
   onLogsData(listener: (event: DockerLogsDataEvent & { bytes: Uint8Array }) => void): () => void
   onLogsExit(listener: (event: DockerLogsExitEvent) => void): () => void
+}
+
+export interface GitApi {
+  isAvailable(request: ServerScoped): Promise<boolean>
+  listRepos(request: ServerScoped): Promise<import('./git').GitRepo[]>
+  addRepo(request: GitRepoRequest): Promise<import('./git').GitRepo>
+  removeRepo(request: GitRepoRequest): Promise<void>
+  summary(request: GitRepoRequest): Promise<import('./git').GitSummary>
+  fetch(request: GitRepoRequest): Promise<void>
+  pull(request: GitPullRequest): Promise<void>
+  push(request: GitPushRequest): Promise<void>
+  checkout(request: GitCheckoutRequest): Promise<void>
+  createBranch(request: GitCreateBranchRequest): Promise<void>
+  stash(request: GitStashRequest): Promise<void>
+}
+
+export interface PrivilegeApi {
+  probe(request: ServerScoped): Promise<import('./permissions').PrivilegeProbeResult>
+}
+
+export interface PermissionsApi {
+  getChoices(request: ServerScoped): Promise<PermissionChoices>
+  setChoices(request: PermissionsSetChoicesRequest): Promise<PermissionChoices>
 }
 
 export interface PortsApi {
@@ -868,6 +969,9 @@ export interface ZviaApi {
 
   terminal: TerminalApi
   docker: DockerApi
+  git: GitApi
+  privilege: PrivilegeApi
+  permissions: PermissionsApi
   ports: PortsApi
   nginx: NginxApi
   ssl: SslApi

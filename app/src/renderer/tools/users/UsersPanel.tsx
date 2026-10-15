@@ -3,6 +3,7 @@ import type { ZviaErrorPayload } from '@shared/errors'
 import type { UserDetail, UserSummary } from '@shared/users'
 import { BackButton } from '@renderer/components/ui/back-button'
 import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
 import { ElevationRequired } from '@renderer/components/errors/ElevationRequired'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { elevationCommand, parseZviaError } from '@renderer/lib/errors'
@@ -188,12 +189,12 @@ export function UsersPanel() {
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2 border-b border-divider px-3 py-2">
-          <input
+          <Input
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search users"
-            className="min-w-[140px] flex-1 rounded-panel border border-divider bg-bg px-2.5 py-1 text-xs text-text outline-none focus:border-text-tertiary"
+            className="min-w-[140px] flex-1"
           />
           <div className="flex items-center gap-1">
             {FILTERS.map((option) => (

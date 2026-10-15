@@ -3,10 +3,12 @@ import type { PortListener } from '@shared/ports'
 import { describeFirewallEditability } from '@shared/ports'
 import { BackButton } from '@renderer/components/ui/back-button'
 import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
 import { ElevationRequired } from '@renderer/components/errors/ElevationRequired'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { useRequiredServerContext } from '@renderer/state/ServerContext'
 import { useNavigationStore, useToolIntent } from '@renderer/state/navigationStore'
+import { denialMessage, isAllowed, useCapabilities, usePermissionsStore } from '@renderer/state/permissionsStore'
 import { cn } from '@renderer/lib/utils'
 import { FirewallPortDialog } from './FirewallPortDialog'
 import { FirewallRuleDialog, type PendingFirewallChange } from './FirewallRuleDialog'
@@ -36,6 +38,9 @@ export function PortsPanel() {
   const [portDialogOpen, setPortDialogOpen] = useState(false)
 
   const ports = usePorts({ serverId, isConnected, paused: selected !== null })
+  const caps = useCapabilities(isConnected ? serverId : null)
+  const firewallAllowed = caps.can('firewall.write')
+  const firewallDeniedReason = caps.reason('firewall.write') ?? undefined
 
   useEffect(() => {
     setSelected(null)
@@ -172,20 +177,20 @@ export function PortsPanel() {
           ))}
         </div>
 
-        <input
+        <Input
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search port, process or unit"
-          className="ml-auto w-52 rounded-panel border border-divider bg-bg px-2 py-1 text-xs text-text outline-none focus:border-text-tertiary"
+          className="ml-auto w-52"
         />
 
         {/* The title sits on the wrapper because a disabled button swallows hover. */}
-        <span title={firewallEditability.reason ?? undefined}>
+        <span title={firewallEditability.reason ?? firewallDeniedReason}>
           <Button
             size="sm"
             variant="ghost"
-            disabled={!firewallEditability.editable}
+            disabled={!firewallEditability.editable || !firewallAllowed}
             onClick={() => setPortDialogOpen(true)}
           >
             Open or Close Port…
@@ -254,7 +259,7 @@ export function PortsPanel() {
         <PortsTable
           listeners={listeners}
           loading={ports.loading}
-          firewallEditable={firewallEditability.editable}
+          firewallEditable={firewallEditability.editable && firewallAllowed}
           sshPort={snapshot?.sshPort ?? null}
           actionLoading={ports.actionLoading}
           onSelect={setSelected}

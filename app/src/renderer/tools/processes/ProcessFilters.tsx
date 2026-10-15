@@ -41,12 +41,12 @@ export function ProcessFilters({
 }: ProcessFiltersProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-divider px-3 py-2">
-      <input
+      <Input
         type="search"
         value={search}
         onChange={(event) => onSearchChange(event.target.value)}
         placeholder="Search processes"
-        className="min-w-[140px] flex-1 rounded-panel border border-divider bg-bg px-2.5 py-1 text-xs text-text outline-none focus:border-text-tertiary"
+        className="min-w-[140px] flex-1"
       />
 
       <div className="flex flex-wrap items-center gap-1">

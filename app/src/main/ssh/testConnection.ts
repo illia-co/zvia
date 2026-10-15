@@ -1,11 +1,15 @@
 import { Client } from 'ssh2'
 import type { ConnectionTestRequest } from '@shared/ipc'
-import type { ServerProfile } from '@shared/server'
-import { AuthenticationError, ConnectionError } from '@shared/errors'
+import type { PassphrasePrompt, ServerProfile } from '@shared/server'
+import { AuthenticationError, ConnectionError, PassphraseRequiredError } from '@shared/errors'
 import { buildConnectConfig } from './auth'
+import { toConnectionOrAuthError } from './authErrors'
 import { createHostVerifier, type HostKeyPromptHandler } from './hostVerifier'
 
 const TEST_CONNECT_TIMEOUT_MS = 20000
+const MAX_PASSPHRASE_ATTEMPTS = 2
+
+export type PassphrasePromptHandler = (prompt: PassphrasePrompt) => Promise<string | null>
 
 function profileFromTestRequest(request: ConnectionTestRequest): ServerProfile {
   return {
@@ -18,17 +22,12 @@ function profileFromTestRequest(request: ConnectionTestRequest): ServerProfile {
   }
 }
 
-export async function runTestConnection(
-  request: ConnectionTestRequest,
+async function attemptTestConnect(
+  connectConfig: Awaited<ReturnType<typeof buildConnectConfig>>,
+  profile: ServerProfile,
   promptHostKey: HostKeyPromptHandler
 ): Promise<void> {
-  const profile = profileFromTestRequest(request)
-  const connectConfig = await buildConnectConfig(profile, {
-    passphrase: request.passphrase
-  })
-
   const client = new Client()
-
   try {
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -55,13 +54,48 @@ export async function runTestConnection(
         )
       })
     })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Connection test failed'
-    if (error instanceof AuthenticationError) {
-      throw error
-    }
-    throw error instanceof ConnectionError ? error : new ConnectionError(message)
   } finally {
     client.end()
+  }
+}
+
+export async function runTestConnection(
+  request: ConnectionTestRequest,
+  promptHostKey: HostKeyPromptHandler,
+  promptPassphrase?: PassphrasePromptHandler
+): Promise<void> {
+  const profile = profileFromTestRequest(request)
+  let explicitPassphrase: string | undefined = request.passphrase
+  let passphraseAttempts = 0
+
+  for (;;) {
+    let connectConfig: Awaited<ReturnType<typeof buildConnectConfig>>
+    try {
+      connectConfig = await buildConnectConfig(
+        profile,
+        explicitPassphrase ? { passphrase: explicitPassphrase } : undefined
+      )
+    } catch (error) {
+      if (!(error instanceof PassphraseRequiredError) || !promptPassphrase) throw error
+      if (passphraseAttempts >= MAX_PASSPHRASE_ATTEMPTS) {
+        throw new AuthenticationError(`Passphrase required for ${error.keyLabel}`)
+      }
+      passphraseAttempts += 1
+      const supplied = await promptPassphrase({
+        serverId: profile.id,
+        hostname: profile.hostname,
+        keyLabel: error.keyLabel
+      })
+      if (!supplied) throw new AuthenticationError(`Passphrase required for ${error.keyLabel}`)
+      explicitPassphrase = supplied
+      continue
+    }
+
+    try {
+      await attemptTestConnect(connectConfig, profile, promptHostKey)
+      return
+    } catch (error) {
+      throw toConnectionOrAuthError(error)
+    }
   }
 }

@@ -107,6 +107,8 @@ export function TerminalView({
   const isVisibleRef = useRef(isActive && isWorkspaceVisible)
   const onSessionEndedRef = useRef(onSessionEnded)
   const isConnectedRef = useRef(isConnected)
+  const prefillWrittenRef = useRef(false)
+  const prefillCleanupRef = useRef<(() => void) | null>(null)
   const [sessionEnded, setSessionEnded] = useState(false)
   const [openError, setOpenError] = useState<string | null>(null)
 
@@ -212,8 +214,29 @@ export function TerminalView({
           }
           markPtyOpened(serverId, sessionId)
           setOpenError(null)
-          if (prefill) {
-            void window.zvia.terminal.write({ serverId, sessionId, data: prefill })
+          if (prefill && !prefillWrittenRef.current) {
+            prefillWrittenRef.current = true
+            // Type the command only after the shell prompt arrives: writing
+            // into a fresh PTY echoes before the prompt and garbles the line.
+            // Never appends a newline — prefill must not execute.
+            let settled = false
+            const writePrefill = (): void => {
+              if (settled || cancelled) return
+              settled = true
+              unsubscribe()
+              window.clearTimeout(fallbackId)
+              void window.zvia.terminal.write({ serverId, sessionId, data: prefill })
+            }
+            const unsubscribe = window.zvia.terminal.onData((event) => {
+              if (event.serverId !== serverId || event.sessionId !== sessionId) return
+              // Let the prompt bytes flush through xterm first.
+              window.setTimeout(writePrefill, 50)
+            })
+            const fallbackId = window.setTimeout(writePrefill, 3000)
+            prefillCleanupRef.current = () => {
+              unsubscribe()
+              window.clearTimeout(fallbackId)
+            }
           }
           if (isVisibleRef.current) {
             terminal.focus()
@@ -234,6 +257,8 @@ export function TerminalView({
 
     return () => {
       cancelled = true
+      prefillCleanupRef.current?.()
+      prefillCleanupRef.current = null
     }
   }, [serverId, sessionId, isConnected, isActive, sessionEnded, command, prefill])
 

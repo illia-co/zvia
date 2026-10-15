@@ -14,7 +14,7 @@ export function describeToolError(error: unknown): ToolError {
   const payload = parseZviaError(error)
   const elevation = elevationCommand(payload)
   const message =
-    payload.details && payload.code === 'VALIDATION_ERROR'
+    payload.details && (payload.code === 'VALIDATION_ERROR' || payload.code === 'COMMAND_ERROR')
       ? `${payload.message} ${payload.details}`
       : payload.message
   return { message, elevation }

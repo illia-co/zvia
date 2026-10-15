@@ -10,6 +10,15 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import { Field } from '@renderer/components/ui/field'
+import { Input } from '@renderer/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@renderer/components/ui/select'
 
 type SchedulePreset = 'minutes' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'reboot' | 'custom'
 
@@ -89,9 +98,6 @@ interface CronEditorDialogProps {
   onSubmit: (values: { target: CronTarget; schedule: string; command: string }) => void
 }
 
-const inputClass =
-  'w-full rounded-panel border border-divider bg-bg px-2.5 py-1 text-xs text-text outline-none focus:border-text-tertiary'
-
 export function CronEditorDialog({
   open,
   job,
@@ -140,146 +146,126 @@ export function CronEditorDialog({
 
         <div className="space-y-3">
           {targets.length > 1 && !job && (
-            <label className="block">
-              <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
-                Crontab
-              </span>
-              <select
-                value={target}
-                onChange={(event) => setTarget(event.target.value as CronTarget)}
-                className={`mt-1 ${inputClass}`}
-              >
-                {targets.map((option) => (
-                  <option key={option} value={option}>
-                    {TARGET_LABELS[option]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Field label="Crontab">
+              <Select value={target} onValueChange={(value) => setTarget(value as CronTarget)}>
+                <SelectTrigger className="mt-1 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  {targets.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {TARGET_LABELS[option]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
           )}
 
-          <label className="block">
-            <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
-              Schedule
-            </span>
-            <select
+          <Field label="Schedule">
+            <Select
               value={builder.preset}
-              onChange={(event) =>
-                updateBuilder({ preset: event.target.value as SchedulePreset })
-              }
-              className={`mt-1 ${inputClass}`}
+              onValueChange={(value) => updateBuilder({ preset: value as SchedulePreset })}
             >
-              {PRESETS.map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  {preset.label}
-                </option>
-              ))}
-            </select>
-          </label>
+              <SelectTrigger className="mt-1 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[60]">
+                {PRESETS.map((preset) => (
+                  <SelectItem key={preset.id} value={preset.id}>
+                    {preset.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
 
           {builder.preset === 'minutes' && (
-            <label className="block">
-              <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
-                Every (minutes)
-              </span>
-              <input
+            <Field label="Every (minutes)">
+              <Input
                 type="number"
                 min={1}
                 max={59}
                 value={builder.interval}
                 onChange={(event) => updateBuilder({ interval: Number(event.target.value) })}
-                className={`mt-1 ${inputClass}`}
+                className="mt-1 w-full"
               />
-            </label>
+            </Field>
           )}
 
           {builder.preset === 'hourly' && (
-            <label className="block">
-              <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
-                At minute
-              </span>
-              <input
+            <Field label="At minute">
+              <Input
                 type="number"
                 min={0}
                 max={59}
                 value={builder.minute}
                 onChange={(event) => updateBuilder({ minute: Number(event.target.value) })}
-                className={`mt-1 ${inputClass}`}
+                className="mt-1 w-full"
               />
-            </label>
+            </Field>
           )}
 
           {(builder.preset === 'daily' ||
             builder.preset === 'weekly' ||
             builder.preset === 'monthly') && (
             <div className="flex gap-2">
-              <label className="flex-1">
-                <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
-                  Hour
-                </span>
-                <input
+              <Field label="Hour" className="flex-1">
+                <Input
                   type="number"
                   min={0}
                   max={23}
                   value={builder.hour}
                   onChange={(event) => updateBuilder({ hour: Number(event.target.value) })}
-                  className={`mt-1 ${inputClass}`}
+                  className="mt-1 w-full"
                 />
-              </label>
-              <label className="flex-1">
-                <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
-                  Minute
-                </span>
-                <input
+              </Field>
+              <Field label="Minute" className="flex-1">
+                <Input
                   type="number"
                   min={0}
                   max={59}
                   value={builder.minute}
                   onChange={(event) => updateBuilder({ minute: Number(event.target.value) })}
-                  className={`mt-1 ${inputClass}`}
+                  className="mt-1 w-full"
                 />
-              </label>
+              </Field>
               {builder.preset === 'weekly' && (
-                <label className="flex-1">
-                  <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
-                    Day
-                  </span>
-                  <select
-                    value={builder.weekday}
-                    onChange={(event) => updateBuilder({ weekday: Number(event.target.value) })}
-                    className={`mt-1 ${inputClass}`}
+                <Field label="Day" className="flex-1">
+                  <Select
+                    value={String(builder.weekday)}
+                    onValueChange={(value) => updateBuilder({ weekday: Number(value) })}
                   >
-                    {WEEKDAYS.map((day) => (
-                      <option key={day.value} value={day.value}>
-                        {day.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    <SelectTrigger className="mt-1 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[60]">
+                      {WEEKDAYS.map((day) => (
+                        <SelectItem key={day.value} value={String(day.value)}>
+                          {day.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
               )}
               {builder.preset === 'monthly' && (
-                <label className="flex-1">
-                  <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
-                    Day of month
-                  </span>
-                  <input
+                <Field label="Day of month" className="flex-1">
+                  <Input
                     type="number"
                     min={1}
                     max={31}
                     value={builder.dayOfMonth}
                     onChange={(event) => updateBuilder({ dayOfMonth: Number(event.target.value) })}
-                    className={`mt-1 ${inputClass}`}
+                    className="mt-1 w-full"
                   />
-                </label>
+                </Field>
               )}
             </div>
           )}
 
-          <label className="block">
-            <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
-              Raw expression
-            </span>
-            <input
+          <Field label="Raw expression">
+            <Input
               type="text"
               value={raw}
               spellCheck={false}
@@ -287,9 +273,9 @@ export function CronEditorDialog({
                 setRaw(event.target.value)
                 setBuilder((current) => ({ ...current, preset: 'custom' }))
               }}
-              className={`mt-1 font-mono ${inputClass}`}
+              className="mt-1 w-full font-mono"
             />
-          </label>
+          </Field>
 
           <p className="text-xs text-text-secondary">
             {validation.valid ? (
@@ -299,17 +285,16 @@ export function CronEditorDialog({
             )}
           </p>
 
-          <label className="block">
-            <span className="text-[10px] uppercase tracking-wider text-text-tertiary">Command</span>
-            <input
+          <Field label="Command">
+            <Input
               type="text"
               value={command}
               spellCheck={false}
               placeholder="/usr/local/bin/backup.sh"
               onChange={(event) => setCommand(event.target.value)}
-              className={`mt-1 font-mono ${inputClass}`}
+              className="mt-1 w-full font-mono"
             />
-          </label>
+          </Field>
         </div>
 
         <DialogFooter>

@@ -136,6 +136,27 @@ export function validateHostKeyResponseRequest(value: unknown): HostKeyResponseR
   return { ...scoped, decision: record.decision }
 }
 
+export function validatePassphraseResponseRequest(value: unknown): import('./ipc').PassphraseResponseRequest {
+  if (!value || typeof value !== 'object') {
+    throw new ValidationError('Invalid passphrase response: expected object')
+  }
+  const record = value as Record<string, unknown>
+  const scoped = validateServerScoped(record)
+  const request: import('./ipc').PassphraseResponseRequest = { ...scoped }
+  if (record.cancel === true) {
+    request.cancel = true
+    return request
+  }
+  if (typeof record.passphrase !== 'string' || record.passphrase.length === 0) {
+    throw new ValidationError('Invalid passphrase: expected non-empty string')
+  }
+  if (record.passphrase.length > 1024) {
+    throw new ValidationError('Invalid passphrase: exceeds 1024 characters')
+  }
+  request.passphrase = record.passphrase
+  return request
+}
+
 export function validateProfileGetRequest(value: unknown): ProfileGetRequest {
   if (!value || typeof value !== 'object') {
     throw new ValidationError('Invalid profile get request: expected object')
@@ -940,6 +961,146 @@ export function validateDockerLogsStopRequest(
   const record = value as Record<string, unknown>
   const scoped = validateServerScoped(record)
   return { ...scoped, streamId: assertStreamId(record.streamId) }
+}
+
+function assertGitRepoPath(value: unknown): string {
+  const path = assertRemotePath(value)
+  if (path.length > 4096) {
+    throw new ValidationError('Invalid path: too long')
+  }
+  return path
+}
+
+function assertGitBranch(value: unknown, field = 'branch'): string {
+  const branch = assertString(value, field)
+  if (branch.length > 255 || /[\s~^:?*[\]\\@{]|\.\.|@{/.test(branch) || branch.endsWith('.lock')) {
+    throw new ValidationError(`Invalid ${field}: not a valid git branch name`)
+  }
+  return branch
+}
+
+/** Shared preamble for git validators: object check + server scope + repo path. */
+function scopedGitRepo(value: unknown, label: string): {
+  record: Record<string, unknown>
+  scoped: ReturnType<typeof validateServerScoped>
+  path: string
+} {
+  if (!value || typeof value !== 'object') {
+    throw new ValidationError(`Invalid ${label}: expected object`)
+  }
+  const record = value as Record<string, unknown>
+  const scoped = validateServerScoped(record)
+  return { record, scoped, path: assertGitRepoPath(record.path) }
+}
+
+export function validateGitRepoRequest(value: unknown): import('./ipc').GitRepoRequest {
+  const { scoped, path } = scopedGitRepo(value, 'git request')
+  return { ...scoped, path }
+}
+
+export function validateGitPullRequest(value: unknown): import('./ipc').GitPullRequest {
+  const { record, scoped, path } = scopedGitRepo(value, 'git pull request')
+  const request: import('./ipc').GitPullRequest = { ...scoped, path }
+  if (record.strategy !== undefined) {
+    if (record.strategy !== 'ff-only' && record.strategy !== 'rebase') {
+      throw new ValidationError('Invalid strategy: expected ff-only or rebase')
+    }
+    request.strategy = record.strategy
+  }
+  return request
+}
+
+export function validateGitPushRequest(value: unknown): import('./ipc').GitPushRequest {
+  const { record, scoped, path } = scopedGitRepo(value, 'git push request')
+  const request: import('./ipc').GitPushRequest = { ...scoped, path }
+  if (record.force === true) request.force = true
+  return request
+}
+
+export function validateGitCheckoutRequest(value: unknown): import('./ipc').GitCheckoutRequest {
+  const { record, scoped, path } = scopedGitRepo(value, 'git checkout request')
+  return { ...scoped, path, branch: assertGitBranch(record.branch) }
+}
+
+export function validateGitCreateBranchRequest(
+  value: unknown
+): import('./ipc').GitCreateBranchRequest {
+  const { record, scoped, path } = scopedGitRepo(value, 'git create branch request')
+  const request: import('./ipc').GitCreateBranchRequest = {
+    ...scoped,
+    path,
+    branch: assertGitBranch(record.branch)
+  }
+  if (record.startPoint !== undefined) {
+    request.startPoint = assertGitBranch(record.startPoint, 'startPoint')
+  }
+  return request
+}
+
+export function validateGitStashRequest(value: unknown): import('./ipc').GitStashRequest {
+  const { record, scoped, path } = scopedGitRepo(value, 'git stash request')
+  if (record.action !== 'push' && record.action !== 'pop' && record.action !== 'apply' && record.action !== 'drop') {
+    throw new ValidationError('Invalid action: expected push, pop, apply or drop')
+  }
+  const request: import('./ipc').GitStashRequest = {
+    ...scoped,
+    path,
+    action: record.action
+  }
+  if (record.message !== undefined) {
+    if (typeof record.message !== 'string' || record.message.length > 500) {
+      throw new ValidationError('Invalid message: expected string up to 500 characters')
+    }
+    request.message = record.message
+  }
+  if (record.index !== undefined) {
+    if (typeof record.index !== 'number' || !Number.isInteger(record.index) || record.index < 0) {
+      throw new ValidationError('Invalid index: expected non-negative integer')
+    }
+    request.index = record.index
+  }
+  return request
+}
+
+export function validatePermissionsSetChoicesRequest(
+  value: unknown
+): import('./ipc').PermissionsSetChoicesRequest {
+  if (!value || typeof value !== 'object') {
+    throw new ValidationError('Invalid permissions request: expected object')
+  }
+  const record = value as Record<string, unknown>
+  const scoped = validateServerScoped(record)
+  if (!Array.isArray(record.enabled)) {
+    throw new ValidationError('Invalid enabled: expected array of capability ids')
+  }
+  if (record.enabled.length > 64) {
+    throw new ValidationError('Invalid enabled: too many entries')
+  }
+  const enabled: string[] = []
+  for (const entry of record.enabled) {
+    if (typeof entry !== 'string' || entry.length === 0 || entry.length > 64) {
+      throw new ValidationError('Invalid enabled: expected non-empty capability id strings')
+    }
+    enabled.push(entry)
+  }
+  const request: import('./ipc').PermissionsSetChoicesRequest = { ...scoped, enabled }
+  if (record.units !== undefined) {
+    if (!Array.isArray(record.units)) {
+      throw new ValidationError('Invalid units: expected array of unit names')
+    }
+    if (record.units.length > 128) {
+      throw new ValidationError('Invalid units: too many entries')
+    }
+    const units: string[] = []
+    for (const entry of record.units) {
+      if (typeof entry !== 'string' || !/^[a-zA-Z0-9@._:-]{1,256}$/.test(entry)) {
+        throw new ValidationError('Invalid units: expected systemd unit names')
+      }
+      units.push(entry)
+    }
+    request.units = units
+  }
+  return request
 }
 
 export function assertPortNumber(value: unknown): number {

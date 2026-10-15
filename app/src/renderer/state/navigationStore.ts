@@ -23,6 +23,8 @@ export type ToolIntent =
   | { tool: 'packages'; packageName?: string; view?: 'installed' | 'updates' | 'search' }
   | { tool: 'deployments'; deploymentId?: string; entityId?: string; view?: 'snapshots' | 'diff'; baselineId?: string }
   | { tool: 'docker'; containerId?: string }
+  | { tool: 'git'; path?: string }
+  | { tool: 'settings'; tab?: 'permissions' }
 
 function intentToToolId(intent: ToolIntent): ToolId {
   return intent.tool

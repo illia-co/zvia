@@ -9,7 +9,8 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
-import { cn } from '@renderer/lib/utils'
+import { Input } from '@renderer/components/ui/input'
+import { SegmentedControl } from '@renderer/components/ui/segmented-control'
 import type { PendingFirewallChange } from './FirewallRuleDialog'
 import { parseFirewallPortForm } from './firewallForm'
 
@@ -26,36 +27,6 @@ const ACTIONS: { id: FirewallRuleAction; label: string }[] = [
   { id: 'allow', label: 'Open' },
   { id: 'deny', label: 'Close' }
 ]
-
-function SegmentedControl<T extends string>({
-  options,
-  value,
-  onChange
-}: {
-  options: { id: T; label: string }[]
-  value: T
-  onChange: (next: T) => void
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      {options.map((option) => (
-        <button
-          key={option.id}
-          type="button"
-          onClick={() => onChange(option.id)}
-          className={cn(
-            'rounded-panel px-2.5 py-1 text-xs transition-colors duration-default',
-            value === option.id
-              ? 'bg-bg-secondary text-text'
-              : 'text-text-secondary hover:bg-bg-secondary hover:text-text'
-          )}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 /**
  * Collects an arbitrary port to open or close. Confirmation, the exact command
@@ -105,7 +76,7 @@ export function FirewallPortDialog({
             <span className="w-20 shrink-0 text-[10px] uppercase tracking-wider text-text-tertiary">
               Port
             </span>
-            <input
+            <Input
               autoFocus
               inputMode="numeric"
               value={port}
@@ -117,7 +88,7 @@ export function FirewallPortDialog({
                 if (event.key === 'Enter') submit()
               }}
               placeholder="8080"
-              className="w-24 rounded-panel border border-divider bg-bg px-2 py-1 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+              className="w-24 font-mono"
             />
           </div>
 

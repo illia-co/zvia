@@ -9,6 +9,8 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import { Field } from '@renderer/components/ui/field'
+import { Input } from '@renderer/components/ui/input'
 
 interface EditUserDialogProps {
   open: boolean
@@ -39,26 +41,24 @@ export function EditUserDialog({ open, user, submitting, onClose, onSubmit }: Ed
         </DialogHeader>
 
         <div className="space-y-3">
-          <label className="block text-xs text-text-secondary">
-            Shell
-            <input
+          <Field label="Shell">
+            <Input
               value={shell}
               onChange={(event) => setShell(event.target.value)}
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+              className="mt-1 w-full font-mono"
             />
-          </label>
+          </Field>
           <p className="text-[11px] text-text-tertiary">
             GECOS is applied on create only. Use shell changes here; group membership is managed
             separately.
           </p>
-          <label className="block text-xs text-text-secondary">
-            Full name (GECOS, read-only)
-            <input
+          <Field label="Full name (GECOS, read-only)">
+            <Input
               value={gecos}
               readOnly
-              className="mt-1 w-full rounded-panel border border-divider bg-bg-secondary px-2.5 py-1.5 text-xs text-text-secondary outline-none"
+              className="mt-1 w-full bg-bg-secondary text-text-secondary"
             />
-          </label>
+          </Field>
         </div>
 
         <DialogFooter>

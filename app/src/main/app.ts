@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { registerIpcHandlers, unregisterIpcHandlers } from './ipc/registry'
 import { profileStore } from './store/profiles'
 import { topologyHistoryStore } from './store/topologyHistory'
+import { permissionStore } from './store/permissions'
 import { connectionManager } from './ssh/ConnectionManager'
 import { hostKeyStore } from './ssh/hostKeys'
 import { statsService } from './services/StatsService'
@@ -165,6 +166,7 @@ app.whenReady().then(async () => {
   await profileStore.load()
   await hostKeyStore.load()
   await topologyHistoryStore.load()
+  await permissionStore.load()
   registerIpcHandlers()
 
   const mainWindow = createWindow()

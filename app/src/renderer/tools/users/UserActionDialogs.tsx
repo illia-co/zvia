@@ -3,6 +3,7 @@ import type { UserDetail } from '@shared/users'
 import { getPasswordPolicyIssues } from '@shared/userPassword'
 import { ServerScopeNotice } from '@renderer/components/ServerScopeNotice'
 import { Button } from '@renderer/components/ui/button'
+import { Checkbox } from '@renderer/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,9 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import { Field } from '@renderer/components/ui/field'
+import { Input } from '@renderer/components/ui/input'
+import { Textarea } from '@renderer/components/ui/textarea'
 import { PasswordFieldHints } from './PasswordFieldHints'
 
 interface DeleteUserDialogProps {
@@ -48,10 +52,9 @@ export function DeleteUserDialog({
           <ServerScopeNotice />
 
           <label className="flex items-center gap-2 text-xs text-text-secondary">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={removeHome}
-              onChange={(event) => setRemoveHome(event.target.checked)}
+              onCheckedChange={(checked) => setRemoveHome(checked === true)}
             />
             Remove home directory ({user?.home})
           </label>
@@ -166,17 +169,16 @@ export function PasswordDialog({
         </DialogHeader>
         <div className="space-y-4">
           <ServerScopeNotice />
-          <label className="block text-xs text-text-secondary">
-            New password
-            <input
+          <Field label="New password">
+            <Input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 text-xs text-text outline-none focus:border-text-tertiary"
+              className="mt-1 w-full"
               autoFocus
             />
             <PasswordFieldHints username={user?.username} password={password} />
-          </label>
+          </Field>
         </div>
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -225,22 +227,20 @@ export function GroupsDialog({ open, user, submitting, onClose, onConfirm }: Gro
         </DialogHeader>
         <div className="space-y-4">
           <ServerScopeNotice />
-          <label className="block text-xs text-text-secondary">
-            Add to groups (comma-separated)
-            <input
+          <Field label="Add to groups (comma-separated)">
+            <Input
               value={addGroups}
               onChange={(event) => setAddGroups(event.target.value)}
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+              className="mt-1 w-full font-mono"
             />
-          </label>
-          <label className="block text-xs text-text-secondary">
-            Remove from groups (comma-separated)
-            <input
+          </Field>
+          <Field label="Remove from groups (comma-separated)">
+            <Input
               value={removeGroups}
               onChange={(event) => setRemoveGroups(event.target.value)}
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+              className="mt-1 w-full font-mono"
             />
-          </label>
+          </Field>
         </div>
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -302,14 +302,13 @@ export function ChangeShellDialog({
         </DialogHeader>
         <div className="space-y-4">
           <ServerScopeNotice />
-          <label className="block text-xs text-text-secondary">
-            Shell
-            <input
+          <Field label="Shell">
+            <Input
               value={shell}
               onChange={(event) => setShell(event.target.value)}
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+              className="mt-1 w-full font-mono"
             />
-          </label>
+          </Field>
         </div>
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -362,16 +361,15 @@ export function EnableSshDialog({
         </DialogHeader>
         <div className="space-y-4">
           <ServerScopeNotice />
-          <label className="block text-xs text-text-secondary">
-            Public key (optional)
-            <textarea
+          <Field label="Public key (optional)">
+            <Textarea
               value={publicKey}
               onChange={(event) => setPublicKey(event.target.value)}
               rows={4}
               placeholder="ssh-ed25519 AAAA... comment"
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+              className="mt-1 font-mono"
             />
-          </label>
+          </Field>
         </div>
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>

@@ -173,7 +173,7 @@ export class ProcessService {
         throw new PrivilegeRequiredError(
           'Elevated privileges are required to signal this process',
           privilegeService.buildPrivileged(
-            { isRoot: false, canSudoNonInteractive: true },
+            { isRoot: false, canSudoNonInteractive: true, sudoKind: 'nopasswd' },
             baseCommand
           )
         )

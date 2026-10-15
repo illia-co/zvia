@@ -8,6 +8,8 @@ import { describeToolError } from '@renderer/lib/toolErrors'
 import { cn } from '@renderer/lib/utils'
 import { useNavigationStore } from '@renderer/state/navigationStore'
 import { useWorkspaceStore } from '@renderer/state/workspaceStore'
+import { useCapabilities } from '@renderer/state/permissionsStore'
+import { useSelectedServer } from '@renderer/state/serverStore'
 import {
   formatCpuPercent,
   formatMemoryPercent,
@@ -54,6 +56,8 @@ export function ProcessDetailView({
 }: ProcessDetailViewProps) {
   const openWithIntent = useNavigationStore((state) => state.openWithIntent)
   const openTool = useWorkspaceStore((state) => state.openTool)
+  const caps = useCapabilities(serverId)
+  const connectedUsername = useSelectedServer()?.username ?? null
   const [detail, setDetail] = useState<ProcessDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -92,6 +96,10 @@ export function ProcessDetailView({
   }
 
   const displayName = processDisplayName(detail)
+  const isForeignProcess =
+    detail !== null && connectedUsername !== null && detail.user !== connectedUsername
+  const signalAllowed = !isForeignProcess || caps.can('process.signal_other')
+  const signalReason = !signalAllowed ? (caps.reason('process.signal_other') ?? undefined) : undefined
 
   return (
     <div className="h-full overflow-auto p-4">

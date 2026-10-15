@@ -22,6 +22,8 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
+import { Checkbox } from '@renderer/components/ui/checkbox'
+import { Input } from '@renderer/components/ui/input'
 import { cn } from '@renderer/lib/utils'
 import type { RemoteFileEntry } from '@shared/files'
 import {
@@ -344,12 +346,12 @@ export function FilesPanel() {
           />
         </div>
 
-        <input
+        <Input
           type="search"
           placeholder="Search"
           value={fm.searchQuery}
           onChange={(event) => fm.setSearchQuery(event.target.value)}
-          className="w-36 rounded-panel border border-divider bg-bg px-2 py-1 text-xs text-text outline-none focus:border-text-tertiary"
+          className="w-36"
         />
 
         <Button size="sm" variant="ghost" onClick={() => openPrompt('create-folder')}>
@@ -459,35 +461,34 @@ export function FilesPanel() {
                 Type <span className="font-mono">{CRITICAL_PATH_CONFIRMATION_PHRASE}</span> to
                 confirm this operation.
               </p>
-              <input
+              <Input
                 autoFocus={promptMode === 'delete'}
                 value={criticalConfirmText}
                 onChange={(event) => setCriticalConfirmText(event.target.value)}
-                className="w-full rounded-panel border border-divider bg-bg px-3 py-2 font-mono text-sm text-text outline-none focus:border-text-tertiary"
+                className="w-full font-mono text-sm"
                 placeholder={CRITICAL_PATH_CONFIRMATION_PHRASE}
               />
             </div>
           )}
 
           {promptMode !== 'delete' ? (
-            <input
+            <Input
               autoFocus
               value={promptValue}
               onChange={(event) => setPromptValue(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') void handlePromptConfirm()
               }}
-              className="w-full rounded-panel border border-divider bg-bg px-3 py-2 text-sm text-text outline-none focus:border-text-tertiary"
+              className="w-full text-sm"
               placeholder="Name"
             />
           ) : (
             (promptTarget?.type === 'directory' ||
               selectedEntries.some((e) => e.type === 'directory')) && (
               <label className="flex items-center gap-2 text-xs text-text-secondary">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={deleteRecursive}
-                  onChange={(event) => setDeleteRecursive(event.target.checked)}
+                  onCheckedChange={(checked) => setDeleteRecursive(checked === true)}
                 />
                 Delete folder and all contents
               </label>
@@ -537,11 +538,11 @@ export function FilesPanel() {
               Type <span className="font-mono">{CRITICAL_PATH_CONFIRMATION_PHRASE}</span> to
               confirm.
             </p>
-            <input
+            <Input
               autoFocus
               value={criticalConfirmText}
               onChange={(event) => setCriticalConfirmText(event.target.value)}
-              className="w-full rounded-panel border border-divider bg-bg px-3 py-2 font-mono text-sm text-text outline-none focus:border-text-tertiary"
+              className="w-full font-mono text-sm"
               placeholder={CRITICAL_PATH_CONFIRMATION_PHRASE}
             />
           </div>

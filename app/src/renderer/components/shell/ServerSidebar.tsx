@@ -50,6 +50,7 @@ function ServerListItem({
       <button
         type="button"
         onClick={() => onSelect(profile.id)}
+        title={profile.name}
         className={cn(
           'flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left text-sm transition-colors duration-default',
           isSelected ? 'text-text' : 'text-text-secondary group-hover:text-text'
@@ -119,7 +120,7 @@ export function ServerSidebar({ onAddServer, onEditServer }: ServerSidebarProps)
   const removeProfile = useServerStore((s) => s.removeProfile)
 
   return (
-    <aside className="flex w-44 shrink-0 flex-col border-r border-divider bg-bg">
+    <aside className="flex w-56 shrink-0 flex-col border-r border-divider bg-bg">
       <div className="flex items-center justify-between px-3 py-3">
         <span className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
           Servers

@@ -14,11 +14,13 @@ Each tool operates on the **currently selected server** only. There are no cross
 | `terminal` | Terminal | [terminal.md](./terminal.md) |
 | `files` | Files | [files.md](./files.md) |
 | `docker` | Docker | [docker.md](./docker.md) |
+| `git` | Git | [git.md](./git.md) |
 | `ports` | Ports | [ports.md](./ports.md) |
 | `nginx` | Nginx | [nginx.md](./nginx.md) |
 | `ssl` | SSL | [ssl.md](./ssl.md) |
 | `services` | Services | [services.md](./services.md) |
 | `cron` | Cron | [cron.md](./cron.md) |
+| `settings` | Settings | [settings.md](./settings.md) |
 
 Implementation entry points:
 

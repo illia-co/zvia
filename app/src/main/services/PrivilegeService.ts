@@ -1,10 +1,19 @@
 import type { ServerId } from '@shared/server'
+import type { SudoKind } from '@shared/permissions'
 import { PrivilegeRequiredError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
+
+export type { SudoKind }
 
 export interface PrivilegeContext {
   isRoot: boolean
   canSudoNonInteractive: boolean
+  /**
+   * `password` means the user is in sudoers but must type a password
+   * (`sudo -n` can never succeed). The app never prompts for that password —
+   * see the NOPASSWD guidance in the topology/SSL warnings.
+   */
+  sudoKind: SudoKind
 }
 
 export class PrivilegeService {
@@ -18,12 +27,21 @@ export class PrivilegeService {
     const isRoot = idResult.stdout.trim() === '0'
 
     let canSudoNonInteractive = isRoot
+    let sudoKind: SudoKind = isRoot ? 'root' : 'none'
     if (!isRoot) {
-      const sudoResult = await connectionManager.exec(serverId, 'sudo -n true')
+      const sudoResult = await connectionManager.exec(serverId, 'sudo -n true 2>&1')
       canSudoNonInteractive = sudoResult.exitCode === 0
+      const output = `${sudoResult.stdout} ${sudoResult.stderr}`.toLowerCase()
+      if (sudoResult.exitCode === 0) {
+        sudoKind = 'nopasswd'
+      } else if (/a password is required/.test(output)) {
+        sudoKind = 'password'
+      } else {
+        sudoKind = 'none'
+      }
     }
 
-    const context: PrivilegeContext = { isRoot, canSudoNonInteractive }
+    const context: PrivilegeContext = { isRoot, canSudoNonInteractive, sudoKind }
     this.cache.set(serverId, context)
     return context
   }

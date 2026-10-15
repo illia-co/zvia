@@ -3,6 +3,7 @@ import { describeCronEditability, type CronJob, type CronTarget } from '@shared/
 import type { ZviaErrorPayload } from '@shared/errors'
 import { BackButton } from '@renderer/components/ui/back-button'
 import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,7 @@ import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { elevationCommand, parseZviaError } from '@renderer/lib/errors'
 import { useRequiredServerContext } from '@renderer/state/ServerContext'
 import { useWorkspaceStore } from '@renderer/state/workspaceStore'
+import { denialMessage, isAllowed, usePermissionsStore } from '@renderer/state/permissionsStore'
 import { CronEditorDialog } from './CronEditorDialog'
 import { CronJobDetailView } from './CronJobDetailView'
 import { CRON_SOURCE_LABELS, CronTable } from './CronTable'
@@ -82,6 +84,14 @@ export function CronPanel() {
     schedule: string
     command: string
   }): Promise<void> => {
+    const target = editorJob?.target ?? values.target
+    if (target === 'root') {
+      const guard = usePermissionsStore.getState().byServer[serverId]
+      if (!isAllowed(guard, 'cron.write_root')) {
+        setActionError({ code: 'VALIDATION_ERROR', message: denialMessage(guard, 'cron.write_root') })
+        return
+      }
+    }
     setSubmitting(true)
     setActionError(null)
     try {
@@ -114,6 +124,14 @@ export function CronPanel() {
   const confirmDelete = async (): Promise<void> => {
     const target = pendingDelete?.target
     if (!pendingDelete || !target) return
+    if (target === 'root') {
+      const guard = usePermissionsStore.getState().byServer[serverId]
+      if (!isAllowed(guard, 'cron.write_root')) {
+        setActionError({ code: 'VALIDATION_ERROR', message: denialMessage(guard, 'cron.write_root') })
+        setPendingDelete(null)
+        return
+      }
+    }
     setSubmitting(true)
     setActionError(null)
     try {
@@ -175,12 +193,12 @@ export function CronPanel() {
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2 border-b border-divider px-3 py-2">
-          <input
+          <Input
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search cron jobs"
-            className="min-w-[140px] flex-1 rounded-panel border border-divider bg-bg px-2.5 py-1 text-xs text-text outline-none focus:border-text-tertiary"
+            className="min-w-[140px] flex-1"
           />
           {/* The title sits on the wrapper because a disabled button swallows hover. */}
           <span title={noEditableTargetsReason ?? undefined} className="flex items-center gap-2">

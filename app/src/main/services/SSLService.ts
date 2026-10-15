@@ -28,13 +28,17 @@ import { portService } from './PortService'
 import { isInsideDirectory } from './nginxParsers'
 import { parseSsOutput } from './portParsers'
 import {
+  certEntriesFromRenewalConfs,
   certIdForPath,
   linkCertificatesToSites,
+  liveDirCertEntries,
   parseCertbotCertificates,
   parseCertbotVersion,
   parseNginxServerBlocks,
   parseOpensslCertificate,
+  parseRenewalConf,
   parseSystemdTimer,
+  sameLetsEncryptCert,
   type CertbotCertificateEntry,
   type NginxServerBlock,
   type OpensslCertificateInfo
@@ -80,6 +84,33 @@ function sectionBetween(stdout: string, start: string, end?: string): string {
 
 function workflowStreamKey(serverId: ServerId, streamId: string): string {
   return `${serverId}:${streamId}`
+}
+
+/**
+ * True when a known certbot entry covers the same domains as the nginx blocks
+ * serving `certificatePath` — i.e. nginx serves a copy of the cert from a
+ * different path, so no duplicate nginx-discovered row is needed. The certbot
+ * entry itself links to the blocks by domain overlap in linkCertificatesToSites.
+ */
+function domainCoveredByKnownEntry(
+  certificatePath: string,
+  serverBlocks: NginxServerBlock[],
+  entries: CertbotCertificateEntry[],
+  opensslByPath: Map<string, { openssl: OpensslCertificateInfo | null; error: string | null }>
+): boolean {
+  const namesForPath = new Set(
+    serverBlocks
+      .filter((block) => block.sslCertificate === certificatePath)
+      .flatMap((block) => block.serverNames.map((name) => name.toLowerCase()))
+  )
+  if (namesForPath.size === 0) return false
+  return entries.some((entry) => {
+    const inspected = opensslByPath.get(entry.certificatePath)?.openssl
+    const names = [...entry.domains, ...(inspected?.sans ?? []), inspected?.subjectCn]
+      .filter((name): name is string => typeof name === 'string' && name.length > 0)
+      .map((name) => name.toLowerCase())
+    return names.some((name) => namesForPath.has(name))
+  })
 }
 
 function parseOsRelease(content: string): { id: string; idLike: string[] } {
@@ -183,7 +214,19 @@ export class SSLService {
     serverId: ServerId,
     path: string
   ): Promise<{ openssl: OpensslCertificateInfo | null; error: string | null }> {
-    const command = `openssl x509 -noout -subject -issuer -dates -serial -ext subjectAltName -in ${shellQuote(path)} 2>&1`
+    // Use elevation when available: /etc/letsencrypt/live is root-only and a
+    // plain-user openssl probe would report permission denied.
+    let prefix = ''
+    try {
+      const ctx = await privilegeService.getContext(serverId)
+      if (ctx.isRoot || ctx.canSudoNonInteractive) {
+        prefix = await this.elevate(serverId, ':').then((cmd) => cmd.slice(0, -':'.length))
+        if (prefix && !prefix.endsWith(' ')) prefix += ' '
+      }
+    } catch {
+      prefix = ''
+    }
+    const command = `${prefix}openssl x509 -noout -subject -issuer -dates -serial -ext subjectAltName -in ${shellQuote(path)} 2>&1`
     const result = await this.exec(serverId, command)
     if (result.exitCode !== 0) {
       return { openssl: null, error: (result.stderr || result.stdout).trim() }
@@ -202,21 +245,28 @@ export class SSLService {
     const elevatedRenewal = await this.elevate(serverId, 'ls -1 /etc/letsencrypt/renewal').catch(
       () => null
     )
-    const elevatedNginx = await this.elevate(serverId, 'nginx -T').catch(() => null)
+    // Shared dump helper: elevated `nginx -T`, plain fallback, then an
+    // SFTP-assembled dump. Emerg failures (root-only ssl keys) yield no dump
+    // from `nginx -T` at all, which is why the SFTP leg matters here.
+    const nginxDump = await nginxService.getConfigDump(serverId).catch(() => null)
 
     const discoveryCommand = [
       `echo '${MARKER_CERTBOT}'`,
-      'command -v certbot 2>/dev/null; command -v snap 2>/dev/null; certbot --version 2>&1',
+      // Absolute fallbacks: non-interactive PATH often lacks snap dirs.
+      // Assignment shares the line so section line indices stay stable.
+      'CERTBOT_BIN=$(command -v certbot 2>/dev/null || ls /usr/bin/certbot /snap/bin/certbot /usr/local/bin/certbot 2>/dev/null | head -1); echo "$CERTBOT_BIN"; command -v snap 2>/dev/null; ${CERTBOT_BIN:-certbot} --version 2>&1',
       `echo '${MARKER_PLUGINS}'`,
-      'certbot plugins 2>&1',
+      '${CERTBOT_BIN:-certbot} plugins 2>&1',
       `echo '${MARKER_TOOLS}'`,
       'command -v openssl 2>/dev/null; command -v curl 2>/dev/null; command -v systemctl 2>/dev/null; command -v crontab 2>/dev/null',
       `echo '${MARKER_CERTS}'`,
       elevatedCerts ? `${elevatedCerts} 2>&1` : 'echo "certbot certificates unavailable"',
       `echo '${MARKER_RENEWAL}'`,
-      elevatedRenewal ? `${elevatedRenewal} 2>/dev/null` : 'echo ""',
+      // Renewal dir listing is best-effort without elevation too: the dir and
+      // confs are often world-readable even for password-sudo users.
+      elevatedRenewal ? `${elevatedRenewal} 2>/dev/null` : 'ls -1 /etc/letsencrypt/renewal 2>/dev/null',
       `echo '${MARKER_NGINX}'`,
-      elevatedNginx ? `${elevatedNginx} 2>/dev/null` : 'echo ""',
+      'echo ""',
       `echo '${MARKER_OS}'`,
       'cat /etc/os-release 2>/dev/null',
       `echo '${MARKER_TIMERS}'`,
@@ -231,7 +281,6 @@ export class SSLService {
     const toolsSection = sectionBetween(result.stdout, MARKER_TOOLS, MARKER_CERTS)
     const certsSection = sectionBetween(result.stdout, MARKER_CERTS, MARKER_RENEWAL)
     const renewalSection = sectionBetween(result.stdout, MARKER_RENEWAL, MARKER_NGINX)
-    const nginxSection = sectionBetween(result.stdout, MARKER_NGINX, MARKER_OS)
     const osSection = sectionBetween(result.stdout, MARKER_OS, MARKER_TIMERS)
     const timersSection = sectionBetween(result.stdout, MARKER_TIMERS, MARKER_CRON)
     const cronSection = sectionBetween(result.stdout, MARKER_CRON)
@@ -250,19 +299,115 @@ export class SSLService {
     const cronAvailable = (toolLines[3]?.trim().length ?? 0) > 0
 
     const certbotEntries = certbotInstalled ? parseCertbotCertificates(certsSection) : []
-    const serverBlocks = nginxSection.trim() ? parseNginxServerBlocks(nginxSection) : []
+    const nginxDumpText = nginxDump?.dump ?? ''
+    const serverBlocks = nginxDumpText.includes('# configuration file')
+      ? parseNginxServerBlocks(nginxDumpText)
+      : []
+
+    // Fallback: `certbot certificates` can miss certs (strict parse, custom
+    // config-dir, broken output). Renewal confs + live dirs are the on-disk
+    // source of truth when the terminal user can read them via sudo.
+    // Only runs when certbot output yielded nothing new to avoid extra SSH round-trips.
+    const renewalFiles = renewalSection
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.endsWith('.conf'))
+    let fallbackEntries: CertbotCertificateEntry[] = []
+    try {
+      const knownPaths = new Set(certbotEntries.map((entry) => entry.certificatePath))
+      const knownNames = new Set(certbotEntries.map((entry) => entry.certName))
+      // Triggers on renewal listing OR on nginx blocks referencing
+      // letsencrypt paths: with an emerg-killed `nginx -T` and an unreadable
+      // renewal dir, the SFTP-fed blocks are still enough to seed the scan.
+      const referencesLetsEncrypt = serverBlocks.some((block) =>
+        (block.sslCertificate ?? '').includes('/etc/letsencrypt/')
+      )
+      const needsFallback =
+        certbotEntries.length === 0 && (renewalFiles.length > 0 || referencesLetsEncrypt)
+      if (needsFallback) {
+        const scanBody =
+          'for f in /etc/letsencrypt/renewal/*.conf; do echo "---RELAY:SSL-RENEWAL-CONF:$f---"; cat -- "$f" 2>/dev/null; done; echo "---RELAY:SSL-LIVE---"; ls -1 /etc/letsencrypt/live 2>/dev/null'
+        // Renewal confs are often 644/world-readable, so a plain scan
+        // recovers certbot certs for password-sudo users too.
+        const renewalCat =
+          (await this.elevate(serverId, scanBody).catch(() => null)) ?? scanBody
+        {
+          const renewalResult = await this.exec(serverId, `${renewalCat} 2>&1`, 20000)
+          if (renewalResult.exitCode === 0 && renewalResult.stdout.includes('---RELAY:SSL-')) {
+            const confs: Array<{ file: string; content: string }> = []
+            const confMarker = '---RELAY:SSL-RENEWAL-CONF:'
+            const liveMarker = '---RELAY:SSL-LIVE---'
+            const liveIndex = renewalResult.stdout.indexOf(liveMarker)
+            const confSection =
+              liveIndex === -1 ? renewalResult.stdout : renewalResult.stdout.slice(0, liveIndex)
+            let cursor = 0
+            while (true) {
+              const markerIndex = confSection.indexOf(confMarker, cursor)
+              if (markerIndex === -1) break
+              const nameStart = markerIndex + confMarker.length
+              const nameEnd = confSection.indexOf('---', nameStart)
+              if (nameEnd === -1) break
+              const file = confSection.slice(nameStart, nameEnd).trim()
+              const contentStart = nameEnd + 3
+              const nextMarker = confSection.indexOf(confMarker, contentStart)
+              const content =
+                nextMarker === -1
+                  ? confSection.slice(contentStart)
+                  : confSection.slice(contentStart, nextMarker)
+              // Validate with the shared parser; skips empty/garbage confs.
+              const parsed = parseRenewalConf(content)
+              if (parsed.certificatePath || parsed.privateKeyPath) {
+                confs.push({ file, content })
+              }
+              cursor = nextMarker === -1 ? confSection.length : nextMarker
+            }
+            fallbackEntries = certEntriesFromRenewalConfs(confs).filter(
+              (entry) => !knownPaths.has(entry.certificatePath) && !knownNames.has(entry.certName)
+            )
+            const liveOutput =
+              liveIndex === -1 ? '' : renewalResult.stdout.slice(liveIndex + liveMarker.length)
+            const liveDirs = liveOutput
+              .split('\n')
+              .map((line) => line.trim())
+              .filter((line) => line && !line.includes(' ') && !line.includes('/'))
+            const liveEntries = liveDirCertEntries(liveDirs).filter(
+              (entry) =>
+                ![...knownPaths, ...fallbackEntries.map((f) => f.certificatePath)].includes(
+                  entry.certificatePath
+                ) && !knownNames.has(entry.certName)
+            )
+            fallbackEntries = [...fallbackEntries, ...liveEntries]
+          }
+        }
+      }
+    } catch {
+      // Fallback is best-effort; certbot/nginx results still stand.
+    }
+    const allCertbotEntries = [...certbotEntries, ...fallbackEntries]
 
     const certPaths = new Set<string>()
-    for (const entry of certbotEntries) certPaths.add(entry.certificatePath)
+    for (const entry of allCertbotEntries) certPaths.add(entry.certificatePath)
     for (const block of serverBlocks) {
       if (block.sslCertificate) certPaths.add(block.sslCertificate)
+    }
+
+    // Inspect with elevation when the terminal user has it: privkey/live dirs
+    // are root-only (700/600), plain-user openssl returns permission denied
+    // which previously surfaced as status unknown.
+    let inspectPrefix = ''
+    try {
+      const ctx = await privilegeService.getContext(serverId)
+      inspectPrefix = ctx.isRoot || ctx.canSudoNonInteractive ? await this.elevate(serverId, ':').then((cmd) => cmd.slice(0, -':'.length)) : ''
+      if (inspectPrefix && !inspectPrefix.endsWith(' ')) inspectPrefix += ' '
+    } catch {
+      inspectPrefix = ''
     }
 
     const opensslByPath = new Map<string, { openssl: OpensslCertificateInfo | null; error: string | null }>()
     if (opensslAvailable && certPaths.size > 0) {
       const inspectCommands = [...certPaths].map(
         (path) =>
-          `echo '---RELAY:SSL-INSPECT:${path}---'; openssl x509 -noout -subject -issuer -dates -serial -ext subjectAltName -in ${shellQuote(path)} 2>&1`
+          `echo '---RELAY:SSL-INSPECT:${path}---'; ${inspectPrefix}openssl x509 -noout -subject -issuer -dates -serial -ext subjectAltName -in ${shellQuote(path)} 2>&1`
       )
       const inspectResult = await this.exec(serverId, inspectCommands.join('; '), 45000)
       for (const path of certPaths) {
@@ -285,7 +430,7 @@ export class SSLService {
       cronSection
     )
 
-    const linkedInputs = certbotEntries.map((entry) => {
+    const linkedInputs = allCertbotEntries.map((entry) => {
       const inspection = opensslByPath.get(entry.certificatePath) ?? {
         openssl: null,
         error: 'Certificate path was not inspected'
@@ -306,7 +451,14 @@ export class SSLService {
     })
 
     for (const block of serverBlocks) {
-      if (!block.sslCertificate || certPaths.has(block.sslCertificate)) continue
+      if (!block.sslCertificate) continue
+      const alreadyCovered =
+        [...certPaths].some(
+          (known) =>
+            known === block.sslCertificate ||
+            sameLetsEncryptCert(known, block.sslCertificate as string)
+        ) || domainCoveredByKnownEntry(block.sslCertificate, serverBlocks, allCertbotEntries, opensslByPath)
+      if (alreadyCovered) continue
       const inspection = opensslByPath.get(block.sslCertificate) ?? {
         openssl: null,
         error: opensslAvailable ? 'Certificate path was not inspected' : 'openssl is not available'
@@ -362,7 +514,7 @@ export class SSLService {
       certPaths,
       certById,
       serverBlocks,
-      certbotEntries,
+      certbotEntries: allCertbotEntries,
       checkedAt: Date.now()
     }
     this.detectionCache.set(serverId, cache)

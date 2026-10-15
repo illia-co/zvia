@@ -33,11 +33,17 @@ function addressesCompatible(
     return (
       listenerAddress === '127.0.0.1' ||
       listenerAddress === '::1' ||
+      listenerAddress === '::' ||
       listenerAddress === '0.0.0.0' ||
       listenerAddress === '*'
     )
   }
-  return listenerAddress === targetAddress || listenerAddress === '0.0.0.0' || listenerAddress === '*'
+  return (
+    listenerAddress === targetAddress ||
+    listenerAddress === '0.0.0.0' ||
+    listenerAddress === '::' ||
+    listenerAddress === '*'
+  )
 }
 
 function hasActiveListener(portEntity: TopologyEntity, listeners: PortListener[]): boolean {
@@ -45,11 +51,11 @@ function hasActiveListener(portEntity: TopologyEntity, listeners: PortListener[]
   if (typeof port !== 'number') return false
   const targetAddress =
     typeof portEntity.sourceRef?.address === 'string' ? portEntity.sourceRef.address : undefined
+  // ponytail: a LISTEN row is enough — ss hides PIDs of other users' processes
+  // from unprivileged SSH users, and that must not read as "backend down".
   return listeners.some(
     (listener) =>
-      listener.pid !== null &&
-      listener.port === port &&
-      addressesCompatible(targetAddress, listener.address)
+      listener.port === port && addressesCompatible(targetAddress, listener.address)
   )
 }
 

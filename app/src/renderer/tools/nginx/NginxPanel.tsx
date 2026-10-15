@@ -14,6 +14,7 @@ import { ElevationRequired } from '@renderer/components/errors/ElevationRequired
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { usePanelId } from '@renderer/state/PanelContext'
 import { usePanelStateStore } from '@renderer/state/panelStateStore'
+import { useCapabilities } from '@renderer/state/permissionsStore'
 import { useRequiredServerContext } from '@renderer/state/ServerContext'
 import { useNavigationStore, useToolIntent } from '@renderer/state/navigationStore'
 import { cn } from '@renderer/lib/utils'
@@ -48,10 +49,11 @@ export function NginxPanel() {
   const intent = useToolIntent('nginx')
 
   const [activeTab, setActiveTab] = useState<NginxTab>('overview')
-  const [pendingAction, setPendingAction] = useState<Exclude<NginxAction, 'reload'> | null>(null)
+  const [pendingAction, setPendingAction] = useState<NginxAction | null>(null)
   const [configPathIntent, setConfigPathIntent] = useState<string | undefined>(undefined)
   const [sslOverview, setSslOverview] = useState<SslOverview | null>(null)
   const nginx = useNginx({ serverId, isConnected })
+  const caps = useCapabilities(isConnected ? serverId : null)
 
   const handleDirtyChange = useCallback(
     (dirty: boolean) => {
@@ -97,7 +99,11 @@ export function NginxPanel() {
 
   const errorSurface = nginx.elevation ? (
     <div className="border-b border-divider p-3">
-      <ElevationRequired serverId={serverId} command={nginx.elevation} />
+      <ElevationRequired
+        serverId={serverId}
+        command={nginx.elevation}
+        sudoersEntry={`${server.username} ALL=(root) NOPASSWD: /usr/sbin/nginx -T, /usr/sbin/nginx -t, /usr/sbin/nginx -s reload, /usr/bin/certbot certificates, /usr/bin/openssl x509 *, /bin/ls -1 /etc/letsencrypt/*, /bin/cat -- /etc/letsencrypt/renewal/*, /usr/bin/systemctl reload nginx, /usr/bin/systemctl restart nginx, /usr/bin/systemctl start nginx, /usr/bin/systemctl stop nginx`}
+      />
     </div>
   ) : nginx.error ? (
     <div className="border-b border-divider p-3">
@@ -144,15 +150,19 @@ export function NginxPanel() {
           <Button
             size="sm"
             variant="ghost"
-            disabled={nginx.actionLoading}
+            disabled={nginx.actionLoading || !caps.can('nginx.test_config')}
+            title={caps.reason('nginx.test_config') ?? undefined}
             onClick={() => void nginx.validate()}
           >
             Test configuration
           </Button>
           <Button
             size="sm"
-            disabled={nginx.actionLoading || !status.canReload || !isActive}
-            onClick={() => void nginx.runAction('reload')}
+            disabled={
+              nginx.actionLoading || !status.canReload || !isActive || !caps.can('nginx.reload')
+            }
+            title={caps.reason('nginx.reload') ?? undefined}
+            onClick={() => setPendingAction('reload')}
           >
             Reload
           </Button>
@@ -161,7 +171,8 @@ export function NginxPanel() {
               <Button
                 size="sm"
                 variant="ghost"
-                disabled={nginx.actionLoading}
+                disabled={nginx.actionLoading || !caps.can('nginx.restart')}
+                title={caps.reason('nginx.restart') ?? undefined}
                 onClick={() => setPendingAction('restart')}
               >
                 Restart
@@ -169,7 +180,8 @@ export function NginxPanel() {
               <Button
                 size="sm"
                 variant="ghost"
-                disabled={nginx.actionLoading}
+                disabled={nginx.actionLoading || !caps.can('nginx.start_stop')}
+                title={caps.reason('nginx.start_stop') ?? undefined}
                 onClick={() => setPendingAction('stop')}
               >
                 Stop
@@ -179,8 +191,9 @@ export function NginxPanel() {
             <Button
               size="sm"
               variant="ghost"
-              disabled={nginx.actionLoading}
-              onClick={() => void nginx.runAction('start')}
+              disabled={nginx.actionLoading || !caps.can('nginx.start_stop')}
+              title={caps.reason('nginx.start_stop') ?? undefined}
+              onClick={() => setPendingAction('start')}
             >
               Start
             </Button>
@@ -255,12 +268,22 @@ export function NginxPanel() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {pendingAction === 'stop' ? 'Stop nginx' : 'Restart nginx'}
+              {pendingAction === 'stop'
+                ? 'Stop nginx'
+                : pendingAction === 'restart'
+                  ? 'Restart nginx'
+                  : pendingAction === 'reload'
+                    ? 'Reload nginx'
+                    : 'Start nginx'}
             </DialogTitle>
             <DialogDescription>
               {pendingAction === 'stop'
-                ? 'Every site served by this nginx will stop responding until it is started again.'
-                : 'Restarting drops in-flight connections. Reload applies config changes without downtime.'}
+                ? 'Every site served by this nginx will stop responding until it is started again. Are you sure?'
+                : pendingAction === 'restart'
+                  ? 'Restarting drops in-flight connections. Reload applies config changes without downtime. Are you sure?'
+                  : pendingAction === 'reload'
+                    ? 'Reload applies the current configuration without downtime. Are you sure?'
+                    : 'Are you sure you want to start nginx?'}
             </DialogDescription>
           </DialogHeader>
           <pre className="overflow-x-auto rounded-sm bg-bg-secondary p-2 font-mono text-[10px] text-text-secondary">
@@ -274,7 +297,7 @@ export function NginxPanel() {
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant={pendingAction === 'stop' ? 'destructive' : 'default'}
               size="sm"
               disabled={nginx.actionLoading}
               onClick={() => {
@@ -283,7 +306,13 @@ export function NginxPanel() {
                 if (action) void nginx.runAction(action)
               }}
             >
-              {pendingAction === 'stop' ? 'Stop' : 'Restart'}
+              {pendingAction === 'stop'
+                ? 'Stop'
+                : pendingAction === 'restart'
+                  ? 'Restart'
+                  : pendingAction === 'reload'
+                    ? 'Reload'
+                    : 'Start'}
             </Button>
           </DialogFooter>
         </DialogContent>

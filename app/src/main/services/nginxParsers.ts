@@ -1,5 +1,22 @@
 import type { NginxLogPaths, NginxPaths, NginxValidation } from '@shared/nginx'
 
+export type NginxDumpFailure = 'not-found' | 'denied' | null
+
+/**
+ * Classifies `nginx -T` stderr so warnings can tell a missing binary from
+ * root-only files. Returns null when stderr carries no recognizable cause.
+ */
+export function classifyNginxDumpFailure(stderr: string): NginxDumpFailure {
+  const output = stderr.toLowerCase()
+  if (/command not found|no such file or directory.*nginx|nginx: not found/.test(output)) {
+    return 'not-found'
+  }
+  if (/permission denied|\[emerg\]/.test(output)) {
+    return 'denied'
+  }
+  return null
+}
+
 /** Parses `Key=Value` output of `systemctl show <unit> --property=...`. */
 export function parseSystemctlProperties(stdout: string): Record<string, string> {
   const properties: Record<string, string> = {}

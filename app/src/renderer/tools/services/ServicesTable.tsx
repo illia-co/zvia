@@ -1,7 +1,9 @@
 import type { SystemdAction, SystemdUnit } from '@shared/systemd'
+import type { ServerId } from '@shared/server'
 import { getProtectedSystemdUnitActionBlock } from '@shared/systemd'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
+import { useCapabilities } from '@renderer/state/permissionsStore'
 
 export function unitStateDotClass(activeState: string): string {
   switch (activeState) {
@@ -23,6 +25,7 @@ export function startupLabel(unitFileState: string): string {
 }
 
 interface ServicesTableProps {
+  serverId: ServerId
   units: SystemdUnit[]
   loading: boolean
   actionLoading: boolean
@@ -32,6 +35,7 @@ interface ServicesTableProps {
 }
 
 export function ServicesTable({
+  serverId,
   units,
   loading,
   actionLoading,
@@ -39,6 +43,7 @@ export function ServicesTable({
   onAction,
   onViewLogs
 }: ServicesTableProps) {
+  const caps = useCapabilities(serverId)
   if (loading && units.length === 0) {
     return <p className="p-6 text-center text-xs text-text-secondary">Loading services…</p>
   }
@@ -63,9 +68,10 @@ export function ServicesTable({
           const isRunning = unit.activeState === 'active'
           const isFailed = unit.activeState === 'failed'
           const stopBlocked = getProtectedSystemdUnitActionBlock(unit.unit, 'stop')
+          const unitAllowed = caps.can('services.control_unit', unit.unit)
+          const unitReason = caps.reason('services.control_unit', unit.unit) ?? undefined
 
-          return (
-            <tr
+          return (            <tr
               key={unit.unit}
               className="group cursor-pointer border-t border-divider hover:bg-bg-secondary"
               onClick={() => onSelect(unit)}
@@ -99,7 +105,8 @@ export function ServicesTable({
                       <Button
                         size="sm"
                         variant="ghost"
-                        disabled={actionLoading}
+                        disabled={actionLoading || !unitAllowed}
+                        title={unitReason}
                         onClick={() => onAction(unit, 'restart')}
                       >
                         Restart
@@ -110,8 +117,8 @@ export function ServicesTable({
                       <Button
                         size="sm"
                         variant="ghost"
-                        disabled={actionLoading || stopBlocked !== null}
-                        title={stopBlocked ?? undefined}
+                        disabled={actionLoading || stopBlocked !== null || !unitAllowed}
+                        title={stopBlocked ?? unitReason}
                         onClick={() => onAction(unit, 'stop')}
                       >
                         Stop
@@ -119,7 +126,8 @@ export function ServicesTable({
                       <Button
                         size="sm"
                         variant="ghost"
-                        disabled={actionLoading}
+                        disabled={actionLoading || !unitAllowed}
+                        title={unitReason}
                         onClick={() => onAction(unit, 'restart')}
                       >
                         Restart
@@ -129,7 +137,8 @@ export function ServicesTable({
                     <Button
                       size="sm"
                       variant="ghost"
-                      disabled={actionLoading}
+                      disabled={actionLoading || !unitAllowed}
+                      title={unitReason}
                       onClick={() => onAction(unit, 'start')}
                     >
                       Start

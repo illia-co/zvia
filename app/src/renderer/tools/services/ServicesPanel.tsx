@@ -4,6 +4,7 @@ import type { SystemdAction, SystemdUnit } from '@shared/systemd'
 import { getProtectedSystemdUnitActionBlock } from '@shared/systemd'
 import { BackButton } from '@renderer/components/ui/back-button'
 import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import { elevationCommand, parseZviaError } from '@renderer/lib/errors'
 import { cn } from '@renderer/lib/utils'
 import { useRequiredServerContext } from '@renderer/state/ServerContext'
 import { useNavigationStore, useToolIntent } from '@renderer/state/navigationStore'
+import { denialMessage, isAllowed, usePermissionsStore } from '@renderer/state/permissionsStore'
 import { useWorkspaceStore } from '@renderer/state/workspaceStore'
 import { ServiceDetailView } from './ServiceDetailView'
 import { ServicesTable } from './ServicesTable'
@@ -132,6 +134,14 @@ export function ServicesPanel() {
       setActionError({ code: 'VALIDATION_ERROR', message: blockReason })
       return
     }
+    const guard = usePermissionsStore.getState().byServer[serverId]
+    if (!isAllowed(guard, 'services.control_unit', unit)) {
+      setActionError({
+        code: 'VALIDATION_ERROR',
+        message: denialMessage(guard, 'services.control_unit', unit)
+      })
+      return
+    }
     if (CONFIRMED_ACTIONS.includes(action)) {
       setPendingAction({ unit, action })
       return
@@ -200,12 +210,12 @@ export function ServicesPanel() {
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2 border-b border-divider px-3 py-2">
-          <input
+          <Input
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search services"
-            className="min-w-[140px] flex-1 rounded-panel border border-divider bg-bg px-2.5 py-1 text-xs text-text outline-none focus:border-text-tertiary"
+            className="min-w-[140px] flex-1"
           />
           <div className="flex items-center gap-1">
             {FILTERS.map((option) => (
@@ -267,6 +277,7 @@ export function ServicesPanel() {
           />
         ) : (
           <ServicesTable
+            serverId={serverId}
             units={visibleUnits}
             loading={loading}
             actionLoading={actionLoading}

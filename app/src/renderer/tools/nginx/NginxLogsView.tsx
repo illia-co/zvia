@@ -2,6 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { NginxLogPaths } from '@shared/nginx'
 import type { ServerId } from '@shared/server'
 import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@renderer/components/ui/select'
 import { ElevationRequired } from '@renderer/components/errors/ElevationRequired'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { describeToolError } from '@renderer/lib/toolErrors'
@@ -121,23 +129,27 @@ export function NginxLogsView({ serverId }: NginxLogsViewProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b border-divider px-3 py-2">
-        <select
-          value={selectedPath ?? ''}
-          onChange={(event) => setSelectedPath(event.target.value || null)}
-          className="max-w-[18rem] rounded-panel border border-divider bg-bg px-2 py-1 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+        <Select
+          value={selectedPath ?? undefined}
+          onValueChange={(value) => setSelectedPath(value || null)}
+          disabled={allPaths.length === 0}
         >
-          {allPaths.length === 0 && <option value="">No log files reported</option>}
-          {paths?.errorLogs.map((path) => (
-            <option key={path} value={path}>
-              {path}
-            </option>
-          ))}
-          {paths?.accessLogs.map((path) => (
-            <option key={path} value={path}>
-              {path}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="max-w-[18rem] font-mono">
+            <SelectValue placeholder="No log files reported" />
+          </SelectTrigger>
+          <SelectContent>
+            {paths?.errorLogs.map((path) => (
+              <SelectItem key={path} value={path} className="font-mono">
+                {path}
+              </SelectItem>
+            ))}
+            {paths?.accessLogs.map((path) => (
+              <SelectItem key={path} value={path} className="font-mono">
+                {path}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <Button size="sm" variant="ghost" onClick={() => setPaused((value) => !value)}>
           {paused ? 'Resume' : 'Pause'}
@@ -146,12 +158,12 @@ export function NginxLogsView({ serverId }: NginxLogsViewProps) {
           Clear
         </Button>
 
-        <input
+        <Input
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Filter lines"
-          className="ml-auto w-40 rounded-panel border border-divider bg-bg px-2 py-1 text-xs text-text outline-none focus:border-text-tertiary"
+          className="ml-auto w-40"
         />
       </div>
 

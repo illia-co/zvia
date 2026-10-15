@@ -2,6 +2,7 @@ import type { SslAutoRenewal, SslCertificate } from '@shared/ssl'
 import type { ServerId } from '@shared/server'
 import { Button } from '@renderer/components/ui/button'
 import { useNavigationStore } from '@renderer/state/navigationStore'
+import { useCapabilities } from '@renderer/state/permissionsStore'
 import { statusLabel } from './SslCertificateList'
 
 interface FieldProps {
@@ -36,6 +37,9 @@ export function SslCertificateDetail({
   onTestRenewal
 }: SslCertificateDetailProps) {
   const openWithIntent = useNavigationStore((state) => state.openWithIntent)
+  const caps = useCapabilities(serverId)
+  const renewAllowed = caps.can('ssl.renew')
+  const renewReason = caps.reason('ssl.renew') ?? undefined
   const site = certificate.nginxSites[0]
 
   return (
@@ -69,10 +73,21 @@ export function SslCertificateDetail({
       <div className="flex flex-wrap gap-2">
         {certificate.managedByCertbot && (
           <>
-            <Button size="sm" disabled={actionLoading} onClick={onRenew}>
+            <Button
+              size="sm"
+              disabled={actionLoading || !renewAllowed}
+              title={renewReason}
+              onClick={onRenew}
+            >
               Renew
             </Button>
-            <Button size="sm" variant="ghost" disabled={actionLoading} onClick={onTestRenewal}>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={actionLoading || !renewAllowed}
+              title={renewReason}
+              onClick={onTestRenewal}
+            >
               Test renewal
             </Button>
           </>

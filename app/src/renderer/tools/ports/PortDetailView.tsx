@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@renderer/components/ui/button'
 import { deploymentNavLink, lookupDeploymentByPort } from '@renderer/lib/deploymentCrossLinks'
 import { useNavigationStore } from '@renderer/state/navigationStore'
+import { useCapabilities } from '@renderer/state/permissionsStore'
 import { exposureLabel, looksLikeNginx, verdictLabel } from './portLabels'
 import type { PendingFirewallChange } from './FirewallRuleDialog'
 
@@ -42,6 +43,7 @@ export function PortDetailView({
   onRequestChange
 }: PortDetailViewProps) {
   const openWithIntent = useNavigationStore((state) => state.openWithIntent)
+  const caps = useCapabilities(serverId)
   const [sslCert, setSslCert] = useState<SslCertificate | null>(null)
   const [deploymentLink, setDeploymentLink] = useState<{ label: string; onClick: () => void } | null>(
     null
@@ -81,7 +83,7 @@ export function PortDetailView({
   const matchingRules = snapshot.firewall.rules.filter((rule) =>
     firewallRuleCoversPort(rule, listener.port, listener.protocol)
   )
-  const canEdit = snapshot.firewall.editable && !isSshPort
+  const canEdit = snapshot.firewall.editable && !isSshPort && caps.can('firewall.write')
 
   return (
     <div className="h-full overflow-auto p-4">

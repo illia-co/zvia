@@ -2,9 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { NginxConfigFile, NginxConfigTree as ConfigTree } from '@shared/nginx'
 import type { ServerId } from '@shared/server'
 import { Button } from '@renderer/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@renderer/components/ui/dialog'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { FileEditor } from '@renderer/tools/files/FileEditor'
 import { describeToolError } from '@renderer/lib/toolErrors'
+import { denialMessage, isAllowed, useCapabilities, usePermissionsStore } from '@renderer/state/permissionsStore'
 import { NginxConfigTree } from './NginxConfigTree'
 
 interface NginxConfigTabProps {
@@ -33,6 +42,8 @@ export function NginxConfigTab({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [openFile, setOpenFile] = useState<OpenFile | null>(null)
+  const [saveConfirmOpen, setSaveConfirmOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
   const initialPathConsumed = useRef(false)
 
   const loadTree = useCallback(async () => {
@@ -95,7 +106,14 @@ export function NginxConfigTab({
   }, [openFile?.dirty, onDirtyChange])
 
   const save = async (): Promise<void> => {
-    if (!openFile) return
+    if (!openFile || saving) return
+    const guard = usePermissionsStore.getState().byServer[serverId]
+    if (!isAllowed(guard, 'nginx.write_config')) {
+      setError(denialMessage(guard, 'nginx.write_config'))
+      setSaveConfirmOpen(false)
+      return
+    }
+    setSaving(true)
     try {
       await window.zvia.nginx.writeConfig({
         serverId,
@@ -104,14 +122,26 @@ export function NginxConfigTab({
       })
       setOpenFile({ ...openFile, dirty: false })
       setError(null)
+      setSaveConfirmOpen(false)
       onSaved()
       await loadTree()
     } catch (err) {
       setError(describeToolError(err).message)
+      setSaveConfirmOpen(false)
+    } finally {
+      setSaving(false)
     }
   }
 
+  const requestSave = (): void => {
+    if (!openFile?.dirty || saving) return
+    setSaveConfirmOpen(true)
+  }
+
   const dirtyPaths = new Set(openFile?.dirty ? [openFile.path] : [])
+  const caps = useCapabilities(serverId)
+  const saveAllowed = caps.can('nginx.write_config')
+  const saveReason = caps.reason('nginx.write_config') ?? undefined
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -149,8 +179,11 @@ export function NginxConfigTab({
               language="nginx"
               content={openFile.content}
               dirty={openFile.dirty}
+              disableCriticalConfirm
+              saveDisabled={!saveAllowed}
+              saveDisabledReason={saveReason}
               onChange={(content) => setOpenFile({ ...openFile, content, dirty: true })}
-              onSave={() => void save()}
+              onSave={() => requestSave()}
               onClose={() => setOpenFile(null)}
             />
           ) : (
@@ -163,6 +196,37 @@ export function NginxConfigTab({
           )}
         </div>
       </div>
+
+      <Dialog open={saveConfirmOpen} onOpenChange={setSaveConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save nginx config?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to save {openFile?.path ?? 'this file'}? The change applies on
+              the next reload and can take sites offline if invalid.
+            </DialogDescription>
+          </DialogHeader>
+          <pre className="overflow-x-auto rounded-sm bg-bg-secondary p-2 font-mono text-[10px] text-text-secondary">
+            sudo cp {openFile?.path ?? ''}
+          </pre>
+          <p className="mt-2 text-[10px] uppercase tracking-wider text-text-tertiary">
+            Runs as root on the remote server
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" size="sm" onClick={() => setSaveConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={saving || !saveAllowed}
+              title={saveReason}
+              onClick={() => void save()}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -23,6 +23,29 @@ The discovery model is the product; the UI is a deployment list with a full-scre
 | Systemd | `SystemdService.listUnits()` |
 | Docker | `DockerService.listContainers()` |
 
+## Privilege degradation
+
+The SSH user often cannot `sudo -n` (password-sudo) or read root-only files
+(e.g. letsencrypt `privkey.pem`, which makes `nginx -T` exit emerg with no
+dump). Discovery degrades instead of failing:
+
+- Nginx dump resolution order: elevated `nginx -T` → plain `nginx -T` →
+  SFTP-assembled dump (`getConfigTree` + per-file `readConfig`, markers
+  synthesized). Absolute binary probes cover thin-PATH sessions.
+- The SFTP leg skips backup/disabled files (`*.bak`, `*~`, `*.disabled`,
+  disabled `sites-available` entries): only configs nginx actually loads shape
+  the graph. `nginx -T` output itself is server truth and stays unfiltered.
+- A backend counts as listening when the `ss` row exists — hidden PIDs
+  (unprivileged users cannot see other users' processes) and IPv6-any (`::`)
+  listeners never read as "backend down".
+- `nginx -T` stderr is classified (`not-found` vs `denied`) so warnings name
+  the real cause; password-sudo users get a scoped NOPASSWD snippet plus a
+  Verify-in-Terminal cross-link.
+- SSL falls back to renewal-conf/live scans (often world-readable) and
+  `server_name` domain linkage when openssl cannot read live dirs.
+- The app never prompts for a sudo password (renderer never handles
+  secrets); privileged writes stay behind `ElevationRequired` + Terminal.
+
 ## Clustering
 
 - **One deployment per primary domain** (`server_name`) for reverse-proxied apps

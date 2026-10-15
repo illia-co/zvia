@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
+  certEntriesFromRenewalConfs,
   deriveStatus,
   linkCertificatesToSites,
+  liveDirCertEntries,
   parseCertbotCertificates,
   parseCertbotVersion,
   parseNginxServerBlocks,
   parseOpensslCertificate,
   parseRenewalConf,
-  parseSystemdTimer
+  parseSystemdTimer,
+  sameLetsEncryptCert
 } from '@main/services/sslParsers'
 
 const OPENSSL_OUTPUT = [
@@ -217,5 +220,132 @@ describe('linkCertificatesToSites', () => {
     expect(certs[0].nginxSites).toHaveLength(1)
     expect(certs[0].nginxSites[0].configPath).toBe('/etc/nginx/sites-enabled/example')
     expect(certs[0].primaryDomain).toBe('example.com')
+  })
+
+  it('links renewal-conf cert.pem to nginx fullchain.pem in the same live dir', () => {
+    const blocks = parseNginxServerBlocks(NGINX_T_OUTPUT)
+    const now = new Date('2026-03-01T00:00:00Z')
+    expect(
+      sameLetsEncryptCert(
+        '/etc/letsencrypt/live/example.com/cert.pem',
+        '/etc/letsencrypt/live/example.com/fullchain.pem'
+      )
+    ).toBe(true)
+    const certs = linkCertificatesToSites(
+      [
+        {
+          id: 'example.com',
+          certificatePath: '/etc/letsencrypt/live/example.com/cert.pem',
+          privateKeyPath: '/etc/letsencrypt/live/example.com/privkey.pem',
+          managedByCertbot: true,
+          openssl: parseOpensslCertificate(OPENSSL_OUTPUT),
+          certbotDomains: [],
+          expiryDate: null,
+          inspectionError: null,
+          lastRenewalResult: null,
+          renewalMethod: 'systemd-timer',
+          lastAttempt: null
+        }
+      ],
+      blocks,
+      now
+    )
+
+    expect(certs[0].nginxSites).toHaveLength(1)
+  })
+
+  it('links a copied cert path to the site by domain overlap', () => {
+    const blocks = parseNginxServerBlocks(NGINX_T_OUTPUT).map((block) => ({
+      ...block,
+      // ponytail: nginx serves a copy outside /etc/letsencrypt — path match fails
+      sslCertificate: '/opt/shop/ssl/fullchain.pem',
+      sslCertificateKey: '/opt/shop/ssl/privkey.pem'
+    }))
+    const now = new Date('2026-03-01T00:00:00Z')
+    const certs = linkCertificatesToSites(
+      [
+        {
+          id: 'example.com',
+          certificatePath: '/etc/letsencrypt/live/example.com/fullchain.pem',
+          privateKeyPath: '/etc/letsencrypt/live/example.com/privkey.pem',
+          managedByCertbot: true,
+          openssl: null,
+          certbotDomains: ['example.com', 'www.example.com'],
+          expiryDate: null,
+          inspectionError: null,
+          lastRenewalResult: null,
+          renewalMethod: 'systemd-timer',
+          lastAttempt: null
+        }
+      ],
+      blocks,
+      now
+    )
+
+    expect(certs[0].nginxSites).toHaveLength(1)
+    expect(certs[0].primaryDomain).toBe('example.com')
+  })
+
+  it('falls back to linked site server_names when openssl is unreadable', () => {
+    const blocks = parseNginxServerBlocks(NGINX_T_OUTPUT)
+    const now = new Date('2026-03-01T00:00:00Z')
+    const certs = linkCertificatesToSites(
+      [
+        {
+          id: 'example.com',
+          certificatePath: '/etc/letsencrypt/live/example.com/fullchain.pem',
+          privateKeyPath: '/etc/letsencrypt/live/example.com/privkey.pem',
+          managedByCertbot: true,
+          openssl: null,
+          certbotDomains: [],
+          expiryDate: null,
+          inspectionError: 'permission denied',
+          lastRenewalResult: null,
+          renewalMethod: 'systemd-timer',
+          lastAttempt: null
+        }
+      ],
+      blocks,
+      now
+    )
+
+    expect(certs[0].primaryDomain).toBe('example.com')
+    expect(certs[0].domains).toEqual(['example.com', 'www.example.com'])
+    expect(certs[0].nginxSites).toHaveLength(1)
+  })
+})
+
+describe('certEntriesFromRenewalConfs', () => {
+  it('builds entries and normalizes cert.pem to fullchain.pem', () => {
+    const entries = certEntriesFromRenewalConfs([
+      { file: '/etc/letsencrypt/renewal/example.com.conf', content: RENEWAL_CONF }
+    ])
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).toMatchObject({
+      certName: 'example.com',
+      certificatePath: '/etc/letsencrypt/live/example.com/fullchain.pem',
+      privateKeyPath: '/etc/letsencrypt/live/example.com/privkey.pem'
+    })
+  })
+
+  it('skips empty confs', () => {
+    expect(certEntriesFromRenewalConfs([{ file: '/etc/letsencrypt/renewal/empty.conf', content: '' }])).toHaveLength(0)
+  })
+})
+
+describe('liveDirCertEntries', () => {
+  it('builds fullchain/privkey paths per live dir', () => {
+    const entries = liveDirCertEntries(['example.com'])
+    expect(entries[0]).toMatchObject({
+      certName: 'example.com',
+      certificatePath: '/etc/letsencrypt/live/example.com/fullchain.pem',
+      privateKeyPath: '/etc/letsencrypt/live/example.com/privkey.pem'
+    })
+  })
+
+  it('skips the README file in the live directory', () => {
+    const entries = liveDirCertEntries(['README', 'example.com'])
+    expect(entries).toHaveLength(1)
+    expect(entries[0].certName).toBe('example.com')
   })
 })

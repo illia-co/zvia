@@ -36,3 +36,9 @@ export interface HostKeyPrompt {
 }
 
 export type HostKeyDecision = 'accept' | 'reject'
+
+export interface PassphrasePrompt {
+  serverId: ServerId
+  hostname: string
+  keyLabel: string
+}

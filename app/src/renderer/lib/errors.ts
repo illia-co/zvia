@@ -33,6 +33,8 @@ export function humanizeError(error: ZviaErrorPayload): string {
       return 'The remote command failed.'
     case 'DOCKER_UNAVAILABLE_ERROR':
       return 'Docker is not available on this server.'
+    case 'GIT_UNAVAILABLE_ERROR':
+      return 'Git is not available on this server.'
     case 'VALIDATION_ERROR':
       return 'The request was invalid.'
     case 'NOT_FOUND':

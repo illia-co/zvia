@@ -5,6 +5,8 @@ import { LogsPanel } from '@renderer/tools/logs/LogsPanel'
 import { TerminalPanel } from '@renderer/tools/terminal/TerminalPanel'
 import { FilesPanel } from '@renderer/tools/files/FilesPanel'
 import { DockerPanel } from '@renderer/tools/docker/DockerPanel'
+import { GitPanel } from '@renderer/tools/git/GitPanel'
+import { SettingsPanel } from '@renderer/tools/settings/SettingsPanel'
 import { PortsPanel } from '@renderer/tools/ports/PortsPanel'
 import { NginxPanel } from '@renderer/tools/nginx/NginxPanel'
 import { ServicesPanel } from '@renderer/tools/services/ServicesPanel'
@@ -28,6 +30,10 @@ export function renderToolPanel(toolId: ToolId) {
       return <FilesPanel />
     case 'docker':
       return <DockerPanel />
+    case 'git':
+      return <GitPanel />
+    case 'settings':
+      return <SettingsPanel />
     case 'ports':
       return <PortsPanel />
     case 'nginx':

@@ -1,7 +1,7 @@
 import type { BrowserWindow } from 'electron'
-import type { ServerProfile, ConnectionState } from '@shared/server'
+import type { ServerProfile, ConnectionState, PassphrasePrompt } from '@shared/server'
 import type { ConnectionTestRequest, ExecResult } from '@shared/ipc'
-import { ConnectionError, ZviaError } from '@shared/errors'
+import { AuthenticationError, ConnectionError, ZviaError } from '@shared/errors'
 import { ServerConnection } from './ServerConnection'
 import { runTestConnection } from './testConnection'
 import { profileStore } from '../store/profiles'
@@ -17,9 +17,19 @@ export class ConnectionManager {
     resolve: (accepted: boolean) => void
     reject: (error: Error) => void
   } | null = null
+  private pendingPassphrase = new Map<
+    string,
+    {
+      resolve: (passphrase: string | null) => void
+      reject: (error: Error) => void
+    }
+  >()
 
   setMainWindow(window: BrowserWindow | null): void {
     this.mainWindow = window
+    for (const connection of this.connections.values()) {
+      connection.setMainWindow(window)
+    }
   }
 
   registerTeardown(hook: TeardownHook): void {
@@ -37,6 +47,7 @@ export class ConnectionManager {
       return existing
     }
     const connection = new ServerConnection(profile, this.mainWindow)
+    connection.setPassphrasePrompter((prompt) => this.promptPassphrase(prompt))
     connection.on('connectionLost', () => {
       void this.runTeardown(profile.id)
     })
@@ -47,7 +58,12 @@ export class ConnectionManager {
   async connect(serverId: string): Promise<void> {
     const profile = profileStore.get(serverId)
     const connection = this.getOrCreate(profile)
-    await connection.connect()
+    try {
+      await connection.connect()
+    } finally {
+      // Memory-only passphrase is held inside ServerConnection per session.
+      // Nothing to persist here by design.
+    }
   }
 
   async testConnection(request: ConnectionTestRequest): Promise<void> {
@@ -55,9 +71,14 @@ export class ConnectionManager {
     const testRequest: ConnectionTestRequest = { ...request, serverId }
 
     try {
-      await runTestConnection(testRequest, (prompt) => this.promptTestHostKey(prompt))
+      await runTestConnection(
+        testRequest,
+        (prompt) => this.promptTestHostKey(prompt),
+        (prompt) => this.promptPassphrase(prompt)
+      )
     } finally {
       this.pendingTestHostKey = null
+      this.pendingPassphrase.delete(serverId)
     }
   }
 
@@ -79,11 +100,50 @@ export class ConnectionManager {
     })
   }
 
+  promptPassphrase(prompt: PassphrasePrompt): Promise<string | null> {
+    const existing = this.pendingPassphrase.get(prompt.serverId)
+    existing?.reject(new AuthenticationError('Superseded by a new passphrase prompt'))
+    return new Promise((resolve, reject) => {
+      this.pendingPassphrase.set(prompt.serverId, { resolve, reject })
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        this.mainWindow.webContents.send('connection:passphrasePrompt', prompt)
+      } else {
+        this.pendingPassphrase.delete(prompt.serverId)
+        reject(new ConnectionError('Unable to prompt for passphrase: no window available'))
+      }
+    })
+  }
+
+  respondToPassphrase(serverId: string, passphrase?: string, cancel?: boolean): void {
+    const pending = this.pendingPassphrase.get(serverId)
+    if (pending) {
+      this.pendingPassphrase.delete(serverId)
+      pending.resolve(cancel ? null : (passphrase ?? null))
+      return
+    }
+
+    const connection = this.connections.get(serverId)
+    if (!connection) {
+      throw new ZviaError('NOT_FOUND', `No pending passphrase prompt for server: ${serverId}`)
+    }
+    connection.respondToPassphrase(cancel ? null : (passphrase ?? null))
+  }
+
+  cancelPassphrasePrompt(serverId: string, reason = 'Disconnected during passphrase prompt'): void {
+    const pending = this.pendingPassphrase.get(serverId)
+    if (pending) {
+      this.pendingPassphrase.delete(serverId)
+      pending.reject(new ConnectionError(reason))
+    }
+    this.connections.get(serverId)?.cancelPassphrasePrompt(reason)
+  }
+
   async disconnect(serverId: string): Promise<void> {
     const connection = this.connections.get(serverId)
     if (!connection) return
     await this.runTeardown(serverId)
     await connection.disconnect()
+    this.pendingPassphrase.delete(serverId)
     this.connections.delete(serverId)
   }
 

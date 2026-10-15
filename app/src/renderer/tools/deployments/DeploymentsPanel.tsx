@@ -3,7 +3,7 @@ import type { Deployment } from '@shared/topology'
 import { Button } from '@renderer/components/ui/button'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { useRequiredServerContext } from '@renderer/state/ServerContext'
-import { useToolIntent } from '@renderer/state/navigationStore'
+import { useNavigationStore, useToolIntent } from '@renderer/state/navigationStore'
 import { cn } from '@renderer/lib/utils'
 import { DeploymentDetailView } from './DeploymentDetailView'
 import { DeploymentsTable } from './DeploymentsTable'
@@ -18,6 +18,7 @@ export function DeploymentsPanel() {
   const { serverId, server, connectionState } = useRequiredServerContext()
   const isConnected = connectionState === 'connected'
   const intent = useToolIntent('deployments')
+  const openWithIntent = useNavigationStore((state) => state.openWithIntent)
 
   const [filter, setFilter] = useState<FilterMode>('all')
   const [selectedDeployment, setSelectedDeployment] = useState<Deployment | null>(null)
@@ -228,10 +229,32 @@ export function DeploymentsPanel() {
       )}
 
       {deploymentsState.snapshot && deploymentsState.snapshot.warnings.length > 0 && (
-        <div className="border-b border-divider px-3 py-2 text-xs text-text-secondary">
+        <div className="space-y-1 border-b border-divider px-3 py-2 text-xs text-text-secondary">
           {deploymentsState.snapshot.warnings.map((warning) => (
             <p key={warning}>{warning}</p>
           ))}
+          {deploymentsState.snapshot.warnings.some((warning) =>
+            /without elevation|NOPASSWD/i.test(warning)
+          ) && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  openWithIntent(serverId, { tool: 'terminal', prefill: 'sudo nginx -T && ' })
+                }
+              >
+                Verify in Terminal
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => openWithIntent(serverId, { tool: 'settings', tab: 'permissions' })}
+              >
+                Manage permissions
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

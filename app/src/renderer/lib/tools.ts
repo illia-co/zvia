@@ -5,6 +5,7 @@ export type ToolId =
   | 'terminal'
   | 'files'
   | 'docker'
+  | 'git'
   | 'ports'
   | 'nginx'
   | 'ssl'
@@ -14,6 +15,7 @@ export type ToolId =
   | 'processes'
   | 'packages'
   | 'deployments'
+  | 'settings'
 
 export interface ToolDefinition {
   id: ToolId
@@ -38,11 +40,13 @@ export const TOOLS: ToolDefinition[] = [
   { id: 'terminal', label: 'Terminal', section: 'Workspace' },
   { id: 'files', label: 'Files', section: 'Workspace' },
   { id: 'docker', label: 'Docker', section: 'Containers' },
+  { id: 'git', label: 'Git', section: 'Source Control' },
   { id: 'ports', label: 'Ports', section: 'Network' },
   { id: 'nginx', label: 'Nginx', section: 'Network' },
   { id: 'ssl', label: 'SSL', section: 'Network' },
   { id: 'services', label: 'Services', section: 'Daemons' },
-  { id: 'cron', label: 'Cron', section: 'Daemons' }
+  { id: 'cron', label: 'Cron', section: 'Daemons' },
+  { id: 'settings', label: 'Settings', section: 'Settings' }
 ]
 
 export function getToolLabel(toolId: ToolId): string {

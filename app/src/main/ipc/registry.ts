@@ -5,6 +5,7 @@ import {
   validateConnectionTestRequest,
   validateDisconnectRequest,
   validateHostKeyResponseRequest,
+  validatePassphraseResponseRequest,
   validateLogsSetFiltersRequest,
   validateLogsStartRequest,
   validateProfileCreateRequest,
@@ -43,6 +44,13 @@ import {
   validateDockerRemoveVolumeRequest,
   validateDockerLogsStartRequest,
   validateDockerLogsStopRequest,
+  validateGitRepoRequest,
+  validateGitPullRequest,
+  validateGitPushRequest,
+  validateGitCheckoutRequest,
+  validateGitCreateBranchRequest,
+  validateGitStashRequest,
+  validatePermissionsSetChoicesRequest,
   validatePortsFirewallRuleRequest,
   validatePortsDeleteFirewallRuleRequest,
   validateNginxConfigPathRequest,
@@ -82,6 +90,9 @@ import { fileService } from '../services/FileService'
 import { statsService } from '../services/StatsService'
 import { logService } from '../services/LogService'
 import { dockerService } from '../services/DockerService'
+import { gitService } from '../services/GitService'
+import { permissionService } from '../services/PermissionService'
+import { permissionStore } from '../store/permissions'
 import { portService } from '../services/PortService'
 import { nginxService } from '../services/NginxService'
 import { sslService } from '../services/SSLService'
@@ -157,6 +168,11 @@ export function registerIpcHandlers(): void {
   registerHandler('connection:hostKeyResponse', async (payload) => {
     const request = validateHostKeyResponseRequest(payload)
     connectionManager.respondToHostKey(request.serverId, request.decision)
+  })
+
+  registerHandler('connection:passphraseResponse', async (payload) => {
+    const request = validatePassphraseResponseRequest(payload)
+    connectionManager.respondToPassphrase(request.serverId, request.passphrase, request.cancel)
   })
 
   registerHandler('terminal:open', async (payload) => {
@@ -593,6 +609,82 @@ export function registerIpcHandlers(): void {
   registerHandler('docker:logsStop', async (payload) => {
     const request = validateDockerLogsStopRequest(payload)
     dockerService.stopLogs(request.serverId, request.streamId)
+  })
+
+  registerHandler('git:isAvailable', async (payload) => {
+    const request = validateServerScoped(payload)
+    return gitService.isAvailable(request.serverId)
+  })
+
+  registerHandler('git:listRepos', async (payload) => {
+    const request = validateServerScoped(payload)
+    return gitService.listRepos(request.serverId)
+  })
+
+  registerHandler('git:addRepo', async (payload) => {
+    const request = validateGitRepoRequest(payload)
+    return gitService.addRepo(request.serverId, request.path)
+  })
+
+  registerHandler('git:removeRepo', async (payload) => {
+    const request = validateGitRepoRequest(payload)
+    await gitService.removeRepo(request.serverId, request.path)
+  })
+
+  registerHandler('git:summary', async (payload) => {
+    const request = validateGitRepoRequest(payload)
+    return gitService.summary(request.serverId, request.path)
+  })
+
+  registerHandler('git:fetch', async (payload) => {
+    const request = validateGitRepoRequest(payload)
+    await gitService.fetch(request.serverId, request.path)
+  })
+
+  registerHandler('git:pull', async (payload) => {
+    const request = validateGitPullRequest(payload)
+    await gitService.pull(request.serverId, request.path, request.strategy ?? 'ff-only')
+  })
+
+  registerHandler('git:push', async (payload) => {
+    const request = validateGitPushRequest(payload)
+    await gitService.push(request.serverId, request.path, request.force ?? false)
+  })
+
+  registerHandler('git:checkout', async (payload) => {
+    const request = validateGitCheckoutRequest(payload)
+    await gitService.checkout(request.serverId, request.path, request.branch)
+  })
+
+  registerHandler('git:createBranch', async (payload) => {
+    const request = validateGitCreateBranchRequest(payload)
+    await gitService.createBranch(request.serverId, request.path, request.branch, request.startPoint)
+  })
+
+  registerHandler('git:stash', async (payload) => {
+    const request = validateGitStashRequest(payload)
+    await gitService.stash(
+      request.serverId,
+      request.path,
+      request.action,
+      request.message,
+      request.index
+    )
+  })
+
+  registerHandler('privilege:probe', async (payload) => {
+    const request = validateServerScoped(payload)
+    return permissionService.probe(request.serverId)
+  })
+
+  registerHandler('permissions:getChoices', async (payload) => {
+    const request = validateServerScoped(payload)
+    return permissionStore.getChoices(request.serverId)
+  })
+
+  registerHandler('permissions:setChoices', async (payload) => {
+    const request = validatePermissionsSetChoicesRequest(payload)
+    return permissionStore.setChoices(request.serverId, request.enabled, request.units ?? [])
   })
 
   registerHandler('ports:list', async (payload) => {

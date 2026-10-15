@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { SslOverview } from '@shared/ssl'
 import type { ServerId } from '@shared/server'
 import { describeToolError } from '@renderer/lib/toolErrors'
+import { denialMessage, isAllowed, usePermissionsStore } from '@renderer/state/permissionsStore'
 
 interface UseSslOptions {
   serverId: ServerId
@@ -80,6 +81,12 @@ export function useSsl({ serverId, isConnected, paused = false }: UseSslOptions)
 
   const renew = useCallback(
     async (certName: string) => {
+      const guard = usePermissionsStore.getState().byServer[serverId]
+      if (!isAllowed(guard, 'ssl.renew')) {
+        setError(denialMessage(guard, 'ssl.renew'))
+        setElevation(null)
+        return
+      }
       await runAction(() => window.zvia.ssl.renew({ serverId, certName }))
     },
     [runAction, serverId]
@@ -87,6 +94,12 @@ export function useSsl({ serverId, isConnected, paused = false }: UseSslOptions)
 
   const testRenewal = useCallback(
     async (certName: string) => {
+      const guard = usePermissionsStore.getState().byServer[serverId]
+      if (!isAllowed(guard, 'ssl.renew')) {
+        setError(denialMessage(guard, 'ssl.renew'))
+        setElevation(null)
+        return null
+      }
       return runAction(() => window.zvia.ssl.testRenewal({ serverId, certName }))
     },
     [runAction, serverId]

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  classifyNginxDumpFailure,
   isInsideDirectory,
   parseNginxLogPaths,
   parseNginxMainPid,
@@ -300,5 +301,24 @@ describe('nginx status parsers against real Ubuntu 24.04 output', () => {
   it('takes the master PID from the worker list printed by ps -o pid= -C nginx', () => {
     const stdout = ['   9337', '   9340', '   9341', '   9342', '   9343'].join('\n')
     expect(parseNginxMainPid(stdout)).toBe(9337)
+  })
+})
+
+describe('classifyNginxDumpFailure', () => {
+  it('detects a missing binary', () => {
+    expect(classifyNginxDumpFailure('bash: nginx: command not found')).toBe('not-found')
+  })
+
+  it('detects permission-denied emerg output (password-sudo case)', () => {
+    expect(
+      classifyNginxDumpFailure(
+        '2026/09/09 [emerg] 720706#720706: cannot load certificate: BIO_new_file() failed (SSL: Permission denied)'
+      )
+    ).toBe('denied')
+  })
+
+  it('returns null for unrecognized stderr', () => {
+    expect(classifyNginxDumpFailure('')).toBeNull()
+    expect(classifyNginxDumpFailure('some unrelated warning')).toBeNull()
   })
 })

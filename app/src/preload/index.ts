@@ -8,6 +8,9 @@ import type {
   DockerApi,
   DockerLogsDataEvent,
   DockerLogsExitEvent,
+  GitApi,
+  PrivilegeApi,
+  PermissionsApi,
   PortsApi,
   NginxApi,
   NginxLogsDataEvent,
@@ -401,6 +404,57 @@ const dockerApi: DockerApi = {
   }
 }
 
+const gitApi: GitApi = {
+  isAvailable(request) {
+    return invokeIpc('git:isAvailable', request)
+  },
+  listRepos(request) {
+    return invokeIpc('git:listRepos', request)
+  },
+  addRepo(request) {
+    return invokeIpc('git:addRepo', request)
+  },
+  removeRepo(request) {
+    return invokeIpc('git:removeRepo', request)
+  },
+  summary(request) {
+    return invokeIpc('git:summary', request)
+  },
+  fetch(request) {
+    return invokeIpc('git:fetch', request)
+  },
+  pull(request) {
+    return invokeIpc('git:pull', request)
+  },
+  push(request) {
+    return invokeIpc('git:push', request)
+  },
+  checkout(request) {
+    return invokeIpc('git:checkout', request)
+  },
+  createBranch(request) {
+    return invokeIpc('git:createBranch', request)
+  },
+  stash(request) {
+    return invokeIpc('git:stash', request)
+  }
+}
+
+const privilegeApi: PrivilegeApi = {
+  probe(request) {
+    return invokeIpc('privilege:probe', request)
+  }
+}
+
+const permissionsApi: PermissionsApi = {
+  getChoices(request) {
+    return invokeIpc('permissions:getChoices', request)
+  },
+  setChoices(request) {
+    return invokeIpc('permissions:setChoices', request)
+  }
+}
+
 const portsApi: PortsApi = {
   list(request) {
     return invokeIpc('ports:list', request)
@@ -595,6 +649,9 @@ const zviaApi: ZviaApi = {
 
   terminal: terminalApi,
   docker: dockerApi,
+  git: gitApi,
+  privilege: privilegeApi,
+  permissions: permissionsApi,
   ports: portsApi,
   nginx: nginxApi,
   ssl: sslApi,

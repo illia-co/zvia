@@ -287,6 +287,38 @@ function domainsForCert(
   return { primaryDomain, domains: domains.length > 0 ? domains : [primaryDomain] }
 }
 
+function letsEncryptLiveDir(path: string): string | null {
+  const match = /^\/etc\/letsencrypt\/live\/([^/]+)\//.exec(path)
+  return match ? `/etc/letsencrypt/live/${match[1]}` : null
+}
+
+function letsEncryptPemKind(path: string): string | null {
+  const base = path.slice(path.lastIndexOf('/') + 1)
+  if (base === 'cert.pem' || base === 'fullchain.pem' || base === 'chain.pem') return 'cert'
+  if (base === 'privkey.pem') return 'key'
+  return null
+}
+
+function sameLetsEncryptCert(a: string, b: string): boolean {
+  if (a === b) return true
+  const dirA = letsEncryptLiveDir(a)
+  const dirB = letsEncryptLiveDir(b)
+  if (!dirA || dirA !== dirB) return false
+  const kindA = letsEncryptPemKind(a)
+  const kindB = letsEncryptPemKind(b)
+  // cert.pem, fullchain.pem and chain.pem in the same live dir are the same cert.
+  if (kindA === 'cert' && kindB === 'cert') return true
+  return false
+}
+
+function sameLetsEncryptKey(a: string, b: string): boolean {
+  if (a === b) return true
+  const dirA = letsEncryptLiveDir(a)
+  const dirB = letsEncryptLiveDir(b)
+  if (!dirA || dirA !== dirB) return false
+  return letsEncryptPemKind(a) === 'key' && letsEncryptPemKind(b) === 'key'
+}
+
 function nginxLinksForCert(
   certificatePath: string,
   privateKeyPath: string | null,
@@ -296,17 +328,12 @@ function nginxLinksForCert(
   for (const block of serverBlocks) {
     const certMatch =
       block.sslCertificate === certificatePath ||
-      (block.sslCertificate?.endsWith('/fullchain.pem') &&
-        certificatePath.endsWith('/fullchain.pem') &&
-        block.sslCertificate.replace(/\/fullchain\.pem$/, '') ===
-          certificatePath.replace(/\/fullchain\.pem$/, ''))
+      (block.sslCertificate !== null && sameLetsEncryptCert(block.sslCertificate, certificatePath))
   const keyMatch =
     privateKeyPath !== null &&
+    block.sslCertificateKey !== null &&
     (block.sslCertificateKey === privateKeyPath ||
-      (block.sslCertificateKey?.endsWith('/privkey.pem') &&
-        privateKeyPath.endsWith('/privkey.pem') &&
-        block.sslCertificateKey.replace(/\/privkey\.pem$/, '') ===
-          privateKeyPath.replace(/\/privkey\.pem$/, '')))
+      sameLetsEncryptKey(block.sslCertificateKey, privateKeyPath))
 
     if (!certMatch && !keyMatch) continue
     links.push({
@@ -341,11 +368,45 @@ export function linkCertificatesToSites(
     const { primaryDomain, domains } = domainsForCert(cert.openssl, cert.certbotDomains)
     const notAfter = cert.openssl?.notAfter ?? cert.expiryDate
     const daysRemaining = daysUntil(notAfter, now)
+    let links = nginxLinksForCert(cert.certificatePath, cert.privateKeyPath, serverBlocks)
+
+    // Copied certs (nginx serves a copy outside /etc/letsencrypt): the path
+    // never matches, so link by domain overlap instead. Path match stays first.
+    if (links.length === 0) {
+      const certNames = new Set(
+        [...cert.certbotDomains, ...(cert.openssl?.sans ?? []), cert.openssl?.subjectCn]
+          .filter((name): name is string => typeof name === 'string' && name.length > 0)
+          .map((name) => name.toLowerCase())
+      )
+      if (certNames.size > 0) {
+        links = serverBlocks
+          .filter((block) => block.serverNames.some((name) => certNames.has(name.toLowerCase())))
+          .map((block) => ({
+            configPath: block.configPath,
+            serverNames: [...new Set(block.serverNames)],
+            listensHttps: block.listensHttps,
+            ports: [...block.ports]
+          }))
+      }
+    }
+
+    // Without openssl access (root-only live dirs) the cert has no SANs.
+    // The server_names of the blocks serving this cert are the honest
+    // fallback: the cert is presented for exactly those names.
+    let resolvedDomains = domains
+    let resolvedPrimary = primaryDomain
+    if (resolvedPrimary === 'unknown' || resolvedDomains.length === 0) {
+      const siteNames = [...new Set(links.flatMap((link) => link.serverNames))]
+      if (siteNames.length > 0) {
+        resolvedDomains = [...new Set([...resolvedDomains.filter((d) => d !== 'unknown'), ...siteNames])]
+        resolvedPrimary = resolvedDomains[0] ?? 'unknown'
+      }
+    }
 
     return {
       id: cert.id,
-      primaryDomain,
-      domains,
+      primaryDomain: resolvedPrimary,
+      domains: resolvedDomains,
       status: deriveStatus({
         notAfter,
         managedByCertbot: cert.managedByCertbot,
@@ -364,7 +425,7 @@ export function linkCertificatesToSites(
         lastAttempt: cert.lastAttempt,
         lastResult: cert.lastRenewalResult
       },
-      nginxSites: nginxLinksForCert(cert.certificatePath, cert.privateKeyPath, serverBlocks),
+      nginxSites: links,
       inspectionError: cert.inspectionError
     }
   })
@@ -428,4 +489,58 @@ export function buildNginxDiscoveredCertificate(
   return linked[0]
 }
 
-export { certIdForPath }
+export function renewalConfCertName(fileName: string): string {
+  return fileName.endsWith('.conf') ? fileName.slice(0, -'.conf'.length) : fileName
+}
+
+/**
+ * Builds certbot-style entries from renewal configs. Used when
+ * `certbot certificates` is unavailable or misses a cert that still has a
+ * renewal file on disk (the reported #1: cert exists but SSL screen is empty).
+ * Prefers fullchain.pem when the conf only points at cert.pem.
+ */
+export function certEntriesFromRenewalConfs(
+  confs: Array<{ file: string; content: string }>
+): CertbotCertificateEntry[] {
+  const entries: CertbotCertificateEntry[] = []
+  for (const { file, content } of confs) {
+    const info = parseRenewalConf(content)
+    if (!info.certificatePath && !info.privateKeyPath) continue
+    const baseName = file.slice(file.lastIndexOf('/') + 1)
+    const certName = renewalConfCertName(baseName)
+    let certificatePath = info.certificatePath ?? ''
+    // Normalize cert.pem -> fullchain.pem so openssl inspection and nginx
+    // linking use the chain nginx actually serves.
+    if (certificatePath.endsWith('/cert.pem')) {
+      certificatePath = certificatePath.replace(/\/cert\.pem$/, '/fullchain.pem')
+    }
+    if (!certificatePath) continue
+    entries.push({
+      certName,
+      domains: [],
+      expiryDate: null,
+      certificatePath,
+      privateKeyPath: info.privateKeyPath,
+      valid: true
+    })
+  }
+  return entries
+}
+
+export function liveDirCertEntries(liveDirs: string[]): CertbotCertificateEntry[] {
+  return liveDirs
+    .map((name) => name.trim())
+    .filter(Boolean)
+    // ponytail: /etc/letsencrypt/live always contains a README file alongside the cert dirs
+    .filter((name) => name.toLowerCase() !== 'readme' && !name.toLowerCase().startsWith('readme.'))
+    .map((name) => ({
+      certName: name,
+      domains: [],
+      expiryDate: null,
+      certificatePath: `/etc/letsencrypt/live/${name}/fullchain.pem`,
+      privateKeyPath: `/etc/letsencrypt/live/${name}/privkey.pem`,
+      valid: true
+    }))
+}
+
+export { certIdForPath, sameLetsEncryptCert }

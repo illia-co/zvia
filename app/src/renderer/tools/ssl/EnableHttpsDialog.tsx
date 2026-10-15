@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { SslNginxLink } from '@shared/ssl'
 import { Button } from '@renderer/components/ui/button'
+import { Checkbox } from '@renderer/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -9,6 +10,15 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import { Field } from '@renderer/components/ui/field'
+import { Input } from '@renderer/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@renderer/components/ui/select'
 
 interface EnableHttpsDialogProps {
   open: boolean
@@ -80,63 +90,59 @@ export function EnableHttpsDialog({
         </DialogHeader>
 
         <div className="space-y-3">
-          <label className="block">
-            <span className="text-[10px] uppercase tracking-wider text-text-tertiary">Domain</span>
-            <input
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2 py-1.5 font-mono text-xs text-text"
+          <Field label="Domain">
+            <Input
               value={domain}
               onChange={(event) => setDomain(event.target.value)}
               placeholder="example.com"
+              className="mt-1 w-full font-mono"
             />
-          </label>
+          </Field>
 
-          <label className="block">
-            <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
-              Nginx site
-            </span>
-            <select
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2 py-1.5 font-mono text-xs text-text"
-              value={configPath}
-              onChange={(event) => setConfigPath(event.target.value)}
+          <Field label="Nginx site">
+            <Select
+              value={configPath || undefined}
+              onValueChange={(value) => setConfigPath(value)}
+              disabled={siteOptions.length === 0}
             >
-              {siteOptions.length === 0 ? (
-                <option value="">No HTTP-only sites detected</option>
-              ) : (
-                siteOptions.map((site) => (
-                  <option key={site.configPath} value={site.configPath}>
+              <SelectTrigger className="mt-1 w-full font-mono">
+                <SelectValue placeholder="No HTTP-only sites detected" />
+              </SelectTrigger>
+              <SelectContent className="z-[60]">
+                {siteOptions.map((site) => (
+                  <SelectItem
+                    key={site.configPath}
+                    value={site.configPath}
+                    className="font-mono"
+                  >
                     {site.configPath} ({site.serverNames.join(', ')})
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
 
-          <label className="block">
-            <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
-              Provider
-            </span>
-            <input
-              className="mt-1 w-full rounded-panel border border-divider bg-bg-secondary px-2 py-1.5 text-xs text-text-secondary"
+          <Field label="Provider">
+            <Input
               value="Let's Encrypt"
               readOnly
+              className="mt-1 w-full bg-bg-secondary text-text-secondary"
             />
-          </label>
+          </Field>
 
-          <label className="block">
-            <span className="text-[10px] uppercase tracking-wider text-text-tertiary">Email</span>
-            <input
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2 py-1.5 font-mono text-xs text-text"
+          <Field label="Email">
+            <Input
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="admin@example.com"
+              className="mt-1 w-full font-mono"
             />
-          </label>
+          </Field>
 
           <label className="flex items-center gap-2 text-xs text-text">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={redirect}
-              onChange={(event) => setRedirect(event.target.checked)}
+              onCheckedChange={(checked) => setRedirect(checked === true)}
             />
             Redirect HTTP to HTTPS
           </label>

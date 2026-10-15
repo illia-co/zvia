@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FirewallRuleAction, PortProtocol, PortsSnapshot } from '@shared/ports'
 import type { ServerId } from '@shared/server'
 import { describeToolError } from '@renderer/lib/toolErrors'
+import { denialMessage, isAllowed, usePermissionsStore } from '@renderer/state/permissionsStore'
 
 const POLL_INTERVAL_MS = 5000
 
@@ -104,6 +105,12 @@ export function usePorts({ serverId, isConnected, paused = false }: UsePortsOpti
 
   const setFirewallRule = useCallback(
     async (action: FirewallRuleAction, port: number, protocol: PortProtocol) => {
+      const guard = usePermissionsStore.getState().byServer[serverId]
+      if (!isAllowed(guard, 'firewall.write')) {
+        setError(denialMessage(guard, 'firewall.write'))
+        setElevation(null)
+        return
+      }
       await runAction(() =>
         window.zvia.ports.setFirewallRule({ serverId, action, port, protocol })
       )
@@ -113,6 +120,12 @@ export function usePorts({ serverId, isConnected, paused = false }: UsePortsOpti
 
   const deleteFirewallRule = useCallback(
     async (ruleId: string) => {
+      const guard = usePermissionsStore.getState().byServer[serverId]
+      if (!isAllowed(guard, 'firewall.write')) {
+        setError(denialMessage(guard, 'firewall.write'))
+        setElevation(null)
+        return
+      }
       await runAction(() => window.zvia.ports.deleteFirewallRule({ serverId, ruleId }))
     },
     [runAction, serverId]

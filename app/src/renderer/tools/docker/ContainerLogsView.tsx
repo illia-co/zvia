@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { DockerContainer } from '@shared/docker'
 import type { ServerId } from '@shared/server'
 import { Button } from '@renderer/components/ui/button'
+import { Checkbox } from '@renderer/components/ui/checkbox'
+import { Input } from '@renderer/components/ui/input'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { parseZviaError } from '@renderer/lib/errors'
 import { cn, generateId } from '@renderer/lib/utils'
@@ -110,19 +112,18 @@ export function ContainerLogsView({ serverId, container }: ContainerLogsViewProp
           Copy
         </Button>
         <label className="inline-flex items-center gap-2 text-xs text-[#999999]">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={timestamps}
-            onChange={(event) => setTimestamps(event.target.checked)}
+            onCheckedChange={(checked) => setTimestamps(checked === true)}
           />
           Timestamps
         </label>
-        <input
+        <Input
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search logs"
-          className="ml-auto min-w-[10rem] rounded-panel border border-[#333333] bg-[#242424] px-2 py-1 text-xs text-[#f2f2f2] outline-none"
+          className="ml-auto min-w-[10rem] border-[#333333] bg-[#242424] text-[#f2f2f2]"
         />
       </div>
 

@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 import type { ZviaErrorPayload } from '@shared/errors'
 import type { ServerId } from '@shared/server'
 import { Button } from '@renderer/components/ui/button'
+import { Checkbox } from '@renderer/components/ui/checkbox'
 import { ErrorSurface } from '@renderer/components/errors/ErrorSurface'
 import { ElevationRequired } from '@renderer/components/errors/ElevationRequired'
+import { Field } from '@renderer/components/ui/field'
+import { Input } from '@renderer/components/ui/input'
 import { elevationCommand } from '@renderer/lib/errors'
 import { getPasswordPolicyIssues } from '@shared/userPassword'
 import {
@@ -104,60 +107,54 @@ export function CreateUserDialog({
           )}
 
           <div className="space-y-3">
-          <label className="block text-xs text-text-secondary">
-            Username
-            <input
+          <Field label="Username">
+            <Input
               value={username}
               onChange={(event) => setUsername(event.target.value)}
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+              className="mt-1 w-full font-mono"
               autoFocus
             />
-          </label>
-          <label className="block text-xs text-text-secondary">
-            Shell
-            <input
+          </Field>
+          <Field label="Shell">
+            <Input
               value={shell}
               onChange={(event) => setShell(event.target.value)}
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+              className="mt-1 w-full font-mono"
             />
-          </label>
-          <label className="block text-xs text-text-secondary">
-            Full name (GECOS)
-            <input
+          </Field>
+          <Field label="Full name (GECOS)">
+            <Input
               value={gecos}
               onChange={(event) => setGecos(event.target.value)}
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 text-xs text-text outline-none focus:border-text-tertiary"
+              className="mt-1 w-full"
             />
-          </label>
-          <label className="block text-xs text-text-secondary">
-            Supplementary groups (comma-separated)
-            <input
+          </Field>
+          <Field label="Supplementary groups (comma-separated)">
+            <Input
               value={groups}
               onChange={(event) => setGroups(event.target.value)}
               placeholder="docker, www-data"
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none focus:border-text-tertiary"
+              className="mt-1 w-full font-mono"
             />
-          </label>
-          <label className="block text-xs text-text-secondary">
-            Password (optional)
-            <input
+          </Field>
+          <Field label="Password (optional)">
+            <Input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 text-xs text-text outline-none focus:border-text-tertiary"
+              className="mt-1 w-full"
             />
             <PasswordFieldHints username={username.trim()} password={password} />
-          </label>
+          </Field>
           <label className="flex items-center gap-2 text-xs text-text-secondary">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={createHome}
-              onChange={(event) => setCreateHome(event.target.checked)}
+              onCheckedChange={(checked) => setCreateHome(checked === true)}
             />
             Create home directory
           </label>
           <label className="flex items-center gap-2 text-xs text-text-secondary">
-            <input type="checkbox" checked={sudo} onChange={(event) => setSudo(event.target.checked)} />
+            <Checkbox checked={sudo} onCheckedChange={(checked) => setSudo(checked === true)} />
             Grant {adminGroup ?? 'sudo'} access
           </label>
           </div>

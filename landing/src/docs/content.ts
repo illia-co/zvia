@@ -50,6 +50,8 @@ export const DOC_NAV: DocNavGroup[] = [
       { id: 'tool-terminal', label: 'Terminal' },
       { id: 'tool-files', label: 'Files' },
       { id: 'tool-docker', label: 'Docker' },
+      { id: 'tool-git', label: 'Git' },
+      { id: 'tool-settings', label: 'Settings' },
       { id: 'tool-ports', label: 'Ports' },
       { id: 'tool-nginx', label: 'Nginx' },
       { id: 'tool-ssl', label: 'SSL' },
@@ -76,7 +78,7 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'paragraph',
         content:
-          'Zvia is a native desktop application for managing remote Linux servers over SSH. It provides a calm, server-scoped workspace for system administration — deployment topology discovery, stats, logs, Docker, Nginx, SSL, systemd, files, and a full terminal — without installing a custom agent on the remote machine.'
+          'Zvia is a native desktop application for managing remote Linux servers over SSH. It provides a calm, server-scoped workspace for system administration — deployment topology discovery, stats, logs, Docker, Git, Nginx, SSL, systemd, files, and a full terminal — without installing a custom agent on the remote machine.'
       },
       {
         type: 'paragraph',
@@ -136,8 +138,9 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         type: 'list',
         content: [
-          'SSH agent — uses keys already loaded in your system SSH agent',
+          'SSH agent — uses keys in your system SSH agent, falling back to default key files (~/.ssh/id_ed25519, id_ecdsa, id_rsa) when the agent is unavailable',
           'Key file — path to a private key on disk, with an optional passphrase stored in the OS credential store',
+          'Encrypted keys without a stored passphrase prompt once per session in a dialog — the entered passphrase is used in memory only and never stored',
           'Zvia does not store or use server login passwords — authentication is SSH key-based only'
         ]
       },
@@ -523,6 +526,30 @@ export const DOC_SECTIONS: DocSection[] = [
         type: 'paragraph',
         content:
           'Manage Docker on the remote host through the Docker CLI over SSH. Inspect containers, images, volumes, and networks; view container logs; exec into running containers; and perform start, stop, and remove actions from structured panels.'
+      }
+    ]
+  },
+  {
+    id: 'tool-git',
+    eyebrow: 'Source Control',
+    title: 'Git',
+    blocks: [
+      {
+        type: 'paragraph',
+        content:
+          'Work with Git repositories on the server without dropping to the terminal. Repositories are discovered automatically with quick Fetch, Pull, and Push actions per row; opening a repo shows branch, working-tree changes, stash, commit history with a graph, branches, and remotes. Authentication reuses the server-side SSH keys.'
+      }
+    ]
+  },
+  {
+    id: 'tool-settings',
+    eyebrow: 'Settings',
+    title: 'Settings',
+    blocks: [
+      {
+        type: 'paragraph',
+        content:
+          'Manage per-server settings. The Permissions tab controls passwordless sudo as capabilities — toggle what the app may do without your Linux password, inspect the exact commands each capability grants, and generate a least-privilege sudoers policy to apply via visudo.'
       }
     ]
   },

@@ -14,12 +14,14 @@ import type {
 import type { NginxLogsDataEvent, NginxLogsExitEvent } from '@shared/ipc'
 import { CommandError, ConnectionError, SFTPError, ValidationError } from '@shared/errors'
 import { connectionManager } from '../ssh/ConnectionManager'
-import { getServerConnection, shellQuote } from './ServiceBase'
+import { getServerConnection, shellQuote, resolveBinary, NGINX_BINARY_FALLBACKS } from './ServiceBase'
 import { LogStreamRegistry } from './LogStreamRegistry'
 import { execStreamOnClient } from '../ssh/exec'
 import { privilegeService } from './PrivilegeService'
 import { topologyService } from './deployments'
 import {
+  classifyNginxDumpFailure,
+  type NginxDumpFailure,
   isInsideDirectory,
   parseNginxLogPaths,
   parseNginxMainPid,
@@ -47,8 +49,27 @@ const CONFIG_SUBDIRECTORIES: { directory: string; group: NginxConfigGroup }[] = 
   { directory: 'modules-enabled', group: 'modules-enabled' }
 ]
 
+/**
+ * Backup/disabled file names nginx would never load from a `*.conf` include
+ * (editor copies, `*.disabled`, `*.off`). The SFTP-assembled dump must skip
+ * them or phantom server blocks pollute topology/SSL. The `nginx -T` path is
+ * server truth and stays unfiltered; the file browser still lists everything.
+ */
+const BACKUP_CONFIG_PATTERN =
+  /(~|\.bak|\.backup|\.bkp|\.orig|\.old|\.save|\.dist|\.dpkg-dist|\.dpkg-old|\.dpkg-new|\.rpmnew|\.rpmsave|\.rej|\.swp|\.swo|\.swn|\.tmp|\.temp|\.disabled|\.off|\.inactive|\.copy)$/i
+
+function isSkippedDumpFile(file: NginxConfigFile): boolean {
+  if (BACKUP_CONFIG_PATTERN.test(file.name) || file.name.startsWith('.#') || file.name.startsWith('#')) {
+    return true
+  }
+  // ponytail: sites-available without a sites-enabled link is disabled; nginx never loads it
+  if (file.group === 'sites-available' && file.enabled === false) return true
+  return false
+}
+
 interface Detection {
   installed: boolean
+  binary: string | null
   version: string | null
   paths: NginxPaths
   checkedAt: number
@@ -96,6 +117,16 @@ function sftpCallback<T>(
     })
   })
 }
+
+export interface NginxConfigDump {
+  /** Raw `nginx -T`-style output with `# configuration file` markers. */
+  dump: string
+  source: 'nginx-T' | 'sftp' | 'none'
+  /** Classified stderr cause when the dump is missing. */
+  failure: NginxDumpFailure
+}
+
+const SFTP_DUMP_MAX_FILES = 50
 
 export class NginxService {
   private mainWindow: BrowserWindow | null = null
@@ -152,24 +183,32 @@ export class NginxService {
       return cached
     }
 
+    // Non-interactive SSH PATH often lacks sbin dirs; probe absolute
+    // locations so `installed` is not falsely false for thin-PATH users.
+    const binary =
+      (await resolveBinary(serverId, 'nginx', NGINX_BINARY_FALLBACKS).catch(() => null)) ??
+      null
+
     const result = await this.exec(
       serverId,
       [
         `echo '${MARKER_WHICH}'`,
-        'command -v nginx 2>/dev/null',
+        binary ?? 'command -v nginx 2>/dev/null',
         `echo '${MARKER_VERSION}'`,
-        'nginx -V 2>&1',
+        binary ? `${shellQuote(binary)} -V 2>&1` : 'nginx -V 2>&1',
         `echo '${MARKER_SYSTEMCTL}'`,
         'command -v systemctl 2>/dev/null'
       ].join('; ')
     )
 
-    const binary = sectionBetween(result.stdout, MARKER_WHICH, MARKER_VERSION).trim()
+    const whichOutput = sectionBetween(result.stdout, MARKER_WHICH, MARKER_VERSION).trim()
+    const resolved = binary ?? (whichOutput.length > 0 ? whichOutput : null)
     const versionOutput = sectionBetween(result.stdout, MARKER_VERSION, MARKER_SYSTEMCTL)
-    const installed = binary.length > 0
+    const installed = resolved !== null
 
     const detection: Detection = {
       installed,
+      binary: resolved,
       version: installed ? parseNginxVersion(versionOutput) : null,
       paths: installed
         ? parseNginxPaths(versionOutput)
@@ -179,6 +218,12 @@ export class NginxService {
 
     this.detectionCache.set(serverId, detection)
     return detection
+  }
+
+  /** Resolved nginx binary for shell use; bare `nginx` when undetectable. */
+  async getBinary(serverId: ServerId): Promise<string> {
+    const detection = await this.detect(serverId).catch(() => null)
+    return detection?.binary ?? 'nginx'
   }
 
   private async requireConfigRoot(serverId: ServerId): Promise<string> {
@@ -379,20 +424,50 @@ export class NginxService {
 
     if (!wrote) {
       // execOnClient has no stdin, so stage the content over SFTP and copy it
-      // into place with elevated privileges. cp preserves the destination mode.
+      // into place with elevated privileges. The terminal user can do the same
+      // with `sudo cp`, so after the GUI confirmation the operation must be
+      // allowed — never silently blocked.
       const tempPath = `/tmp/zvia-nginx-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
       await sftpCallback<void>('writeFile', (callback) => {
         sftp.writeFile(tempPath, content, 'utf8', callback)
       })
 
       try {
-        const command = await this.elevate(
-          serverId,
-          `cp -- ${shellQuote(tempPath)} ${shellQuote(validPath)}`
-        )
-        const result = await this.exec(serverId, `${command} 2>&1`)
-        if (result.exitCode !== 0) {
-          throw new CommandError('Could not write the config file', result.stdout.trim())
+        // NOTE: `cp` and `chmod` must each be elevated separately. `sudo`
+        // applies only to the command directly after it, so
+        // `sudo cp … && chmod …` would run `chmod` as the unprivileged SSH
+        // user and fail on root-owned files — exactly the files that reach
+        // this fallback path.
+        let copyCommand: string
+        let modeCommand: string
+        try {
+          copyCommand = await this.elevate(
+            serverId,
+            `cp -- ${shellQuote(tempPath)} ${shellQuote(validPath)}`
+          )
+          modeCommand = await this.elevate(
+            serverId,
+            `chmod 644 -- ${shellQuote(validPath)}`
+          )
+        } catch (error) {
+          throw new CommandError(
+            'Could not write the config file: the SSH user cannot elevate to root',
+            error instanceof Error ? error.message : String(error)
+          )
+        }
+        const copyResult = await this.exec(serverId, `${copyCommand} 2>&1`)
+        if (copyResult.exitCode !== 0) {
+          throw new CommandError(
+            'Could not write the config file',
+            copyResult.stdout.trim() || copyResult.stderr.trim() || `exit code ${copyResult.exitCode}`
+          )
+        }
+        const modeResult = await this.exec(serverId, `${modeCommand} 2>&1`)
+        if (modeResult.exitCode !== 0) {
+          throw new CommandError(
+            'Could not write the config file',
+            modeResult.stdout.trim() || modeResult.stderr.trim() || `exit code ${modeResult.exitCode}`
+          )
         }
       } finally {
         await this.exec(serverId, `rm -f -- ${shellQuote(tempPath)}`).catch(() => undefined)
@@ -406,7 +481,8 @@ export class NginxService {
 
   async validate(serverId: ServerId): Promise<NginxValidation> {
     await this.requireConfigRoot(serverId)
-    const command = await this.elevate(serverId, 'nginx -t')
+    const binary = await this.getBinary(serverId)
+    const command = await this.elevate(serverId, `${binary} -t`)
     const result = await this.exec(serverId, `${command} 2>&1`)
 
     const validation = parseNginxTestOutput(result.stdout || result.stderr)
@@ -426,16 +502,55 @@ export class NginxService {
     if (action === 'reload' && !this.canReload(serverId)) {
       throw new ValidationError(
         'Test the configuration before reloading nginx',
-        'The config changed since the last successful nginx -t.'
+        'The config changed since the last successful nginx -t. Run Test configuration first.'
       )
     }
 
-    const command = await this.elevate(serverId, `systemctl ${action} ${UNIT}`)
-    const result = await this.exec(serverId, `${command} 2>&1`, 30000)
-    if (result.exitCode !== 0) {
-      throw new CommandError(`Failed to ${action} nginx`, result.stdout.trim())
+    // Same privilege rule as the terminal: if the SSH user can sudo, the GUI
+    // must allow it after confirmation. Try systemctl first, then fall back
+    // for hosts without systemd (service wrapper, direct nginx signal).
+    const attempts: string[] = []
+    try {
+      attempts.push(await this.elevate(serverId, `systemctl ${action} ${UNIT}`))
+    } catch (error) {
+      throw new CommandError(
+        `Failed to ${action} nginx: the SSH user cannot elevate to root`,
+        error instanceof Error ? error.message : String(error)
+      )
     }
-    topologyService.invalidate(serverId)
+    if (action === 'reload') {
+      try {
+        attempts.push(await this.elevate(serverId, `${detection.binary ?? 'nginx'} -s reload`))
+      } catch {
+        // systemctl attempt already covers the privileged path.
+      }
+    } else {
+      try {
+        attempts.push(await this.elevate(serverId, `service nginx ${action}`))
+      } catch {
+        // systemctl attempt already covers the privileged path.
+      }
+    }
+
+    let lastError = ''
+    for (const command of attempts) {
+      const result = await this.exec(serverId, `${command} 2>&1`, 30000)
+      if (result.exitCode === 0) {
+        topologyService.invalidate(serverId)
+        return
+      }
+      lastError = (result.stdout.trim() || result.stderr.trim()).trim()
+      // systemctl-specific failure on non-systemd hosts, or sudo denial when
+      // only some actions are NOPASSWD-allowed → try the next fallback.
+      if (
+        !/systemd|system has not been booted|failed to connect to bus|not found|is not allowed to execute|a password is required/i.test(
+          lastError
+        )
+      ) {
+        break
+      }
+    }
+    throw new CommandError(`Failed to ${action} nginx`, lastError || `exit code 1`)
   }
 
   async getLogPaths(serverId: ServerId): Promise<NginxLogPaths> {
@@ -447,9 +562,9 @@ export class NginxService {
     const paths: NginxLogPaths = { accessLogs: [], errorLogs: [] }
 
     try {
-      const command = await this.elevate(serverId, 'nginx -T')
+      const command = await this.elevate(serverId, `${detection.binary ?? 'nginx'} -T`)
       const result = await this.exec(serverId, `${command} 2>/dev/null`, 30000)
-      if (result.exitCode === 0) {
+      if (result.stdout.includes('# configuration file')) {
         const parsed = parseNginxLogPaths(result.stdout, detection.paths.prefix)
         paths.accessLogs = parsed.accessLogs
         paths.errorLogs = parsed.errorLogs
@@ -468,7 +583,6 @@ export class NginxService {
     this.knownLogPaths.set(serverId, new Set([...paths.accessLogs, ...paths.errorLogs]))
     return paths
   }
-
   /** Log paths come from nginx itself, never from renderer input. */
   private async assertKnownLogPath(serverId: ServerId, path: string): Promise<string> {
     if (this.knownLogPaths.get(serverId)?.has(path)) return path
@@ -478,6 +592,58 @@ export class NginxService {
       'Invalid log path: not reported by the running nginx configuration',
       path
     )
+  }
+
+  /**
+   * Returns an `nginx -T`-style configuration dump for topology/SSL parsing.
+   * Tries an (elevated when possible) `nginx -T` first — stderr is preserved
+   * for failure classification — then falls back to assembling the dump from
+   * SFTP-read config files, which are usually world-readable even for
+   * password-sudo users. Never throws for unreadable configs.
+   */
+  async getConfigDump(serverId: ServerId): Promise<NginxConfigDump> {
+    const binary = await this.getBinary(serverId)
+    const elevated = await this.elevate(serverId, `${binary} -T`).catch(() => null)
+    // No `2>/dev/null`: emerg output on stderr classifies the failure while
+    // the complete dump (when present) stays on stdout.
+    const result = await this.exec(serverId, elevated ?? `${binary} -T`, 45000).catch(() => null)
+    if (result && result.stdout.includes('# configuration file')) {
+      return { dump: result.stdout, source: 'nginx-T', failure: null }
+    }
+    const failure = classifyNginxDumpFailure(result?.stderr ?? '')
+
+    try {
+      const detection = await this.detect(serverId).catch(() => null)
+      const configRoot = detection?.paths.configRoot
+      if (!detection?.installed || !configRoot) {
+        return { dump: '', source: 'none', failure }
+      }
+      const tree = await this.getConfigTree(serverId)
+      const candidates = [
+        `${configRoot}/nginx.conf`,
+        ...tree.files.filter((file) => !isSkippedDumpFile(file)).map((file) => file.path)
+      ]
+      const chunks: string[] = []
+      const seen = new Set<string>()
+      for (const path of candidates) {
+        if (seen.has(path)) continue // ponytail: nginx.conf duplicates tree.files; stop only on file cap
+        if (chunks.length >= SFTP_DUMP_MAX_FILES) break
+        seen.add(path)
+        try {
+          const { content } = await this.readConfig(serverId, path)
+          chunks.push(`# configuration file ${path}:\n${content}`)
+        } catch {
+          // Root-only files skip individually; the rest still assembles.
+        }
+      }
+      const dump = chunks.join('\n')
+      if (dump.includes('# configuration file') && /server\s*\{/.test(dump)) {
+        return { dump, source: 'sftp', failure: null }
+      }
+    } catch {
+      // Best-effort; callers degrade to warnings.
+    }
+    return { dump: '', source: 'none', failure }
   }
 
   private sendLogsData(event: NginxLogsDataEvent): void {

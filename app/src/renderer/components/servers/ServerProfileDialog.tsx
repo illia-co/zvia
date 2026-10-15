@@ -10,6 +10,8 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import { Field } from '@renderer/components/ui/field'
+import { Input } from '@renderer/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -196,45 +198,41 @@ export function ServerProfileDialog({
           )}
 
           <div className="space-y-3">
-            <label className="block">
-              <span className="text-xs text-text-secondary">Name</span>
-              <input
+            <Field label="Name">
+              <Input
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 text-sm outline-none focus:border-text-tertiary"
+                className="mt-1 w-full text-sm"
                 placeholder="Production"
               />
-            </label>
-            <label className="block">
-              <span className="text-xs text-text-secondary">Hostname</span>
-              <input
+            </Field>
+            <Field label="Hostname">
+              <Input
                 required
                 value={hostname}
                 onChange={(e) => setHostname(e.target.value)}
-                className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 text-sm outline-none focus:border-text-tertiary"
+                className="mt-1 w-full text-sm"
                 placeholder="203.0.113.10"
               />
-            </label>
+            </Field>
             <div className="grid grid-cols-3 gap-2">
-              <label className="col-span-2 block">
-                <span className="text-xs text-text-secondary">Username</span>
-                <input
+              <Field label="Username" className="col-span-2">
+                <Input
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 text-sm outline-none focus:border-text-tertiary"
+                  className="mt-1 w-full text-sm"
                   placeholder="ubuntu"
                 />
-              </label>
-              <label className="block">
-                <span className="text-xs text-text-secondary">Port</span>
-                <input
+              </Field>
+              <Field label="Port">
+                <Input
                   value={port}
                   onChange={(e) => setPort(e.target.value)}
-                  className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 text-sm outline-none focus:border-text-tertiary"
+                  className="mt-1 w-full text-sm"
                 />
-              </label>
+              </Field>
             </div>
             <div className="block">
               <span className="text-xs text-text-secondary">Authentication</span>
@@ -256,29 +254,27 @@ export function ServerProfileDialog({
             </div>
             {authType === 'key-file' && (
               <>
-                <label className="block">
-                  <span className="text-xs text-text-secondary">Private key path</span>
-                  <input
+                <Field label="Private key path">
+                  <Input
                     required
                     value={keyPath}
                     onChange={(e) => setKeyPath(e.target.value)}
-                    className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 font-mono text-xs outline-none focus:border-text-tertiary"
+                    className="mt-1 w-full font-mono text-xs"
                     placeholder="~/.ssh/id_ed25519"
                   />
-                </label>
-                <label className="block">
-                  <span className="text-xs text-text-secondary">Passphrase</span>
-                  <input
+                </Field>
+                <Field label="Passphrase">
+                  <Input
                     type="password"
                     value={passphrase}
                     onChange={(e) => setPassphrase(e.target.value)}
-                    className="mt-1 w-full rounded-panel border border-divider bg-bg px-2.5 py-1.5 text-sm outline-none focus:border-text-tertiary"
+                    className="mt-1 w-full text-sm"
                     placeholder={
                       hasStoredPassphrase ? 'Leave blank to keep existing' : 'Optional'
                     }
                     autoComplete="off"
                   />
-                </label>
+                </Field>
               </>
             )}
           </div>
